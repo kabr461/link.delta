@@ -1,3 +1,5 @@
+console.log("test success")
+
 var _0x478bc6 = _0x1f3f;
 function _0x1f3f(_0x4cf471, _0x2f81c3) {
   var _0x262468 = _0x2624();
@@ -18843,3 +18845,5 @@ function _0x2624() {
   };
   return _0x2624();
 }
+
+console.log("test success")
