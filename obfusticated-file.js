@@ -1,8 +1,36 @@
 console.log("test success");
 
-delete window.WebSocket;
-window.WebSocket = nativeWebSocket;
+// Save the native WebSocket implementation
+const nativeWebSocket = window.WebSocket;
 
+// Override the WebSocket constructor for debugging
+window.WebSocket = function (...args) {
+    console.log("WebSocket initialized with arguments:", args);
+
+    // Create a new WebSocket using the native implementation
+    const ws = new nativeWebSocket(...args);
+
+    // Add event listeners to log WebSocket events
+    ws.addEventListener("open", () => console.log("WebSocket connected:", ws.url));
+    ws.addEventListener("message", (event) => console.log("WebSocket message received:", event.data));
+    ws.addEventListener("error", (event) => console.error("WebSocket error:", event));
+    ws.addEventListener("close", (event) => console.warn("WebSocket closed:", event));
+
+    return ws; // Return the WebSocket instance
+};
+
+// Preserve native WebSocket properties
+Object.defineProperty(window, "WebSocket", {
+    get() {
+        console.log("WebSocket accessed");
+        return nativeWebSocket;
+    },
+    set(value) {
+        console.log("WebSocket overridden:", value);
+    }
+});
+
+console.log("WebSocket debugging script injected successfully.");
 
 var _0x478bc6 = _0x1f3f;
 function _0x1f3f(_0x4cf471, _0x2f81c3) {
