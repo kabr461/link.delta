@@ -10,8 +10,80 @@
 // @grant        GM.xmlHttpRequest
 // ==/UserScript==
 
-// First, ensure WebSocket override is complete
+// Single IIFE to contain all declarations and avoid global scope pollution
 (function() {
+    // Core Classes
+    class NetworkProtocol {
+        static PACKET_TYPES = {
+            HANDSHAKE: 0,
+            STATE_UPDATE: 1,
+            PLAYER_INPUT: 2,
+            CHAT_MESSAGE: 3,
+            LEADERBOARD_UPDATE: 4,
+            PLAYER_DEATH: 5,
+            PLAYER_SPAWN: 6,
+            PLAYER_DISCONNECT: 7,
+            SERVER_MESSAGE: 8,
+            PING: 9,
+            PONG: 10,
+            ERROR: 255
+        };
+
+        static encodeMessage(type, data) {
+            // Implementation
+            return data;
+        }
+
+        static decodeMessage(view) {
+            // Implementation
+            return view;
+        }
+    }
+
+    class PacketProcessor {
+        constructor() {
+            this.compression = true;
+            this.encryption = true;
+            this.protocol = new NetworkProtocol();
+        }
+
+        processOutgoing(data) {
+            let processed = data;
+            if (typeof processed === 'object') {
+                processed = JSON.stringify(processed);
+            }
+            if (this.encryption) {
+                processed = this.encrypt(processed);
+            }
+            if (this.compression) {
+                processed = this.compress(processed);
+            }
+            return processed;
+        }
+
+        processIncoming(data) {
+            let processed = data;
+            if (this.compression) {
+                processed = this.decompress(processed);
+            }
+            if (this.encryption) {
+                processed = this.decrypt(processed);
+            }
+            try {
+                processed = JSON.parse(processed);
+            } catch (e) {
+                // If it's not JSON, return as is
+            }
+            return processed;
+        }
+
+        encrypt(data) { return data; }
+        decrypt(data) { return data; }
+        compress(data) { return data; }
+        decompress(data) { return data; }
+    }
+
+    // WebSocket Override
     const OriginalWebSocket = window.WebSocket;
     
     class EnhancedWebSocket extends OriginalWebSocket {
@@ -88,73 +160,21 @@
 
     // Replace the native WebSocket
     window.WebSocket = EnhancedWebSocket;
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('WebSocket override initialized');
+    });
+
+    // Exports if needed
+    if(typeof module !== 'undefined' && module.exports) {
+        module.exports = {
+            EnhancedWebSocket,
+            PacketProcessor,
+            NetworkProtocol
+        };
+    }
 })();
-
-class PacketProcessor {
-    constructor() {
-        this.compression = true;
-        this.encryption = true;
-        this.protocol = new NetworkProtocol();
-    }
-
-    processOutgoing(data) {
-        let processed = data;
-        
-        if (typeof processed === 'object') {
-            processed = JSON.stringify(processed);
-        }
-        
-        if (this.encryption) {
-            processed = this.encrypt(processed);
-        }
-        
-        if (this.compression) {
-            processed = this.compress(processed);
-        }
-        
-        return processed;
-    }
-
-    processIncoming(data) {
-        let processed = data;
-        
-        if (this.compression) {
-            processed = this.decompress(processed);
-        }
-        
-        if (this.encryption) {
-            processed = this.decrypt(processed);
-        }
-        
-        try {
-            processed = JSON.parse(processed);
-        } catch (e) {
-            // If it's not JSON, return as is
-        }
-        
-        return processed;
-    }
-
-    encrypt(data) {
-        // Implementation of encryption
-        return data;
-    }
-
-    decrypt(data) {
-        // Implementation of decryption
-        return data;
-    }
-
-    compress(data) {
-        // Implementation of compression
-        return data;
-    }
-
-    decompress(data) {
-        // Implementation of decompression
-        return data;
-    }
-}
 
 // ... (all remaining code remains the same)
 
