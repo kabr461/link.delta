@@ -1,4 +1,8 @@
-console.log("test success")
+console.log("test success");
+
+delete window.WebSocket;
+window.WebSocket = nativeWebSocket;
+
 
 var _0x478bc6 = _0x1f3f;
 function _0x1f3f(_0x4cf471, _0x2f81c3) {
