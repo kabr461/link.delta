@@ -3104,7 +3104,7 @@ class ExtendedNetworkProtocol {
 }
 
 // Complete Game State Management
-class GameState {
+class ExtendedGameState {
     constructor() {
         this.players = new Map();
         this.cells = new Map();
