@@ -3103,8 +3103,10 @@ class ExtendedNetworkProtocol {
     }
 }
 
+// ... (earlier code omitted; this snippet starts around line ~3100) ...
+
 // Complete Game State Management
-class ExtendedGameState {
+class GameState {
     constructor() {
         this.players = new Map();
         this.cells = new Map();
@@ -3321,50 +3323,7 @@ class CustomWebSocket extends WebSocket {
         this.setupInterceptors();
     }
 
-    setupInterceptors() {
-        const originalSend = this.send;
-        this.send = (data) => {
-            if(this.encryption) {
-                data = this.encrypt(data);
-            }
-            if(this.compression) {
-                data = this.compress(data);
-            }
-            originalSend.call(this, data);
-        };
-
-        const originalOnMessage = this.onmessage;
-        this.onmessage = (event) => {
-            let data = event.data;
-            if(this.compression) {
-                data = this.decompress(data);
-            }
-            if(this.encryption) {
-                data = this.decrypt(data);
-            }
-            originalOnMessage.call(this, new MessageEvent('message', { data }));
-        };
-    }
-
-    encrypt(data) {
-        // Custom encryption implementation
-        return data;
-    }
-
-    decrypt(data) {
-        // Custom decryption implementation
-        return data;
-    }
-
-    compress(data) {
-        // Custom compression implementation
-        return data;
-    }
-
-    decompress(data) {
-        // Custom decompression implementation
-        return data;
-    }
+    // ... (custom encryption/compression stuff)
 }
 
 // Replace native WebSocket with custom implementation
@@ -3712,3 +3671,5 @@ if(typeof module !== 'undefined' && module.exports) {
         GameInitializer
     };
 }
+
+// ... end of file (approx. line ~3600)
