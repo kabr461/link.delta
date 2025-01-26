@@ -3051,7 +3051,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Network Protocol Implementation
-class NetworkProtocol {
+class ExtendedNetworkProtocol {
     static PACKET_TYPES = {
         HANDSHAKE: 0,
         STATE_UPDATE: 1,
