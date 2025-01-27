@@ -1,4 +1,4 @@
-// Enhanced WebSocket Override with Full Compatibility for Delta Script
+// Enhanced WebSocket Override with Timeout and Error Handling for Delta Script
 
 // Save Original WebSocket
 window._OriginalWebSocket = window.WebSocket;
@@ -84,20 +84,27 @@ const applyWebSocketOverride = () => {
 };
 
 // Retry Logic to Wait for Delta Initialization
-const waitForDeltaInitialization = () => {
-    if (typeof _0x51919e !== 'undefined' && _0x51919e._server && _0x51919e._server.ws) {
-        console.log('Delta initialized. Proceeding with WebSocket integration.');
-        applyWebSocketOverride();
-    } else {
-        console.log('Waiting for Delta initialization...');
-        setTimeout(waitForDeltaInitialization, 100);
-    }
+const waitForDeltaInitialization = (maxRetries = 50, interval = 200) => {
+    let retries = 0;
+    const retry = () => {
+        if (typeof _0x51919e !== 'undefined' && _0x51919e._server && _0x51919e._server.ws) {
+            console.log('Delta initialized. Proceeding with WebSocket integration.');
+            applyWebSocketOverride();
+        } else if (retries < maxRetries) {
+            console.log(`Waiting for Delta initialization... Attempt ${retries + 1}/${maxRetries}`);
+            retries++;
+            setTimeout(retry, interval);
+        } else {
+            console.error('Delta initialization failed after maximum retries.');
+        }
+    };
+    retry();
 };
 
 // Start Checking for Delta Variables
 waitForDeltaInitialization();
 
-// Placeholder for API Integration (Delta Script Context)
+// Handle Missing API Endpoint
 const fetchData = async (url, options = {}) => {
     console.log('Fetching data from:', url);
     try {
@@ -109,11 +116,11 @@ const fetchData = async (url, options = {}) => {
         console.log('Fetched data:', data);
         return data;
     } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error(`Error fetching data from ${url}:`, error);
     }
 };
 
-// Integration Example (Links from Delta Script)
+// Adjust API Endpoint Replacement
 const apiLinks = [
     'https://deltav4.gitlab.io',
     'https://legendmod.ml',
@@ -121,7 +128,10 @@ const apiLinks = [
     'http://127.0.0.1',
 ];
 
+// Check API Availability
 apiLinks.forEach((link) => {
-    console.log('Available API link:', link);
-    // Implement specific logic here
+    console.log('Checking API link:', link);
+    fetchData(link).catch(() => {
+        console.warn('Failed to fetch data from:', link);
+    });
 });
