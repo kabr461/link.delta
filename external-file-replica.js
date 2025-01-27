@@ -1,19 +1,23 @@
-// Extend WebSocket Override with Specific Handling for Delta Script
+// Enhanced WebSocket Override with Compatibility for Delta Script
 
 // Save Original WebSocket
 window._OriginalWebSocket = window.WebSocket;
 
-// Override WebSocket with Handling for Delta
-class CustomWebSocket {
+// Proxy for WebSocket with Delta Compatibility
+class ProxyWebSocket {
     constructor(url, protocols) {
         this.originalSocket = new window._OriginalWebSocket(url, protocols);
         this.url = url;
-        this.listeners = {};
 
-        // Log connection URL
-        console.log('WebSocket connected to:', this.url);
+        // Preserve native event listeners
+        this.eventHandlers = {
+            open: [],
+            message: [],
+            close: [],
+            error: []
+        };
 
-        // Proxy events
+        // Bind original socket events
         this.originalSocket.addEventListener('open', (event) => {
             console.log('WebSocket opened:', this.url);
             this.dispatchEvent('open', event);
@@ -21,12 +25,12 @@ class CustomWebSocket {
 
         this.originalSocket.addEventListener('message', (event) => {
             console.log('WebSocket message received:', event.data);
-            // Leave space for custom logic here
+            // Optionally modify message here
             this.dispatchEvent('message', event);
         });
 
         this.originalSocket.addEventListener('close', (event) => {
-            console.log('WebSocket closed:', event);
+            console.log('WebSocket closed:', this.url);
             this.dispatchEvent('close', event);
         });
 
@@ -37,55 +41,48 @@ class CustomWebSocket {
     }
 
     send(data) {
-        console.log('Sending data via WebSocket:', data);
+        console.log('Sending data through WebSocket:', data);
+        // Optionally modify data before sending
         this.originalSocket.send(data);
     }
 
     close() {
-        console.log('Closing WebSocket connection.');
+        console.log('Closing WebSocket connection for:', this.url);
         this.originalSocket.close();
     }
 
-    addEventListener(event, callback) {
-        if (!this.listeners[event]) {
-            this.listeners[event] = [];
-        }
-        this.listeners[event].push(callback);
-    }
-
-    removeEventListener(event, callback) {
-        if (this.listeners[event]) {
-            this.listeners[event] = this.listeners[event].filter((cb) => cb !== callback);
+    addEventListener(type, callback) {
+        if (this.eventHandlers[type]) {
+            this.eventHandlers[type].push(callback);
         }
     }
 
-    dispatchEvent(event, data) {
-        if (this.listeners[event]) {
-            this.listeners[event].forEach((callback) => callback(data));
+    removeEventListener(type, callback) {
+        if (this.eventHandlers[type]) {
+            this.eventHandlers[type] = this.eventHandlers[type].filter((cb) => cb !== callback);
+        }
+    }
+
+    dispatchEvent(type, event) {
+        if (this.eventHandlers[type]) {
+            this.eventHandlers[type].forEach((callback) => callback(event));
         }
     }
 }
 
-// Extracted WebSocket URL from Delta Script
-const deltaWebSocketUrl = (() => {
-    try {
-        return _0x51919e._server.ws || '';
-    } catch (error) {
-        console.error('Error extracting WebSocket URL from Delta script:', error);
-        return '';
-    }
-})();
-
-// Selective Override Logic
+// Selective WebSocket Override Based on URL
 window.WebSocket = function (url, protocols) {
-    if (url === deltaWebSocketUrl) {
-        console.log('Excluding WebSocket override for:', url);
+    // Use heuristic to detect Delta WebSocket URLs
+    const deltaPattern = /(delta7\?protocol=v1|54-199-166-198)/;
+    if (deltaPattern.test(url)) {
+        console.log('Using original WebSocket for:', url);
         return new window._OriginalWebSocket(url, protocols);
     }
-    return new CustomWebSocket(url, protocols);
+    console.log('Applying ProxyWebSocket for:', url);
+    return new ProxyWebSocket(url, protocols);
 };
 
-// Fetch API Integration (from delta.user.js)
+// Placeholder for API Integration (Delta Script Context)
 const fetchData = async (url, options = {}) => {
     console.log('Fetching data from:', url);
     try {
@@ -101,7 +98,7 @@ const fetchData = async (url, options = {}) => {
     }
 };
 
-// Integration Example (Links from delta.user.js)
+// Integration Example (Links from Delta Script)
 const apiLinks = [
     'https://deltav4.gitlab.io',
     'https://legendmod.ml',
@@ -109,11 +106,7 @@ const apiLinks = [
     'http://127.0.0.1',
 ];
 
-// Leave a placeholder for specific API logic
 apiLinks.forEach((link) => {
     console.log('Available API link:', link);
-    // Implement your logic here
+    // Implement specific logic here
 });
-
-// Placeholder for additional Delta-specific functionalities
-// Extend as needed for UI commands, new API integrations, etc.
