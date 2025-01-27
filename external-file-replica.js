@@ -1,4 +1,4 @@
-// Enhanced WebSocket Override with Timeout and Error Handling for Delta Script
+// Enhanced WebSocket Override and Error Handling for Delta Script
 
 // Save Original WebSocket
 window._OriginalWebSocket = window.WebSocket;
@@ -71,25 +71,22 @@ class ProxyWebSocket {
 // Delta WebSocket URL Patterns
 const deltaWebSocketPattern = /wss:\/\/(chat\.delt\.io|web-arenas-live).*?/;
 
-// Function to Apply WebSocket Override Once Delta Variables are Available
-const applyWebSocketOverride = () => {
-    window.WebSocket = function (url, protocols) {
-        if (deltaWebSocketPattern.test(url)) {
-            console.log('Bypassing ProxyWebSocket for Delta connection:', url);
-            return new window._OriginalWebSocket(url, protocols);
-        }
-        console.log('Applying ProxyWebSocket for:', url);
-        return new ProxyWebSocket(url, protocols);
-    };
+// Apply WebSocket Override Dynamically
+window.WebSocket = function (url, protocols) {
+    if (deltaWebSocketPattern.test(url)) {
+        console.log(`Using original WebSocket for Delta connection: ${url}`);
+        return new window._OriginalWebSocket(url, protocols);
+    }
+    console.log('Applying ProxyWebSocket for:', url);
+    return new ProxyWebSocket(url, protocols);
 };
 
 // Retry Logic to Wait for Delta Initialization
 const waitForDeltaInitialization = (maxRetries = 50, interval = 200) => {
     let retries = 0;
     const retry = () => {
-        if (typeof _0x51919e !== 'undefined' && _0x51919e._server && _0x51919e._server.ws) {
+        if (typeof _0x51919e !== 'undefined' && _0x51919e._server?.ws) {
             console.log('Delta initialized. Proceeding with WebSocket integration.');
-            applyWebSocketOverride();
         } else if (retries < maxRetries) {
             console.log(`Waiting for Delta initialization... Attempt ${retries + 1}/${maxRetries}`);
             retries++;
@@ -100,38 +97,33 @@ const waitForDeltaInitialization = (maxRetries = 50, interval = 200) => {
     };
     retry();
 };
-
-// Start Checking for Delta Variables
 waitForDeltaInitialization();
 
-// Handle Missing API Endpoint
-const fetchData = async (url, options = {}) => {
-    console.log('Fetching data from:', url);
+// Fetch Data with Improved Error Handling
+const fetchData = async (url) => {
     try {
-        const response = await fetch(url, options);
+        const response = await fetch(url, { mode: 'no-cors' }); // Bypass CORS restrictions
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        const data = await response.json();
-        console.log('Fetched data:', data);
-        return data;
+        return await response.json(); // Validate JSON response
     } catch (error) {
-        console.error(`Error fetching data from ${url}:`, error);
+        console.warn(`Error fetching data from ${url}:`, error);
     }
 };
 
-// Adjust API Endpoint Replacement
-const apiLinks = [
-    'https://deltav4.gitlab.io',
-    'https://legendmod.ml',
-    'https://pastebin.com',
-    'http://127.0.0.1',
-];
+// Validate API Links
+const validateAPILinks = async () => {
+    const apiLinks = [
+        'https://deltav4.gitlab.io',
+        'https://legendmod.ml',
+        'https://pastebin.com',
+        'http://127.0.0.1',
+    ];
 
-// Check API Availability
-apiLinks.forEach((link) => {
-    console.log('Checking API link:', link);
-    fetchData(link).catch(() => {
-        console.warn('Failed to fetch data from:', link);
-    });
-});
+    for (const link of apiLinks) {
+        console.log(`Checking API link: ${link}`);
+        await fetchData(link);
+    }
+};
+validateAPILinks();
