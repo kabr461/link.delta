@@ -1,9 +1,9 @@
-// Extend WebSocket Override with Delta Script Integration
+// Extend WebSocket Override with Specific Handling for Delta Script
 
 // Save Original WebSocket
 window._OriginalWebSocket = window.WebSocket;
 
-// Override WebSocket
+// Override WebSocket with Handling for Delta
 class CustomWebSocket {
     constructor(url, protocols) {
         this.originalSocket = new window._OriginalWebSocket(url, protocols);
@@ -22,7 +22,6 @@ class CustomWebSocket {
         this.originalSocket.addEventListener('message', (event) => {
             console.log('WebSocket message received:', event.data);
             // Leave space for custom logic here
-            // Example: Modify message
             this.dispatchEvent('message', event);
         });
 
@@ -39,7 +38,6 @@ class CustomWebSocket {
 
     send(data) {
         console.log('Sending data via WebSocket:', data);
-        // Leave space for custom logic before sending
         this.originalSocket.send(data);
     }
 
@@ -68,8 +66,24 @@ class CustomWebSocket {
     }
 }
 
-// Replace native WebSocket
-window.WebSocket = CustomWebSocket;
+// Extracted WebSocket URL from Delta Script
+const deltaWebSocketUrl = (() => {
+    try {
+        return _0x51919e._server.ws || '';
+    } catch (error) {
+        console.error('Error extracting WebSocket URL from Delta script:', error);
+        return '';
+    }
+})();
+
+// Selective Override Logic
+window.WebSocket = function (url, protocols) {
+    if (url === deltaWebSocketUrl) {
+        console.log('Excluding WebSocket override for:', url);
+        return new window._OriginalWebSocket(url, protocols);
+    }
+    return new CustomWebSocket(url, protocols);
+};
 
 // Fetch API Integration (from delta.user.js)
 const fetchData = async (url, options = {}) => {
