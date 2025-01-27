@@ -1,4 +1,4 @@
-// Enhanced WebSocket Override with Dynamic Detection of Delta Script Variables
+// Enhanced WebSocket Override with Full Compatibility for Delta Script
 
 // Save Original WebSocket
 window._OriginalWebSocket = window.WebSocket;
@@ -24,8 +24,7 @@ class ProxyWebSocket {
         });
 
         this.originalSocket.addEventListener('message', (event) => {
-            console.log('WebSocket message received:', event.data);
-            // Optionally modify message here
+            console.log('WebSocket message received (unmodified):', event.data);
             this.dispatchEvent('message', event);
         });
 
@@ -41,8 +40,7 @@ class ProxyWebSocket {
     }
 
     send(data) {
-        console.log('Sending data through WebSocket:', data);
-        // Optionally modify data before sending
+        console.log('Sending data (unmodified) through WebSocket:', data);
         this.originalSocket.send(data);
     }
 
@@ -70,29 +68,34 @@ class ProxyWebSocket {
     }
 }
 
+// Delta WebSocket URL Patterns
+const deltaWebSocketPattern = /wss:\/\/(chat\.delt\.io|web-arenas-live).*?/;
+
 // Function to Apply WebSocket Override Once Delta Variables are Available
 const applyWebSocketOverride = () => {
-    if (typeof _0x51919e !== 'undefined' && _0x51919e._server && _0x51919e._server.ws) {
-        const deltaWebSocketUrl = _0x51919e._server.ws;
-        console.log('Extracted WebSocket URL:', deltaWebSocketUrl);
+    window.WebSocket = function (url, protocols) {
+        if (deltaWebSocketPattern.test(url)) {
+            console.log('Bypassing ProxyWebSocket for Delta connection:', url);
+            return new window._OriginalWebSocket(url, protocols);
+        }
+        console.log('Applying ProxyWebSocket for:', url);
+        return new ProxyWebSocket(url, protocols);
+    };
+};
 
-        // Override WebSocket selectively
-        window.WebSocket = function (url, protocols) {
-            if (url === deltaWebSocketUrl) {
-                console.log('Using original WebSocket for Delta:', url);
-                return new window._OriginalWebSocket(url, protocols);
-            }
-            console.log('Using ProxyWebSocket for:', url);
-            return new ProxyWebSocket(url, protocols);
-        };
+// Retry Logic to Wait for Delta Initialization
+const waitForDeltaInitialization = () => {
+    if (typeof _0x51919e !== 'undefined' && _0x51919e._server && _0x51919e._server.ws) {
+        console.log('Delta initialized. Proceeding with WebSocket integration.');
+        applyWebSocketOverride();
     } else {
-        console.log('Waiting for _0x51919e to be defined...');
-        setTimeout(applyWebSocketOverride, 100); // Retry after 100ms
+        console.log('Waiting for Delta initialization...');
+        setTimeout(waitForDeltaInitialization, 100);
     }
 };
 
-// Start checking for Delta variables
-applyWebSocketOverride();
+// Start Checking for Delta Variables
+waitForDeltaInitialization();
 
 // Placeholder for API Integration (Delta Script Context)
 const fetchData = async (url, options = {}) => {
