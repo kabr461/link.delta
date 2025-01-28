@@ -16,7 +16,7 @@
             });
 
             this.addEventListener('message', (event) => {
-         //       console.log('[CustomWebSocket] Message received:', event.data);
+                console.log('[CustomWebSocket] Message received:', event.data);
             });
 
             this.addEventListener('error', (error) => {
@@ -30,7 +30,7 @@
 
         // Optionally, you can override methods like send to customize their behavior
         send(data) {
-       //     console.log('[CustomWebSocket] Sending data:', data);
+            console.log('[CustomWebSocket] Sending data:', data);
             super.send(data);
         }
 
