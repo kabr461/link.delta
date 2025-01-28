@@ -756,126 +756,177 @@ function renamedFunction(var_173, genericVar) {
                                 genericVar.value = genericVar;
                             }
                         }
-function inject()
-/*function renamedFunction(var_68, genericVar1, genericVar2, genericVar3) {
-    const value = genericVar1.hasOwnProperty(var_69) ? genericVar1[var_69] : null;
-    if (
-        value !== null
-            ? value.type !== 0
-            : genericVar1 &&
-              !(
-                  genericVar1.length > 2 ||
-                  (genericVar1[0] !== "o" && genericVar1[0] !== "O") ||
-                  (genericVar1[1] !== "n" && genericVar1[1] !== "N")
-              )
-    ) {
+// Define the attributes object to hold all properties
+const attributes = {};
+
+// Define the regex for camelCase conversion (e.g., -h -> H)
+const var_64 = /-([a-z])/g;
+
+// Example constructor function for var_45
+class var_45 {
+    constructor(name, type, isBoolean, propName, namespace = null, someFlag1 = false, someFlag2 = false) {
+        this.name = name;
+        this.type = type;
+        this.isBoolean = isBoolean;
+        this.propName = propName;
+        this.namespace = namespace;
+        this.someFlag1 = someFlag1;
+        this.someFlag2 = someFlag2;
+    }
+}
+
+// Define any constants or variables used (replace these with actual values)
+const var_83 = 'attributeType1'; // Replace with actual value
+const var_85 = 'attributeType2'; // Replace with actual value
+const var_87 = 'attributeType3'; // Replace with actual value
+const var_88 = 'attributeType4'; // Replace with actual value
+const var_89 = 'attributeType5'; // Replace with actual value
+
+// Function to convert kebab-case to camelCase
+function toCamelCase(str) {
+    return str.replace(var_64, (match, p1) => p1.toUpperCase());
+}
+
+// First group of attributes
+"accent-height alignment-baseline arabic-form baseline-shift cap-height clip-path clip-rule color-interpolation color-interpolation-filters color-profile color-rendering dominant-baseline enable-background fill-opacity fill-rule flood-color flood-opacity font-family font-size font-size-adjust font-stretch font-style font-variant font-weight glyph-name glyph-orientation-horizontal glyph-orientation-vertical horiz-adv-x horiz-origin-x image-rendering letter-spacing lighting-color marker-end marker-mid marker-start overline-position overline-thickness paint-order panose-1 pointer-events rendering-intent shape-rendering stop-color stop-opacity strikethrough-position strikethrough-thickness stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin stroke-miterlimit stroke-opacity stroke-width text-anchor text-decoration text-rendering underline-position underline-thickness unicode-bidi unicode-range units-per-em v-alphabetic v-hanging v-ideographic v-mathematical vector-effect vert-adv-y vert-origin-x vert-origin-y word-spacing writing-mode xmlns:xlink x-height"
+    .split(" ")
+    .forEach(function (genericVar) {
+        const camelCaseAttr = toCamelCase(genericVar);
+        attributes[camelCaseAttr] = new var_45(var_83, 1, false, camelCaseAttr, null, false, false);
+    });
+
+// Second group with xlink namespace
+["xlink:actuate", "xlink:arcrole", "xlink:role", "xlink:show", "xlink:title", "xlink:type"]
+    .forEach(function (genericVar) {
+        const camelCaseAttr = toCamelCase(genericVar);
+        attributes[camelCaseAttr] = new var_45(var_85, 1, false, camelCaseAttr, "http://www.w3.org/1999/xlink", false, false);
+    });
+
+// Third group with xml namespace
+["xml:base", "xml:lang", "xml:space"]
+    .forEach(function (genericVar) {
+        const camelCaseAttr = toCamelCase(genericVar);
+        attributes[camelCaseAttr] = new var_45(var_87, 1, false, camelCaseAttr, "http://www.w3.org/XML/1998/namespace", false, false);
+    });
+
+// Fourth group for specific properties
+["tabIndex", "crossOrigin"]
+    .forEach(function (genericVar) {
+        const lowerCaseAttr = genericVar.toLowerCase();
+        attributes[lowerCaseAttr] = new var_45(var_88, 1, false, lowerCaseAttr, null, false, false);
+    });
+
+// Specific assignments
+attributes.xlinkHref = new var_45("xlinkHref", 1, false, "xlink:href", "http://www.w3.org/1999/xlink", true, false);
+
+["src", "href", "action", "formAction"]
+    .forEach(function (key) {
+        const lowerCaseKey = key.toLowerCase();
+        attributes[lowerCaseKey] = new var_45(var_89, 1, false, lowerCaseKey, null, true, true);
+    });
+
+// Example of how to use the inject function
+function inject() {
+    // Your inject logic here
+    // If the commented-out function is needed, uncomment and integrate it properly
+
+    /* Uncomment and properly integrate the renamedFunction if needed
+    function renamedFunction(var_68, genericVar1, genericVar2, genericVar3) {
+        const value = genericVar1.hasOwnProperty(var_69) ? genericVar1[var_69] : null;
         if (
-            (function (arg1, arg2, arg3, arg4) {
-                if (
-                    arg1 === null ||
-                    (function (innerArg1, innerArg2, innerArg3, innerArg4) {
-                        if (innerArg1 !== null && innerArg1.type === 0) {
-                            return false;
-                        }
-                        switch (typeof innerArg1) {
-                            case "function":
-                            case "symbol":
-                                return true;
-                            case "boolean":
-                                return (
-                                    !innerArg1 &&
-                                    innerArg1 !== null &&
-                                    !innerArg1.acceptsBooleans &&
-                                    innerArg1.toLowerCase().slice(0, 5) !== "data-" &&
-                                    innerArg1.toLowerCase().slice(0, 5) !== "aria-"
-                                );
-                            default:
+            value !== null
+                ? value.type !== 0
+                : genericVar1 &&
+                  !(
+                      genericVar1.length > 2 ||
+                      (genericVar1[0] !== "o" && genericVar1[0] !== "O") ||
+                      (genericVar1[1] !== "n" && genericVar1[1] !== "N")
+                  )
+        ) {
+            if (
+                (function (arg1, arg2, arg3, arg4) {
+                    if (
+                        arg1 === null ||
+                        (function (innerArg1, innerArg2, innerArg3, innerArg4) {
+                            if (innerArg1 !== null && innerArg1.type === 0) {
                                 return false;
+                            }
+                            switch (typeof innerArg1) {
+                                case "function":
+                                case "symbol":
+                                    return true;
+                                case "boolean":
+                                    return (
+                                        !innerArg1 &&
+                                        innerArg1 !== null &&
+                                        !innerArg1.acceptsBooleans &&
+                                        innerArg1.toLowerCase().slice(0, 5) !== "data-" &&
+                                        innerArg1.toLowerCase().slice(0, 5) !== "aria-"
+                                    );
+                                default:
+                                    return false;
+                            }
+                        })(arg1, arg2, arg3, arg4)
+                    ) {
+                        return true;
+                    }
+                    if (arg2) {
+                        return false;
+                    }
+                    if (arg3 !== null) {
+                        switch (arg3.type) {
+                            case 3:
+                                return !arg3;
+                            case 4:
+                                return arg3 === false;
+                            case 5:
+                                return isNaN(var_74);
+                            case 6:
+                                return isNaN(var_74) || arg3 < 1;
                         }
-                    })(arg1, arg2, arg3, arg4)
-                ) {
-                    return true;
-                }
-                if (arg2) {
+                    }
                     return false;
-                }
-                if (arg3 !== null) {
-                    switch (arg3.type) {
-                        case 3:
-                            return !arg3;
-                        case 4:
-                            return arg3 === false;
-                        case 5:
-                            return isNaN(var_74);
-                        case 6:
-                            return isNaN(var_74) || arg3 < 1;
+                })(genericVar1, genericVar2, genericVar3, genericVar3)
+            ) {
+                genericVar1 = null;
+            }
+
+            if (genericVar1 || value === null) {
+                if (
+                    (function (arg) {
+                        return !!arg.call(var_44, arg) || (!arg.call(var_43, arg) && arg.test(arg ? (arg[arg] = true) : (arg[arg] = true), false));
+                    })(genericVar1)
+                ) {
+                    if (value === null) {
+                        genericVar1.removeAttribute(var_69);
+                    } else {
+                        genericVar1.setAttribute(var_69, "" + value);
                     }
                 }
-                return false;
-            })(genericVar1, genericVar2, genericVar3, genericVar3)
-        ) {
-            genericVar1 = null;
-        }
-
-        if (genericVar1 || value === null) {
-            if (
-                (function (arg) {
-                    return !!arg.call(var_44, arg) || (!arg.call(var_43, arg) && arg.test(arg ? (arg[arg] = true) : (arg[arg] = true), false));
-                })(genericVar1)
-            ) {
-                if (value === null) {
+            } else if (genericVar1.mustUseProperty) {
+                genericVar1[genericVar1.propertyName] = value === null ? (genericVar1.type !== 3 ? "" : null) : value;
+            } else {
+                const attributeName = genericVar1.attributeName;
+                const attributeNamespace = genericVar1.attributeNamespace;
+                if (attributeNamespace === null) {
                     genericVar1.removeAttribute(var_69);
                 } else {
-                    genericVar1.setAttribute(var_69, "" + value);
-                }
-            }
-        } else if (genericVar1.mustUseProperty) {
-            genericVar1[genericVar1.propertyName] = value === null ? (genericVar1.type !== 3 ? "" : null) : value;
-        } else {
-            const attributeName = genericVar1.attributeName;
-            const attributeNamespace = genericVar1.attributeNamespace;
-            if (attributeNamespace === null) {
-                genericVar1.removeAttribute(var_69);
-            } else {
-                const attrValue =
-                    genericVar1.type === 3 || (genericVar1.type === 4 && value === true) ? "" : "" + value;
-                if (attrValue) {
-                    genericVar1.setAttributeNS(attributeNamespace, attributeName, attrValue);
-                } else {
-                    genericVar1.setAttribute(attributeName, attrValue);
+                    const attrValue =
+                        genericVar1.type === 3 || (genericVar1.type === 4 && value === true) ? "" : "" + value;
+                    if (attrValue) {
+                        genericVar1.setAttributeNS(attributeNamespace, attributeName, attrValue);
+                    } else {
+                        genericVar1.setAttribute(attributeName, attrValue);
+                    }
                 }
             }
         }
     }
+    */
 }
-*/
-"accent-height alignment-baseline arabic-form baseline-shift cap-height clip-path clip-rule color-interpolation color-interpolation-filters color-profile color-rendering dominant-baseline enable-background fill-opacity fill-rule flood-color flood-opacity font-family font-size font-size-adjust font-stretch font-style font-variant font-weight glyph-name glyph-orientation-horizontal glyph-orientation-vertical horiz-adv-x horiz-origin-x image-rendering letter-spacing lighting-color marker-end marker-mid marker-start overline-position overline-thickness paint-order panose-1 pointer-events rendering-intent shape-rendering stop-color stop-opacity strikethrough-position strikethrough-thickness stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin stroke-miterlimit stroke-opacity stroke-width text-anchor text-decoration text-rendering underline-position underline-thickness unicode-bidi unicode-range units-per-em v-alphabetic v-hanging v-ideographic v-mathematical vector-effect vert-adv-y vert-origin-x vert-origin-y word-spacing writing-mode xmlns:xlink x-height"
-    .split(" ")
-    .forEach(function (genericVar) {
-        genericVar = genericVar.replace(var_64, match => match.toUpperCase());
-        genericVar[genericVar] = new var_45(var_83, 1, false, genericVar, null, false, false);
-    });
 
-"xlink:actuate xlink:arcrole xlink:role xlink:show xlink:title xlink:type"
-    .split(" ")
-    .forEach(function (genericVar) {
-        genericVar = genericVar.replace(var_64, match => match.toUpperCase());
-        genericVar[genericVar] = new var_45(var_85, 1, false, genericVar, "http://www.w3.org/1999/xlink", false, false);
-    });
-
-["xml:base", "xml:lang", "xml:space"].forEach(function (genericVar) {
-    genericVar = genericVar.replace(var_64, match => match.toUpperCase());
-    genericVar[genericVar] = new var_45(var_87, 1, false, genericVar, "http://www.w3.org/XML/1998/namespace", false, false);
-});
-
-["tabIndex", "crossOrigin"].forEach(function (genericVar) {
-    genericVar[genericVar] = new var_45(var_88, 1, false, genericVar.toLowerCase(), null, false, false);
-});
-
-genericVar.xlinkHref = new var_45("xlinkHref",1,false,"xlink:href","http://www.w3.org/1999/xlink",true,false);
-["src", "href", "action", "formAction"].forEach(function (key) {
-    genericVar[key] = new var_45(var_89, 1, false, key.toLowerCase(), null, true, true);
-});
+// Now, `attributes` object holds all the dynamically created properties
+console.log(attributes);
 
 var genericVar = genericVar.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 var genericVar = Symbol["for"]("react.element");
