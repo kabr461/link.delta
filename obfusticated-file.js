@@ -757,7 +757,7 @@ function renamedFunction(var_173, genericVar) {
                             }
                         }
 function inject()
-function renamedFunction(var_68, genericVar1, genericVar2, genericVar3) 
+function renamedFunction(var_68, genericVar1, genericVar2, genericVar3) {
     const value = genericVar1.hasOwnProperty(var_69) ? genericVar1[var_69] : null;
     if (
         value !== null
