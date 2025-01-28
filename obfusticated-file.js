@@ -757,7 +757,7 @@ function renamedFunction(var_173, genericVar) {
                             }
                         }
 function inject()
-function renamedFunction(var_68, genericVar1, genericVar2, genericVar3) {
+/*function renamedFunction(var_68, genericVar1, genericVar2, genericVar3) {
     const value = genericVar1.hasOwnProperty(var_69) ? genericVar1[var_69] : null;
     if (
         value !== null
@@ -848,7 +848,7 @@ function renamedFunction(var_68, genericVar1, genericVar2, genericVar3) {
         }
     }
 }
-
+*/
 "accent-height alignment-baseline arabic-form baseline-shift cap-height clip-path clip-rule color-interpolation color-interpolation-filters color-profile color-rendering dominant-baseline enable-background fill-opacity fill-rule flood-color flood-opacity font-family font-size font-size-adjust font-stretch font-style font-variant font-weight glyph-name glyph-orientation-horizontal glyph-orientation-vertical horiz-adv-x horiz-origin-x image-rendering letter-spacing lighting-color marker-end marker-mid marker-start overline-position overline-thickness paint-order panose-1 pointer-events rendering-intent shape-rendering stop-color stop-opacity strikethrough-position strikethrough-thickness stroke-dasharray stroke-dashoffset stroke-linecap stroke-linejoin stroke-miterlimit stroke-opacity stroke-width text-anchor text-decoration text-rendering underline-position underline-thickness unicode-bidi unicode-range units-per-em v-alphabetic v-hanging v-ideographic v-mathematical vector-effect vert-adv-y vert-origin-x vert-origin-y word-spacing writing-mode xmlns:xlink x-height"
     .split(" ")
     .forEach(function (genericVar) {
