@@ -8503,7 +8503,7 @@ genericVar.prototype.unstable_scheduleHydration = function() {
     }
 };
 
-                  const genericVar = function() {
+                  const uniqueGenericVar = function() {
     switch (genericVar.tag) {
         case 3:
             let stateNode = genericVar.stateNode;
@@ -11763,7 +11763,7 @@ function(genericVar, genericVar) {
                             })
                         })
                     });
-    const genericVar = setInterval(() => {
+    const intervalId = setInterval(() => {
         if (!window.ApiDelta || !window.app) {
             return;
         }
