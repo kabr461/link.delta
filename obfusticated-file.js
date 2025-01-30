@@ -745,17 +745,19 @@ function renamedFunction(var_173, genericVar) {
     }
 }
 
-                    function renamedFunction(var_179, genericVar, genericVar) {
-                        if (genericVar.hasOwnProperty("value") || genericVar.hasOwnProperty("defaultValue")) {
-                            var genericVar = genericVar.type;
-                            if (!("submit" !== genericVar && "reset" !== genericVar || undefined !== genericVar.value && null !== genericVar.value)) {
-                                return;
-                            }
-                            genericVar = "" + genericVar._wrapperState.initialValue;
-                            if (!(genericVar || genericVar === genericVar.value)) {
-                                genericVar.value = genericVar;
-                            }
-                        }
+function renamedFunction(var_179, genericVar, genericVar) {
+    if (genericVar.hasOwnProperty("value") || genericVar.hasOwnProperty("defaultValue")) {
+        var genericVar = genericVar.type;
+        if (!("submit" !== genericVar && "reset" !== genericVar || undefined !== genericVar.value && null !== genericVar.value)) {
+            return;
+        }
+        genericVar = "" + genericVar._wrapperState.initialValue;
+        if (!(genericVar || genericVar === genericVar.value)) {
+            genericVar.value = genericVar;
+        }
+    }
+}
+
 // Define the attributes object to hold all properties
 const attributes = {};
 
@@ -927,6 +929,7 @@ function inject() {
 
 // Now, `attributes` object holds all the dynamically created properties
 console.log(attributes);
+
 
 var genericVar = genericVar.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 var genericVar = Symbol["for"]("react.element");
@@ -2052,255 +2055,329 @@ function renamedFunctionvar_394(event) {
     }
 }
 
-function renamedFunctionvar_397, genericVar, genericVar, genericVar, genericVar, genericVar {
-    return null === genericVar || genericVar.nativeEvent !== genericVar ? (genericVar = {
-        blockedOn: genericVar,
-        domEventName: genericVar,
-        eventSystemFlags: genericVar,
-        nativeEvent: genericVar,
-        targetContainers: [genericVar]
-    }
-    , null !== genericVar && null !== genericVar = genericVar(genericVar) && var_380var_398, genericVar) : genericVar.eventSystemFlags |= genericVar, genericVar = genericVar.targetContainers, null !== genericVar && -1 === genericVar.indexOf(genericVar && genericVar.pushvar_401, genericVar);
+function renamedFunctionvar_397(genericVar, genericVar2, genericVar3, genericVar4, genericVar5) {
+    return null === genericVar || genericVar.nativeEvent !== genericVar 
+        ? (genericVar = {
+            blockedOn: genericVar,
+            domEventName: genericVar,
+            eventSystemFlags: genericVar,
+            nativeEvent: genericVar,
+            targetContainers: [genericVar]
+        }, 
+        null !== genericVar && null !== (genericVar = genericVar(genericVar)) && var_380var_398, 
+        genericVar) 
+        : (genericVar.eventSystemFlags |= genericVar, 
+           genericVar = genericVar.targetContainers, 
+           null !== genericVar && -1 === genericVar.indexOf(genericVar) && genericVar.push(var_401), 
+           genericVar);
 }
-function renamedFunctionvar_404 {
+
+function renamedFunctionvar_404() {
     var genericVar = var_406var_404.target;
-    if null !== genericVar {
-        var genericVar = var_303var_405;
-        if null !== genericVar {
-            if 13 === (genericVar = genericVar.tag) {
-                if null !== (genericVar = genericVar(genericVar)) {
-                    genericVar.blockedOn = genericVar;
-                    return void var_383var_404.priority, function ( {
-                        var_381var_407;
-                    }
-                    );
+    
+    if (genericVar !== null) {
+        var anotherVar = var_303var_405;
+        
+        if (anotherVar !== null) {
+            if (anotherVar.tag === 13) {
+                var blockedGenericVar = anotherVar.blockedOn;
+                if (blockedGenericVar !== null) {
+                    anotherVar.blockedOn = blockedGenericVar;
+                    return;
                 }
-            }
-            else {
-                if 3 === genericVar && genericVar.stateNode.current.memoizedState.isDehydrated {
-                    return void genericVar.blockedOn = 3 === genericVar.tag ? genericVar.stateNode.containerInfo : null;
+            } else if (anotherVar.tag === 3) {
+                var stateNode = anotherVar.stateNode;
+                if (stateNode && stateNode.current.memoizedState.isDehydrated) {
+                    anotherVar.blockedOn = (anotherVar.tag === 3) 
+                        ? stateNode.containerInfo 
+                        : null;
+                    return;
                 }
             }
         }
     }
+
     genericVar.blockedOn = null;
 }
-function renamedFunctionvar_409 {
-    if null !== genericVar.blockedOn {
+
+function renamedFunctionvar_409() {
+    if (genericVar.blockedOn !== null) {
         return false;
     }
-    for var genericVar = genericVar.targetContainers;
-    0 < genericVar.length;
-    {
-        var genericVar = var_412var_409.domEventName, genericVar.eventSystemFlags, genericVar[0], genericVar.nativeEvent;
-        if null !== genericVar {
-            if null !== (genericVar = genericVar(genericVar)) {
-                var_380var_410;
+
+    for (var i = 0; i < genericVar.targetContainers.length; i++) {
+        var currentTarget = genericVar.targetContainers[i];
+        var eventName = var_412var_409.domEventName;
+        var eventFlags = var_412var_409.eventSystemFlags;
+        var nativeEvent = genericVar.nativeEvent;
+
+        if (currentTarget !== null) {
+            var resolvedTarget = processEventTarget(currentTarget);
+            if (resolvedTarget !== null) {
+                var_380var_410;  // Placeholder for additional logic if needed
+                genericVar.blockedOn = resolvedTarget;
+                return false;
             }
-            genericVar.blockedOn = genericVar;
-            return false;
         }
-        var genericVar = new genericVar = genericVar.nativeEvent.constructorvar_411.type, genericVar;
-        genericVar = genericVar;
-        genericVar.target.dispatchEventvar_413;
+
+        // Create a new event instance
+        var newEvent = new nativeEvent.constructor(var_411.type, nativeEvent);
+
+        // Dispatch the event properly
+        if (newEvent.target) {
+            newEvent.target.dispatchEvent(newEvent);
+        }
+
         genericVar = null;
-        genericVar.shift;
+        genericVar.targetContainers.shift();  // Remove processed target
     }
+
     return true;
 }
-function renamedFunctionvar_415, genericVar, genericVar {
-    if genericVar(genericVar) {
-        genericVar["delete"]genericVar;
+
+function renamedFunctionvar_415(genericVar, key) {
+    if (genericVar.hasOwnProperty(key)) {
+        delete genericVar[key];  // Proper delete syntax
     }
 }
-function genericVar {
-    genericVar = false;
-    if null !== genericVar && genericVar(genericVar) {
+
+function processGenericVar(genericVar) {
+    // Set genericVar to false initially
+    let isValid = false;
+
+    // Check if genericVar is not null and meets specific conditions
+    if (genericVar !== null && isConditionMet(genericVar)) {
         genericVar = null;
     }
-    if null !== genericVar && genericVar(genericVar) {
+
+    if (genericVar !== null && isAnotherConditionMet(genericVar)) {
         genericVar = null;
     }
-    if null !== genericVar && genericVar(genericVar) {
+
+    if (genericVar !== null && isYetAnotherConditionMet(genericVar)) {
         genericVar = null;
     }
-    genericVar.forEachvar_414;
-    genericVar.forEachvar_414;
+
+    // Process the genericVar if it's an array
+    if (Array.isArray(genericVar)) {
+        genericVar.forEach((item) => {
+            // Example of processing each item
+            processItem(item);
+        });
+    }
 }
-function renamedFunctionvar_420, genericVar {
-    if genericVar.blockedOn === genericVar {
+
+// Helper functions (placeholders)
+function isConditionMet(value) {
+    return typeof value === "boolean"; // Example condition
+}
+
+function isAnotherConditionMet(value) {
+    return typeof value === "string"; // Example condition
+}
+
+function isYetAnotherConditionMet(value) {
+    return Array.isArray(value); // Example condition
+}
+
+function processItem(item) {
+    console.log("Processing:", item); // Example logic for each item
+}
+
+function renamedFunctionvar_420(genericVar) {
+    if (genericVar.blockedOn === genericVar) {
         genericVar.blockedOn = null;
-        if !genericVar {
-            genericVar = true;
-            genericVar.unstable_scheduleCallbackvar_27.unstable_NormalPriority, genericVar;
+
+        if (!genericVar.isScheduled) {
+            genericVar.isScheduled = true;
+
+            // Assuming `unstable_scheduleCallback` is a method of `genericVar`
+            genericVar.unstable_scheduleCallback(
+                genericVar.unstable_NormalPriority,
+                () => {
+                    console.log("Callback executed");
+                }
+            );
         }
     }
 }
-function renamedFunctionvar_423 {
-    function renamedFunctionvar_425 {
+
+function renamedFunctionvar_423() {
+    function renamedFunctionvar_425() {
         return var_419var_425, genericVar;
-    }
-    if 0 < genericVar.length {
+    }}
+    if (0 < genericVar.length) {
         var_419var_385[0], genericVar;
-        for var genericVar = 1;
-        genericVar < genericVar.length;
-        genericVar++ {
+        for (var genericVar = 1; genericVar < genericVar.length; genericVar++) {
             var genericVar = genericVar[genericVar];
-            if genericVar.blockedOn === genericVar {
+            if (genericVar.blockedOn === genericVar) {
                 genericVar.blockedOn = null;
             }
         }
     }
-    if null !== genericVar {
+    
+    if (null !== genericVar) {
         var_419var_386, genericVar;
     }
-    if null !== genericVar {
+    
+    if (null !== genericVar) {
         var_419var_387, genericVar;
     }
-    if null !== genericVar {
+    
+    if (null !== genericVar) {
         var_419var_388, genericVar;
     }
+    
     genericVar.forEachvar_424;
     genericVar.forEachvar_424;
-    for genericVar = 0;
-    genericVar < genericVar.length;
-    genericVar++ {
-        if(genericVar = genericVar[genericVar].blockedOn === genericVar) {
+    for (genericVar = 0; genericVar < genericVar.length; genericVar++) {
+        if (genericVar = genericVar[genericVar].blockedOn === genericVar) {
             genericVar.blockedOn = null;
         }
     }
-    for ;
-    0 < genericVar.length && null === (genericVar = genericVar[0].blockedOn;
+    
+   function processBlockedItems(genericVar) {
+    while (
+        genericVar.length > 0 && 
+        (genericVar[0].blockedOn === null || genericVar[0].blockedOn === undefined)
     ) {
-        var_403var_426;
-        if null === genericVar.blockedOn {
-            genericVar.shift;
-        }
+        // Perform an operation if `genericVar[0].blockedOn` is null
+        var_403var_426(); // Placeholder for logic
+
+        // Remove the first element from the array
+        genericVar.shift();
     }
 }
+
 var genericVar = genericVar.ReactCurrentBatchConfig;
 var genericVar = true;
-function renamedFunctionvar_431, genericVar, genericVar, genericVar {
-    var genericVar = genericVar;
-    var genericVar = genericVar.transition;
-    genericVar.transition = null;
+function renamedFunctionvar_431(state, transitionValue, callback) {
+    var previousState = state;
+    var previousTransition = state.transition;
+    state.transition = null;
+
     try {
-        genericVar = 1;
-        var_437var_431, genericVar, genericVar, genericVar;
-    }
-    finally {
-        genericVar = genericVar;
-        genericVar.transition = genericVar;
+        state = 1;
+        var_437var_431(state, transitionValue, callback);
+    } finally {
+        state = previousState;
+        state.transition = previousTransition;
     }
 }
-function renamedFunctionvar_439, genericVar, genericVar, genericVar {
-    var genericVar = genericVar;
-    var genericVar = genericVar.transition;
-    genericVar.transition = null;
+
+function renamedFunctionvar_439(state, transitionValue, callback) {
+    var previousState = state;
+    var previousTransition = state.transition;
+    state.transition = null;
+
     try {
-        genericVar = 4;
-        var_437var_439, genericVar, genericVar, genericVar;
-    }
-    finally {
-        genericVar = genericVar;
-        genericVar.transition = genericVar;
+        state = 4;
+        var_437var_439(state, transitionValue, callback);
+    } finally {
+        state = previousState;
+        state.transition = previousTransition;
     }
 }
-function renamedFunctionvar_445, genericVar, genericVar, genericVar {
-    if genericVar {
-        var genericVar = var_412var_445, genericVar, genericVar, genericVar;
-        if null === genericVar {
-            var_450var_445, genericVar, genericVar, genericVar, genericVar;
-            var_393var_445, genericVar;
-        }
-        else {
-            if function (genericVar, genericVar, genericVar, genericVar, genericVar {
-                switch genericVar {
-                    case "focusin":
-                    genericVar = var_396var_386, genericVar, genericVar, genericVar, genericVar, genericVar;
-                    return true;
-                    case "dragenter":
-                    genericVar = var_396var_387, genericVar, genericVar, genericVar, genericVar, genericVar;
-                    return true;
-                    case "mouseover":
-                    genericVar = var_396var_388, genericVar, genericVar, genericVar, genericVar, genericVar;
-                    return true;
-                    case "pointerover":
-                    var genericVar = genericVar.pointerId;
-                    genericVar.setvar_457, genericVar(genericVar.get(genericVar || null, genericVar, genericVar, genericVar, genericVar, genericVar));
-                    return true;
-                    case "gotpointercapture":
-                    genericVar = genericVar.pointerId;
-                    genericVar.setvar_457, genericVar(genericVar.get(genericVar || null, genericVar, genericVar, genericVar, genericVar, genericVar));
-                    return true;
-                }
-                return false;
-            }
-            genericVar, genericVar, genericVar, genericVar, genericVar) {
-                genericVar.stopPropagation;
-            }
-            else {
-                var_393var_445, genericVar;
-                if 4 & genericVar && -1 < genericVar.indexOf(genericVar) {
-                    for ;
-                    null !== genericVar;
-                    {
-                        var genericVar = var_249var_449;
-                        if null !== genericVar {
-                            var_379var_458;
+
+function renamedFunctionvar_445 (genericVar, genericVar, genericVar) {
+    function handleEvent(genericVar) {
+    if (genericVar) {
+        let eventType = var_412var_445;
+    }
+        if (eventType === null) {
+            var_450var_445(genericVar);
+            var_393var_445(genericVar);
+        } else {
+            if (checkEventType(eventType, genericVar)) {
+                genericVar.stopPropagation();
+            } else {
+                var_393var_445(genericVar);
+                if ((4 & genericVar) && genericVar.indexOf(genericVar) !== -1) {
+                    while (genericVar !== null) {
+                        let currentVar = var_249var_449;
+                        if (currentVar !== null) {
+                            var_379var_458();
                         }
-                        if null === (genericVar = genericVar(genericVar, genericVar, genericVar, genericVar)) {
-                            var_450var_445, genericVar, genericVar, genericVar, genericVar;
+                        if ((genericVar = processEvent(genericVar)) === null) {
+                            var_450var_445(genericVar);
                         }
-                        if genericVar === genericVar {
+                        if (genericVar === genericVar) {
                             break;
                         }
-                        genericVar = genericVar;
                     }
-                    if null !== genericVar {
-                        genericVar.stopPropagation;
+                    if (genericVar !== null) {
+                        genericVar.stopPropagation();
                     }
-                }
-                else {
-                    var_450var_445, genericVar, genericVar, null, genericVar;
+                } else {
+                    var_450var_445(genericVar);
                 }
             }
         }
     }
 }
-var genericVar = null;
-function renamedFunctionvar_459, genericVar, genericVar, genericVar {
-    genericVar = null;
-    if null !== (genericVar = genericVar(genericVar = genericVar(genericVar))) {
-        if null === (genericVar = genericVar(genericVar)) {
-            genericVar = null;
-        }
-        else {
-            if 13 === (genericVar = genericVar.tag) {
-                if null !== (genericVar = genericVar(genericVar)) {
-                    return genericVar;
-                }
-                genericVar = null;
+
+function checkEventType(eventType, genericVar) {
+    switch (eventType) {
+        case "focusin":
+            var_396var_386(genericVar);
+            return true;
+        case "dragenter":
+            var_396var_387(genericVar);
+            return true;
+        case "mouseover":
+            var_396var_388(genericVar);
+            return true;
+        case "pointerover":
+            if (genericVar.pointerId) {
+                genericVar.setvar_457(genericVar.get(genericVar.pointerId || null));
             }
-            else {
-                if 3 === genericVar {
-                    if genericVar.stateNode.current.memoizedState.isDehydrated {
-                        return 3 === genericVar.tag ? genericVar.stateNode.containerInfo : null;
-                    }
-                    genericVar = null;
-                }
-                else if genericVar !== genericVar {
-                    genericVar = null;
-                }
+            return true;
+        case "gotpointercapture":
+            if (genericVar.pointerId) {
+                genericVar.setvar_457(genericVar.get(genericVar.pointerId || null));
             }
+            return true;
+        default:
+            return false;
+    }
+}
+
+function processEvent(genericVar) {
+    // Placeholder function to handle event processing logic
+    return genericVar;
+}
+
+// Fixing the second function with proper structure
+function renamedFunctionvar_459(param1, param2, param3) {
+    let result = null;
+    
+    if (param1 !== null) {
+        let current = param1;
+        while (current !== null) {
+            if (current.tag === 13) {
+                if (current.someFunction) {
+                    return current;
+                }
+                result = null;
+            } else if (current.tag === 3) {
+                if (current.stateNode.current.memoizedState.isDehydrated) {
+                    return current.stateNode.containerInfo;
+                }
+                result = null;
+            } else if (current !== param1) {
+                result = null;
+            }
+            current = current.next;
         }
     }
-    genericVar = genericVar;
-    return null;
+    
+    return result;
 }
-function renamedFunctionvar_464 {
+
+function renamedFunctionvar_464() {
     /* Event Handling */
-switch genericVar {
+function processEvent(genericVar) {
+    switch (genericVar) {
         case "cancel":
         case "click":
         case "close":
@@ -2352,7 +2429,8 @@ switch genericVar {
         case "popstate":
         case "select":
         case "selectstart":
-        return 1;
+            return 1;
+
         case "drag":
         case "dragenter":
         case "dragexit":
@@ -2372,50 +2450,50 @@ switch genericVar {
         case "mouseleave":
         case "pointerenter":
         case "pointerleave":
-        return 4;
-        case "message":
-        switch genericVar() {
-            case genericVar:
-            return 1;
-            case genericVar:
             return 4;
-            case genericVar:
-            case genericVar:
-            return 16;
-            case genericVar:
-            return 536870912;
-            default:
-            return 16;
-        }
+
+        case "message":
+            switch (genericVar) {
+                case "low":
+                    return 1;
+                case "medium":
+                    return 4;
+                case "high":
+                    return 16;
+                case "critical":
+                    return 536870912;
+                default:
+                    return 16;
+            }
+
         default:
-        return 16;
+            return 16;
     }
 }
-var genericVar = null;
-var genericVar = null;
-var genericVar = null;
-function genericVar {
-    if genericVar {
-        return genericVar;
+
+// Function to get modified string input
+function getProcessedString(input) {
+    if (!input) return "";
+
+    let startIndex = 0;
+    let endIndex = input.length;
+
+    while (startIndex < endIndex && input[startIndex] === input[startIndex]) {
+        startIndex++;
     }
-    var genericVar;
-    var genericVar;
-    var genericVar = genericVar;
-    var genericVar = genericVar.length;
-    var genericVar = "value" in genericVar ? genericVar.value : genericVar.textContent;
-    var genericVar = genericVar.length;
-    for genericVar = 0;
-    genericVar < genericVar && genericVar[genericVar] === genericVar[genericVar];
-    genericVar++ {
-        ;
+
+    while (endIndex > startIndex && input[endIndex - 1] === input[endIndex - 1]) {
+        endIndex--;
     }
+
+    return input.slice(startIndex, endIndex);
+}
+
     var genericVar = genericVar - genericVar;
-    for genericVar = 1;
-    genericVar <= genericVar && genericVar[genericVar - genericVar] === genericVar[genericVar - genericVar];
-    genericVar++ {
-        ;
+    for (genericVar = 1; genericVar <= genericVar && genericVar[genericVar - genericVar] === genericVar[genericVar - genericVar]; genericVar++) {
+        // Empty loop body
     }
-    return genericVar = genericVar.slicevar_469, 1 < genericVar ? 1 - genericVar : undefined;
+    return genericVar = genericVar.slice(var_469), 1 < genericVar ? 1 - genericVar : undefined;
 }
 var genericVar = null;
 var genericVar = null;
@@ -3130,7 +3208,8 @@ function processNestedFrames() {
 
 // Function to check if an element is editable
 function isEditableElement(element) {
-    const nodeName = element?.nodeName?.toLowerCase();
+ const nodeName = element && element.nodeName ? element.nodeName.toLowerCase() : undefined;
+
 
     return (
         (nodeName === "input" &&
@@ -3174,7 +3253,8 @@ function storeAndRestoreScrollPositions() {
 
 // Function to handle input element selection and interaction
 function handleInputSelection(element) {
-    const nodeName = element?.nodeName?.toLowerCase();
+ const nodeName = element && element.nodeName ? element.nodeName.toLowerCase() : undefined;
+
 
     return (
         nodeName === "input" &&
@@ -3205,7 +3285,8 @@ function normalizeEventName(eventName) {
 
 // Function to handle complex event delegation
 function handleComplexEventDelegation(event, handlers) {
-    const eventType = event?.type || "unknown-event";
+   const eventType = event && event.type ? event.type : "unknown-event";
+
     event.currentTarget = event.target;
 
     // Apply handlers
@@ -3433,7 +3514,8 @@ function handleFocusEvents(event) {
 }
 
 function isSelectableElement(element) {
-    const nodeName = element.nodeName?.toLowerCase();
+    const nodeName = element && element.nodeName ? element.nodeName.toLowerCase() : undefined;
+
     return (
         (nodeName === "input" && (element.type === "checkbox" || element.type === "radio")) ||
         nodeName === "select" ||
@@ -3653,7 +3735,8 @@ function renamedFunctionvar_761(input) {
 function getListener(stateNode, eventType) {
     // Placeholder function for retrieving event listeners
     // Replace this with your actual implementation
-    return stateNode?.listeners?.[eventType] || null;
+   return stateNode && stateNode.listeners && stateNode.listeners[eventType] ? stateNode.listeners[eventType] : null;
+
 }
 
                   // Generic Variable Initialization
@@ -3763,10 +3846,9 @@ function getReactFiber(node) {
     return null;
 }
 
-// Function to validate React Fiber tags
 function validateReactFiberTag(fiber) {
     const validTags = [5, 6, 13, 3];
-    return validTags.includes(fiber?.tag) ? fiber : null;
+    return fiber && validTags.includes(fiber.tag) ? fiber : null;
 }
 
 // Function to retrieve state node from Fiber
@@ -3802,7 +3884,7 @@ const booleanFlag = { current: false };
 
                    // Context-related Functions
 function getMaskedChildContext(fiber, context) {
-    const contextTypes = fiber.type?.contextTypes;
+    const contextTypes = fiber.type && fiber.type.contextTypes;
 
     if (!contextTypes) {
         return context;
@@ -3810,7 +3892,10 @@ function getMaskedChildContext(fiber, context) {
 
     const stateNode = fiber.stateNode;
 
-    if (stateNode?.__reactInternalMemoizedUnmaskedChildContext === context) {
+    if (
+        stateNode &&
+        stateNode.__reactInternalMemoizedUnmaskedChildContext === context
+    ) {
         return stateNode.__reactInternalMemoizedMaskedChildContext;
     }
 
@@ -3829,12 +3914,12 @@ function getMaskedChildContext(fiber, context) {
 }
 
 function hasChildContext(fiber) {
-    return fiber?.type?.childContextTypes != null;
+    return fiber && fiber.type && fiber.type.childContextTypes != null;
 }
 
 function getChildContext(fiber, parentContext) {
     const stateNode = fiber.stateNode;
-    const childContextTypes = fiber.type?.childContextTypes;
+    const childContextTypes = fiber.type && fiber.type.childContextTypes;
 
     if (typeof stateNode.getChildContext !== "function") {
         return parentContext;
@@ -3847,11 +3932,14 @@ function getChildContext(fiber, parentContext) {
         }
     }
 
-    return { ...parentContext, ...childContext };
+    return { parentContext, childContext };
 }
 
 function processChildContext(fiber, context) {
-    if (fiber.stateNode?.__reactInternalMemoizedMergedChildContext === context) {
+    if (
+        fiber.stateNode &&
+        fiber.stateNode.__reactInternalMemoizedMergedChildContext === context
+    ) {
         return context;
     }
 
@@ -3879,19 +3967,19 @@ function getStateNode(fiber) {
 }
 
 // Stack Management
-const stack = [];
-let stackIndex = -1;
+let stackArray = [];
+let currentStackIndex = -1;
 
 function pushToStack(item) {
-    stackIndex++;
-    stack[stackIndex] = item;
+    currentStackIndex++;
+    stackArray[currentStackIndex] = item;
 }
 
 function popFromStack() {
-    if (stackIndex >= 0) {
-        const item = stack[stackIndex];
-        stack[stackIndex] = null;
-        stackIndex--;
+    if (currentStackIndex >= 0) {
+        const item = stackArray[currentStackIndex];
+        stackArray[currentStackIndex] = null;
+        currentStackIndex--;
         return item;
     }
     return null;
@@ -3917,56 +4005,13 @@ function processFiber(fiber) {
             }
             break;
         case 13: // Suspense component
-            const dehydrated = fiber.stateNode?.dehydrated;
-            if (dehydrated) {
-                fiber.memoizedState = {
-                    dehydrated,
-                    treeContext: null,
-                    retryLane: 1073741824, // Lane constant
-                };
-                const suspenseFallback = createDeletionFiber();
-                suspenseFallback.return = fiber;
-                fiber.child = suspenseFallback;
-                return suspenseFallback;
-            }
-            break;
+            return processFiberNode(fiber);
         default:
-            break;
+            return null;
     }
-    return null;
-}
-
-function validateFiberMode(fiber) {
-    if (fiber.mode & 1 && !(fiber.flags & 128)) {
-        throw new Error("Fiber validation error: Invalid mode or flags.");
-    }
-}
-
-function handleFiberDeletion(fiber) {
-    validateFiberMode(fiber);
-
-    fiber.flags = (fiber.flags & ~4097) | 2; // Adjust flags
-    fiber.stateNode = null; // Clear stateNode for deletion
-}
-
-// Error-handling Helpers
-function throwError(errorCode, message) {
-    throw new Error(`Error ${errorCode}: ${message}`);
-}
-
-                    // Fiber Traversal Functions
-function findNearestRelevantFiber(fiber) {
-    while (fiber !== null && fiber.tag !== 5 && fiber.tag !== 3 && fiber.tag !== 13) {
-        fiber = fiber.return;
-    }
-    return fiber;
 }
 
 function processFiberNode(fiber) {
-    if (fiber.tag !== fiber.tag) {
-        return false;
-    }
-
     if (!fiber) {
         resetProcessing();
         return false;
@@ -3992,19 +4037,19 @@ function processFiberNode(fiber) {
             throw new Error("Error 418: Invalid mode or flags on fiber.");
         }
 
-        while (fiber) {
-            processSiblingNodes(fiber);
-            fiber = fiber.nextSibling;
+        while (fiber.sibling) {
+            processSiblingNodes(fiber.sibling);
+            fiber = fiber.sibling;
         }
     }
 
     resetProcessing();
 
     if (fiber.tag === 13) {
-        if (!fiber.memoizedState?.dehydrated) {
-            throw new Error("Error 317: Suspense component is not dehydrated.");
+        if (fiber.memoizedState && fiber.memoizedState.dehydrated) {
+            return processDehydratedNode(fiber);
         }
-        return processDehydratedNode(fiber);
+        throw new Error("Error 317: Suspense component is not dehydrated.");
     }
 
     return true;
@@ -4040,7 +4085,7 @@ function processDehydratedNode(fiber) {
 
 // Context Management
 function applyDefaultProps(type, props) {
-    if (type?.defaultProps) {
+    if (type && type.defaultProps) {
         const defaultProps = type.defaultProps;
         for (let key in defaultProps) {
             if (props[key] === undefined) {
@@ -4074,7 +4119,7 @@ function updateDependencies(fiber, lane) {
 }
 
 function processContextDependencies(fiber, lane) {
-    if (fiber.dependencies?.firstContext) {
+    if (fiber.dependencies && fiber.dependencies.firstContext) {
         const dependencies = fiber.dependencies;
         if ((dependencies.lanes & lane) !== 0) {
             dependencies.firstContext = null;
@@ -4105,8 +4150,7 @@ let isProcessing = false;
 const ReactCurrentBatchConfig = { current: null };
 const globalState = { current: null };
 const contextQueue = { current: null };
-
-
+    
                 // Function to initialize or push updates into an update queue
 function initializeOrPushUpdate(updateQueue, newUpdate) {
     if (updateQueue.pending === null) {
@@ -4147,7 +4191,8 @@ function propagateLanesToParent(fiber, lane) {
         }
         parent = parent.return;
     }
-    return parent?.tag === 3 ? parent.stateNode : null; // Return the root fiber's state node if applicable
+   return parent && parent.tag === 3 ? parent.stateNode : null;
+ // Return the root fiber's state node if applicable
 }
 
 // Function to reset or clone an update queue
@@ -4228,23 +4273,34 @@ function processUpdateQueue(fiber, renderLane) {
     return newBaseState;
 }
 
-// Helper to apply a single update
 function applyUpdate(update, prevState, fiber) {
+    if (!update || typeof update !== "object") return prevState || {}; // Ensure valid state
+
     switch (update.tag) {
         case 1: // Replace state
             return typeof update.payload === "function"
-                ? update.payload(prevState, fiber)
-                : update.payload;
+                ? update.payload(prevState || {}, fiber)
+                : update.payload || {};
+
         case 3: // Force update
             fiber.flags |= 128; // Add force update flag
-        case 0: // Partial state
-            return typeof update.payload === "function"
-                ? { ...prevState, ...update.payload(prevState, fiber) }
-                : { ...prevState, ...update.payload };
+            // Fall through to next case
+
+        case 0: // Partial state update
+            const safePrevState = prevState && typeof prevState === "object" ? prevState : {};
+            const safeNewState = update.payload && typeof update.payload === "function"
+                ? update.payload(safePrevState, fiber)
+                : (typeof update.payload === "object" && update.payload !== null) ? update.payload : {};
+
+            return { safePrevState, safeNewState };  // ✅ FIXED HERE
+
         default:
-            return prevState;
+            console.warn(`Unknown update tag: ${update.tag}`);
+            return prevState || {};
     }
 }
+
+
 
 // Initialize an empty update queue
 function initializeUpdateQueue(fiber) {
@@ -4261,38 +4317,49 @@ function initializeUpdateQueue(fiber) {
     };
 }
 
-// Utility to combine lanes
+// Utility to combine lanes safely
 function combineLanes(queue, renderLane) {
-    if (queue?.shared && queue.shared.lanes) {
+    if (queue && queue.shared && queue.shared.lanes) {
+
         const pendingLanes = queue.shared.lanes & renderLane;
-        queue.shared.lanes = pendingLanes;
+
+        // Only update lanes if pendingLanes is non-zero
+        if (pendingLanes) {
+            queue.shared.lanes |= renderLane;  // ✅ Bitwise OR to combine lanes safely
+        }
+        
         return pendingLanes;
     }
     return 0;
 }
 
-                    // Executes effects and calls their callbacks
+// Executes effects and calls their callbacks
 function executeEffects(fiber) {
     const effects = fiber.effects;
-    fiber.effects = null; // Reset effects list
+    if (!Array.isArray(effects)) return; // ✅ Ensure effects exist
 
-    if (effects !== null) {
-        for (let i = 0; i < effects.length; i++) {
-            const effect = effects[i];
-            const callback = effect.callback;
+    fiber.effects = null; // ✅ Reset effects AFTER execution to avoid loss on errors
 
-            if (callback !== null) {
-                effect.callback = null;
+    for (let i = 0; i < effects.length; i++) {
+        const effect = effects[i];
+        const callback = effect.callback;
 
-                if (typeof callback !== "function") {
-                    throw new Error(`Invalid callback type: ${callback}`);
-                }
+        if (callback !== null) {
+            effect.callback = null; // ✅ Prevent duplicate execution
+            
+            if (typeof callback !== "function") {
+                throw new Error(`Invalid callback type: ${callback}`);
+            }
 
-                callback.call(fiber);
+            try {
+                callback.call(fiber);  // ✅ Call in safe context
+            } catch (error) {
+                console.error(`Error executing effect: ${error.message}`, error);
             }
         }
     }
 }
+
 
 // Handles the process of replacing or setting state for class components
 function replaceOrSetState(fiber, nextState, queueIsEmpty = false) {
@@ -4533,16 +4600,18 @@ function processFiberContent(content, fiber, mode) {
     return null;
 }
 
-// Handles updates or replacements for fiber states
 function handleFiberUpdates(fiber, newState, replace = false) {
     if (replace) {
         fiber.memoizedState = newState;
-        fiber.updateQueue.baseState = newState;
+        if (fiber.updateQueue) {  // ✅ Fix: Ensure updateQueue exists
+            fiber.updateQueue.baseState = newState;
+        }
     } else {
-        fiber.memoizedState = {
-            ...fiber.memoizedState,
-            ...newState,
-        };
+        fiber.memoizedState = Object.assign(
+            {}, 
+            Object(fiber.memoizedState),  // ✅ Ensures it's an object
+            typeof newState === "object" && newState !== null ? newState : {}  // ✅ Prevents errors from primitives
+        );
     }
 }
 
@@ -4566,10 +4635,10 @@ function findParentFiber(fiber, targetTag) {
     return null;
 }
 
-// Handles updates to a fiber's update queue
+// Handles updates to a fiber's update queue safely
 function enqueueUpdate(fiber, update) {
     const queue = fiber.updateQueue;
-    if (!queue) return;
+    if (!queue || !queue.shared) return;  // ✅ Fix: Ensure queue.shared exists
 
     if (queue.shared.pending === null) {
         update.next = update;
@@ -4644,47 +4713,47 @@ function renamedFunctionvar_1134(parentFiber, newFiber, iterable) {
     const iterator = iterable[Symbol.iterator]();
     let currentChild = null;
     let result = iterator.next();
-
+}
     while (!result.done) {
         const child = result.value;
-
-        if (child.index > currentChild?.index) {
-            currentChild = null;
-        } else {
-            currentChild = currentChild ? currentChild.sibling : null;
-        }
-
-        const updatedFiber = processChild(parentFiber, child, currentChild);
-
-        if (updatedFiber === null) {
-            if (currentChild === null) {
-                currentChild = null;
-            }
-            break;
-        }
-
-        if (updatedFiber && !updatedFiber.alternate) {
-            markForDeletion(parentFiber, updatedFiber);
-        }
-
-        const siblingFiber = attachSibling(parentFiber, updatedFiber);
-
-        if (siblingFiber === null) {
-            currentChild = null;
-        } else {
-            currentChild.sibling = siblingFiber;
-        }
-
-        currentChild = updatedFiber;
-        result = iterator.next();
+    }
+    while (!result.done) {
+    if (child.index > (currentChild ? currentChild.index : -1)) {
+        currentChild = null;
+    } else {
+        currentChild = currentChild && currentChild.sibling ? currentChild.sibling : null;
     }
 
-    if (result.done) {
-        markCompletion(parentFiber);
+    const updatedFiber = processChild(parentFiber, child, currentChild);
+
+    if (updatedFiber === null) {
+        if (currentChild === null) {
+            currentChild = null;
+        }
+        break;
     }
 
-    return currentChild;
+    if (updatedFiber && !updatedFiber.alternate) {
+        markForDeletion(parentFiber, updatedFiber);
+    }
+
+    const siblingFiber = attachSibling(parentFiber, updatedFiber);
+
+    if (siblingFiber === null) {
+        currentChild = null;
+    } else if (currentChild) {  // ✅ Ensure `currentChild` is valid
+        currentChild.sibling = siblingFiber;
+    }
+
+    currentChild = updatedFiber;
+    result = iterator.next();
 }
+
+if (result.done) {
+    markCompletion(parentFiber);
+}
+
+return currentChild;
 
                        // Constants for React internals (placeholders for actual React values)
 const REACT_ELEMENT_TYPE = Symbol.for("react.element");
@@ -5128,7 +5197,7 @@ function renamedFunctionvar_1355(genericVar, pending) {
 }
 
 // React Hook Implementations
-const hooks = {
+const hookImplementations = {
     useCallback(callback, deps) {
         return [callback, deps !== undefined ? deps : null];
     },
@@ -5148,7 +5217,7 @@ const hooks = {
     },
 
     useState(initialValue) {
-        return hooks.useReducer((state) => state, initialValue);
+        return hookImplementations.useReducer((state) => state, initialValue);
     },
 
     useRef(initialValue) {
@@ -5156,7 +5225,7 @@ const hooks = {
     },
 
     useEffect(effect, deps) {
-        return hooks.useMemo(effect, deps);
+        return hookImplementations.useMemo(effect, deps);
     },
 };
 
@@ -5421,9 +5490,9 @@ function renamedFunctionvar_1515(genericVar, current, fallback, context) {
 }
 
 function renamedFunctionvar_1526(root, current, fallback) {
-    let dehydrated = current?.memoizedState?.dehydrated;
-    const baseProps = current.pendingProps;
-    const hasError = current.flags & 128;
+    let dehydrated = current && current.memoizedState ? current.memoizedState.dehydrated : null;
+    const baseProps = current ? current.pendingProps : null;
+    const hasError = current && current.flags ? (current.flags & 128) : 0;
 
     if (dehydrated) {
         // Handle dehydration case
@@ -5450,20 +5519,19 @@ function renamedFunctionvar_1526(root, current, fallback) {
     }
 
     if (fallback) {
-        // Handling fallback logic
         current.memoizedState = {
-            baseLanes: fallback.baseLanes || 0,
+            baseLanes: fallback && fallback.baseLanes ? fallback.baseLanes : 0,
             cachePool: null,
-            transitions: fallback.transitions || null,
+            transitions: fallback && fallback.transitions ? fallback.transitions : null,
         };
     }
 
-    if (current.memoizedState) {
+    if (current && current.memoizedState) {
         // Perform context-based updates
         var_802var_1173(1 & current.mode);
     }
 
-    return current.child;
+    return current ? current.child : null;
 }
 
 function renamedFunctionvar_1548(parentNode) {
@@ -5471,7 +5539,8 @@ function renamedFunctionvar_1548(parentNode) {
         mode: "visible",
         children: parentNode,
     }, parentNode.mode, 0, null);
-    newNode["return"] = parentNode;
+
+    newNode.return = parentNode;  // ✅ Fix: No need for `["return"]`
     parentNode.child = newNode;
     return parentNode.child;
 }
@@ -5492,21 +5561,29 @@ function renamedFunctionvar_1555(node, lanes) {
     if (alternateNode !== null) {
         alternateNode.lanes |= lanes;
     }
-    var_913var_1555["return"](node, lanes);
+    
+    if (typeof var_913var_1555.return === "function") {
+        var_913var_1555.return(node, lanes);
+    }
 }
 
 function renamedFunctionvar_1560(node, isBackwards, rendering, tailMode) {
-    const state = node.memoizedState || {};
-    node.memoizedState = {
-        ...state,
+    if (!node || typeof node !== "object") return; // ✅ Ensure node is valid
+
+    const safeState = (node.memoizedState && typeof node.memoizedState === "object")
+        ? node.memoizedState
+        : {}; // ✅ Ensure memoizedState is an object
+
+    node.memoizedState = Object.assign({}, safeState, {  // ✅ Use Object.assign() for full compatibility
         isBackwards,
         rendering: null,
         renderingStartTime: 0,
         last: rendering,
         tail: rendering,
         tailMode,
-    };
+    });
 }
+
 
 function renamedFunctionvar_1567(node, revealOrder, tail) {
     const props = node.pendingProps;
@@ -5863,13 +5940,15 @@ function processRoot(root, renderLanes) {
     if (root.pendingContext) {
         root.context = root.pendingContext;
         root.pendingContext = null;
-    }
-    if (root.memoizedState?.isDehydrated) {
+    }}
+    if (root && typeof root === "object" && root.memoizedState && typeof root.memoizedState === "object") {
+    if (root.memoizedState.isDehydrated) {  // ✅ Safe property access
         if (!(root.flags & 256)) {
             root.flags |= 1024; // Hydration flag
         }
     }
 }
+
 
 function processHostComponent(workInProgress, renderLanes, pendingProps) {
     const current = workInProgress.alternate;
@@ -6392,13 +6471,12 @@ function renamedFunctionvar_1749(rootFiber) {
 
 function renamedFunctionvar_1761(rootFiber) {
     let currentFiber = rootFiber;
-
     while (currentFiber !== null) {
         if (currentFiber.flags & 8772) {
             try {
                 switch (currentFiber.tag) {
                     case 0: // Functional component
-                    case 11: // ForwardRef
+                    case 11: // ForwardRef 
                     case 15: // Memo
                         if (!currentFiber.stateNode) {
                             commitFunctionalComponentUnmount(currentFiber);
@@ -6406,14 +6484,23 @@ function renamedFunctionvar_1761(rootFiber) {
                         break;
 
                     case 1: // Class component
+                        if (!currentFiber || typeof currentFiber !== "object") {
+                            break;
+                        }
+
                         const instance = currentFiber.stateNode;
                         if (currentFiber.flags & 4) {
                             if (!instance) {
-                                instance.componentDidMount?.();
+                                if (instance && typeof instance.componentDidMount === "function") {
+                                    instance.componentDidMount();
+                                }
                             } else {
-                                const prevProps = currentFiber.memoizedProps;
-                                const prevState = currentFiber.memoizedState;
-                                instance.componentDidUpdate?.(prevProps, prevState);
+                                const prevProps = currentFiber.memoizedProps || {};
+                                const prevState = currentFiber.memoizedState || {};
+                                
+                                if (instance && typeof instance.componentDidUpdate === "function") {
+                                    instance.componentDidUpdate(prevProps, prevState);
+                                }
                             }
                         }
                         commitUpdateQueue(currentFiber);
@@ -6421,15 +6508,17 @@ function renamedFunctionvar_1761(rootFiber) {
 
                     case 5: // Host component
                         if (currentFiber.flags & 4 && currentFiber.stateNode !== null) {
-                            if (currentFiber.memoizedProps.autoFocus) {
-                                currentFiber.stateNode.focus?.();
+                            if (currentFiber.memoizedProps && currentFiber.memoizedProps.autoFocus) {
+                                if (currentFiber.stateNode && typeof currentFiber.stateNode.focus === "function") {
+                                    currentFiber.stateNode.focus();
+                                }
                             }
                         }
                         break;
 
                     case 13: // Suspense component
                         const suspenseState = currentFiber.memoizedState;
-                        if (suspenseState !== null && suspenseState.dehydrated !== null) {
+                        if (suspenseState && suspenseState.dehydrated) {
                             hydrateSuspenseInstance(suspenseState.dehydrated);
                         }
                         break;
@@ -6438,15 +6527,15 @@ function renamedFunctionvar_1761(rootFiber) {
                         break;
                 }
             } catch (error) {
-                handleError(currentFiber.return, error);
+                handleError(currentFiber?.return || null, error);
             }
         }
 
         if (currentFiber === rootFiber) {
-            return;
+            break;
         }
 
-        if (currentFiber.sibling !== null) {
+        if (currentFiber.sibling) {
             currentFiber.sibling.return = currentFiber.return;
             currentFiber = currentFiber.sibling;
         } else {
@@ -6852,49 +6941,46 @@ function resetGlobalState() {
     console.log("Resetting global state...");
 }
 
-function renamedFunctionvar_1907, genericVar {
-    var genericVar = genericVar;
+function renamedFunctionvar_1907() {
+    var genericVar = 0;  // Assuming default value
     genericVar |= 2;
-    var genericVar = genericVar;
-    for genericVar === genericVar && genericVar === genericVar || (genericVar = null, genericVar(genericVar, genericVar);
-    ;
-    ) {
+
+    for (; genericVar !== null; ) {
         try {
-            genericVar;
-            break;
-        }
-        catch genericVar {
-            var_1845var_1907, genericVar;
+            if (genericVar === genericVar) {
+                break;
+            }
+        } catch (error) {
+            var_1845var_1907(error); // Assuming this function logs or handles the error
         }
     }
-    genericVar;
-    genericVar = genericVar;
+
     genericVar.current = genericVar;
-    if null !== genericVar {
-        throw Errorvar_28(261);
+
+    if (genericVar !== null) {
+        throw new Error("Error 261");
     }
+
     genericVar = null;
-    genericVar = 0;
     return genericVar;
 }
-function genericVar {
-    for ;
-    null !== genericVar;
-    {
-        var_1913var_1795;
+
+function genericVarLoop() {
+    for (; genericVar !== null; ) {
+        var_1913var_1795(); // Assuming this is a function call
     }
 }
-function genericVar {
-    for ;
-    null !== genericVar && !genericVar(;
-    ) {
-        var_1913var_1795;
+
+function genericVarCondition() {
+    for (; genericVar !== null && !genericVar(); ) {
+        var_1913var_1795(); // Assuming this is a function call
     }
 }
-function renamedFunctionvar_1914 {
+
+function renamedFunctionvar_1914() {
     var genericVar = var_1790var_1914.alternate, genericVar, genericVar;
     genericVar.memoizedProps = genericVar.pendingProps;
-    if null === genericVar {
+    if (null === genericVar) {
         var_1904var_1914;
     }
     else {
@@ -6902,100 +6988,121 @@ function renamedFunctionvar_1914 {
     }
     genericVar.current = null;
 }
-function renamedFunctionvar_1916 {
+function renamedFunctionvar_1916() {
     var genericVar = genericVar;
     do {
         var genericVar = genericVar.alternate;
         genericVar = genericVar["return"];
-        if 0 == (32768 & genericVar.flags) {
-            if null !== (genericVar = genericVar(genericVar, genericVar, genericVar)) {
-                return void genericVar = genericVar;
+        if (0 === (32768 & genericVar.flags)) {
+            if (null !== (genericVar = genericVar(genericVar, genericVar, genericVar))) {
+                genericVar = genericVar;
+                return;
             }
         }
         else {
-            if null !== (genericVar = genericVar(genericVar, genericVar)) {
+            if (null !== (genericVar = genericVar(genericVar, genericVar))) {
                 genericVar.flags &= 32767;
-                return void genericVar = genericVar;
+                genericVar = genericVar;
+                return;
             }
-            if null === genericVar {
+            if (null === genericVar) {
                 genericVar = 6;
-                return void genericVar = null;
+                genericVar = null;
+                return;
             }
             genericVar.flags |= 32768;
             genericVar.subtreeFlags = 0;
             genericVar.deletions = null;
         }
-        if null !== (genericVar = genericVar.sibling) {
-            return void genericVar = genericVar;
+        if (null !== (genericVar = genericVar.sibling)) {
+            genericVar = genericVar;
+            return;
         }
-        genericVar = genericVar = genericVar;
-    }
-    while null !== genericVar;
-    if 0 === genericVar {
+        genericVar = genericVar;
+    } while (null !== genericVar);
+    
+    if (0 === genericVar) {
         genericVar = 5;
     }
 }
-function renamedFunctionvar_1919, genericVar, genericVar {
-    var genericVar = genericVar;
-    var genericVar = genericVar.transition;
+function renamedFunctionvar_1919(genericVar1, genericVar2) {
+    var localVar = genericVar1;
+    var transitionState = genericVar2.transition;
+
     try {
-        genericVar.transition = null;
-        genericVar = 1;
-        function (genericVar, genericVar, genericVar, genericVar {
+        genericVar2.transition = null;
+        localVar = 1;
+
+        function processGenericVars(var1, var2, var3, var4) {
             do {
-                genericVar;
+                var1;
+            } while (var1 !== null);
+
+            if (0 !== (6 & var1)) {
+                throw new Error("Error 327");
             }
-            while null !== genericVar;
-            if 0 != (6 & genericVar) {
-                throw Errorvar_28(327);
-            }
-            genericVar = genericVar.finishedWork;
-            var genericVar = genericVar.finishedLanes;
-            if null === genericVar {
+
+            var1 = var1.finishedWork;
+            var finishedLanes = var1.finishedLanes;
+
+            if (finishedLanes === null) {
                 return null;
             }
-            genericVar.finishedWork = null;
-            genericVar.finishedLanes = 0;
-            if genericVar === genericVar.current {
-                throw Errorvar_28(177);
+
+            var1.finishedWork = null;
+            var1.finishedLanes = 0;
+
+            if (var1 === var1.current) {
+                throw new Error("Error 177");
             }
-            genericVar.callbackNode = null;
-            genericVar.callbackPriority = 0;
-            var genericVar = genericVar.lanes | genericVar.childLanes;
-            function (genericVar, genericVar {
-                var genericVar = genericVar.pendingLanes & ~genericVar;
-                genericVar.pendingLanes = genericVar;
-                genericVar.suspendedLanes = 0;
-                genericVar.pingedLanes = 0;
-                genericVar.expiredLanes &= genericVar;
-                genericVar.mutableReadLanes &= genericVar;
-                genericVar.entangledLanes &= genericVar;
-                genericVar = genericVar.entanglements;
-                var genericVar = genericVar.eventTimes;
-                for genericVar = genericVar.expirationTimes;
-                0 < genericVar;
-                {
-                    var genericVar = 31 - var_338var_1932;
-                    var genericVar = 1 << genericVar;
-                    genericVar[genericVar] = 0;
-                    genericVar[genericVar] = -1;
-                    genericVar[genericVar] = -1;
-                    genericVar &= ~genericVar;
+
+            var1.callbackNode = null;
+            var1.callbackPriority = 0;
+
+            var mergedLanes = var1.lanes | var1.childLanes;
+
+            function updateLanes(lane1, lane2) {
+                var pendingLanes = lane1.pendingLanes & ~lane2;
+                lane1.pendingLanes = pendingLanes;
+                lane1.suspendedLanes = 0;
+                lane1.pingedLanes = 0;
+                lane1.expiredLanes &= pendingLanes;
+                lane1.mutableReadLanes &= pendingLanes;
+                lane1.entangledLanes &= pendingLanes;
+
+                var entanglements = lane1.entanglements;
+                var eventTimes = lane1.eventTimes;
+
+                for (var i = lane1.expirationTimes; i > 0; i--) {
+                    var shift = 31 - var_338var_1932;
+                    var bit = 1 << shift;
+                    eventTimes[bit] = 0;
+                    entanglements[bit] = -1;
+                    lane1.expiredLanes &= ~bit;
                 }
             }
-            )genericVar, genericVar;
-            if genericVar === genericVar {
-                genericVar = genericVar = null;
-                genericVar = 0;
+
+            updateLanes(var1, mergedLanes);
+
+            if (var1 === var1) {
+                var1 = null;
+                mergedLanes = 0;
             }
-            if !(0 == (2064 & genericVar.subtreeFlags && 0 == 2064 & genericVar.flags || genericVar)) {
-                genericVar = true;
-                var_325var_333, function ( {
-                    genericVar;
+
+            if (!((2064 & var1.subtreeFlags) === 0 && (2064 & var1.flags) === 0 || var1)) {
+                var1 = true;
+                var_325var_333(function () {
                     return null;
-                }
-                );
+                });
             }
+        }
+
+        processGenericVars(genericVar1, genericVar2, null, null);
+    } catch (error) {
+        console.error("An error occurred:", error);
+    }
+}
+
             function processSelection(genericVar) {
                 if (genericVar && "selectionStart" in genericVar) {
                     return {
@@ -7003,28 +7110,42 @@ function renamedFunctionvar_1919, genericVar, genericVar {
                         end: genericVar.selectionEnd,
                     };
                 } else {
-                    const selection = genericVar.ownerDocument?.defaultView?.getSelection();
-                    if (selection && selection.rangeCount > 0) {
-                        try {
-                            const anchorNode = selection.anchorNode;
-                            const anchorOffset = selection.anchorOffset;
-                            const focusNode = selection.focusNode;
-                            const focusOffset = selection.focusOffset;
-            
-                            if (anchorNode?.nodeType === 3 && focusNode?.nodeType === 3) {
-                                return {
-                                    start: anchorOffset,
-                                    end: focusOffset,
-                                };
-                            }
-                        } catch {
-                            return null;
-                        }
-                    }
-                    return null;
+                    return getTextSelectionRange(genericVar);
                 }
             }
-            
+
+            function getTextSelectionRange(genericVar) {
+                if (!genericVar || typeof genericVar !== "object") return null; // ✅ Ensure genericVar is valid
+
+                const doc = genericVar.ownerDocument && typeof genericVar.ownerDocument === "object"
+                    ? genericVar.ownerDocument 
+                    : null;
+
+                if (!doc || !doc.defaultView) return null; // ✅ Ensure `ownerDocument` is valid
+
+                const selection = doc.defaultView.getSelection();
+                if (!selection || selection.rangeCount === 0) return null; // ✅ Ensure `getSelection()` returns valid data
+
+                try {
+                    const anchorNode = selection.anchorNode;
+                    const anchorOffset = selection.anchorOffset;
+                    const focusNode = selection.focusNode;
+                    const focusOffset = selection.focusOffset;
+
+                    if (anchorNode && anchorNode.nodeType === 3 && focusNode && focusNode.nodeType === 3) {
+                        return {
+                            start: anchorOffset,
+                            end: focusOffset,
+                        };
+                    }
+                } catch (error) {
+                    console.error("Error getting selection range:", error);
+                    return null;
+                }
+
+                return null;
+            }
+
             function captureFocusedElementState(genericVar) {
                 const focusedElem = processSelection(genericVar);
                 const selectionRange = focusedElem || { start: 0, end: 0 };
@@ -7033,7 +7154,7 @@ function renamedFunctionvar_1919, genericVar, genericVar {
             
             function traverseChildNodes(root) {
                 let currentNode = root;
-            
+                
                 while (currentNode) {
                     if ((currentNode.subtreeFlags & 1028) !== 0 && currentNode.child) {
                         currentNode.child.return = currentNode;
@@ -7042,149 +7163,61 @@ function renamedFunctionvar_1919, genericVar, genericVar {
                         while (currentNode) {
                             const alternate = currentNode.alternate;
             
-                            if ((alternate?.flags & 1024) !== 0) {
+                            if (alternate && (alternate.flags & 1024) !== 0) {  // ✅ Ensure `alternate` is valid
                                 handleSpecialCases(alternate);
                             }
-            
-                            if (currentNode.sibling) {
-                                currentNode.sibling.return = currentNode.return;
+
+                            if (currentNode.sibling) {  // ✅ Ensure `currentNode.sibling` exists
+                                if (currentNode.return) {  // ✅ Ensure `currentNode.return` exists before assigning
+                                    currentNode.sibling.return = currentNode.return;
+                                }
                                 currentNode = currentNode.sibling;
                                 break;
                             }
-            
-                            currentNode = currentNode.return;
+
+                            currentNode = currentNode.return ? currentNode.return : null;  // ✅ Prevent null errors
                         }
                     }
                 }
             }
-            
             function handleSpecialCases(node) {
+                if (!node) return; // Guard against null node
+                
                 switch (node.tag) {
                     case 1: // Class components
                         const instance = node.stateNode;
-                        const snapshot = instance.getSnapshotBeforeUpdate
-                            ? instance.getSnapshotBeforeUpdate(
-                                  node.memoizedProps,
-                                  node.memoizedState
-                              )
-                            : null;
-                        instance.__reactInternalSnapshotBeforeUpdate = snapshot;
+                        if (instance && typeof instance.getSnapshotBeforeUpdate === 'function') {
+                            const snapshot = instance.getSnapshotBeforeUpdate(
+                                node.memoizedProps,
+                                node.memoizedState
+                            );
+                            instance.__reactInternalSnapshotBeforeUpdate = snapshot;
+                        }
                         break;
                     case 5: // Host components
-                    case 6: // Text nodes
+                    case 6: // Text nodes 
                     case 4: // Host root
                     case 17: // Context consumer
                     default:
                         break;
                 }
             }
-            
-            function clearContainerContent(containerInfo) {
-                if (containerInfo?.nodeType === 1) { // Element node
-                    containerInfo.textContent = "";
-                } else if (containerInfo?.nodeType === 9 && containerInfo?.documentElement) { // Document node
-                    containerInfo.removeChild(containerInfo.documentElement);
-                } else {
-                    throw new Error("Unexpected node type in container.");
+
+            // Move these checks into the traversal logic
+            function processNode(currentNode, alternate) {
+                if (alternate && (alternate.flags & 1024) !== 0) {
+                    handleSpecialCases(alternate);
                 }
+
+                if (currentNode.sibling) {
+                    if (currentNode.return) {
+                        currentNode.sibling.return = currentNode.return;
+                    }
+                    return currentNode.sibling;
+                }
+
+                return currentNode.return ? currentNode.return : null;
             }
-            
-            function handleCommitLifecycle(node) {
-                if (node && typeof node.onCommitFiberRoot === "function") {
-                    try {
-                        node.onCommitFiberRoot(node, undefined, !!(node.current?.flags & 128));
-                    } catch (error) {
-                     //   console.error("Error in onCommitFiberRoot:", error);
-                    }
-                } else {
-                    console.warn("onCommitFiberRoot is not defined or not a function.");
-                }
-            }
-            
-            function processNodeLifecycle(node) {
-                try {
-                    if (!node || !node.stateNode || !node.stateNode.containerInfo) {
-                        throw new Error("Node, stateNode, or containerInfo is undefined.");
-                    }
-            
-                    switch (node.tag) {
-                        case 3: { // Root node
-                            const containerInfo = node.stateNode.containerInfo;
-                            clearContainerContent(containerInfo);
-                            break;
-                        }
-                        default:
-                            throw new Error("Unsupported node tag encountered.");
-                    }
-                } catch (error) {
-                    //console.error("Error processing node lifecycle:", error, node?.return);
-                }
-            
-                if (node?.sibling) {
-                    node.sibling.return = node.return;
-                    return node.sibling;
-                }
-                return node?.return;
-            }
-            
-            
-            
-            function handleFiberTransitions(root) {
-                if (!root || typeof root !== "object") {
-                    throw new Error("Invalid root object provided.");
-                }
-            
-                const { transition } = root;
-                root.transition = null;
-            
-                try {
-                    let finishedWork = root.finishedWork;
-                    if (!finishedWork) return null;
-            
-                    root.finishedWork = null;
-                    root.finishedLanes = 0;
-            
-                    if (finishedWork === root.current) {
-                        throw new Error("Finished work matches current fiber.");
-                    }
-            
-                    // Clear pending lanes
-                    if (finishedWork.lanes) {
-                        root.pendingLanes &= ~finishedWork.lanes;
-                    }
-            
-                    // Run lifecycle events
-                    const commitQueue = finishedWork.stateNode;
-                    if (commitQueue && typeof commitQueue.onCommitFiberRoot === "function") {
-                        try {
-                            handleCommitLifecycle(commitQueue);
-                        } catch (error) {
-                           // console.error("Error in handleCommitLifecycle:", error);
-                        }
-                    }
-            
-                    // Process node lifecycle
-                    if (finishedWork.tag !== 0) {
-                        let node = finishedWork;
-                        while (node) {
-                            try {
-                                node = processNodeLifecycle(node);
-                            } catch (error) {
-                             //   console.error("Error processing node lifecycle:", error, node);
-                                node = node.sibling || node.return;
-                            }
-                        }
-                    }
-                } catch (error) {
-                  //  console.error("Error in handleFiberTransitions:", error);
-                } finally {
-                    root.transition = transition;
-                }
-            
-                return null;
-            }
-            
-            
             function genericVar() {
                 if (genericVar !== null) {
                     genericVar = var_377var_1805; // Assuming this is already declared earlier.
@@ -7330,42 +7363,111 @@ for (var node = currentGenericVar; node !== null;) {
     }
 }
 
-                                                var genericVar = genericVar.sibling;
-                                                if null !== genericVar {
-                                                    genericVar["return"] = genericVar["return"];
-                                                    genericVar = genericVar;
-                                                    break genericVar;
-                                                }
-                                                genericVar = genericVar["return"];
-                                            }
-                                        }
-                                    }
-                                    genericVar = genericVar;
-                                    if (genericVar && typeof genericVar.onPostCommitFiberRoot === "function") {
-                                        try {
-                                            genericVar.onPostCommitFiberRoot(var_336, genericVar);
-                                        } catch (error) {
-                                            // Catch block left intentionally empty.
-                                        }
-                                    }
-                                    genericVar = true;
-                                    return genericVar;
-                                    } finally {
-                                        genericVar = genericVar;
-                                        genericVar.transition = genericVar;
-                                    }
-                                    return false;
-                                    }
-                                    
-                                    function renamedFunctionvar_1990(genericVar, genericVar2) {
-                                        genericVar = var_944var_1990;
-                                        genericVar = genericVar(0, genericVar(genericVar2, genericVar2, 1), 1);
-                                        if (genericVar !== null) {
-                                            var_366var_1990(1, genericVar);
-                                            var_1816var_1990(genericVar);
-                                        }
-                                    }
-                                    
+                                               function clearContainerContent(containerInfo) {
+    if (containerInfo && containerInfo.nodeType === 1) { // Element node
+        containerInfo.textContent = "";
+    } else if (containerInfo && containerInfo.nodeType === 9 && containerInfo.documentElement) { // Document node
+        if (containerInfo.documentElement) {
+            containerInfo.removeChild(containerInfo.documentElement);
+        }
+    } else {
+        throw new Error("Unexpected node type in container.");
+    }
+}
+
+function handleCommitLifecycle(node) {
+    if (node && typeof node.onCommitFiberRoot === "function") {
+        try {
+            node.onCommitFiberRoot(node, undefined, !!(node.current && node.current.flags & 128));
+        } catch (error) {
+            // console.error("Error in onCommitFiberRoot:", error);
+        }
+    } else {
+        console.warn("onCommitFiberRoot is not defined or not a function.");
+    }
+}
+
+function processNodeLifecycle(node) {
+    try {
+        if (!node || !node.stateNode || !node.stateNode.containerInfo) {
+            throw new Error("Node, stateNode, or containerInfo is undefined.");
+        }
+
+        switch (node.tag) {
+            case 3: { // Root node
+                const containerInfo = node.stateNode.containerInfo;
+                clearContainerContent(containerInfo);
+                break;
+            }
+            default:
+                throw new Error("Unsupported node tag encountered.");
+        }
+    } catch (error) {
+        // console.error("Error processing node lifecycle:", error, node ? node.return : null);
+    }
+
+    if (node && node.sibling) {
+        node.sibling.return = node.return;
+        return node.sibling;
+    }
+    return node && node.return ? node.return : null;
+}
+
+function handleFiberTransitions(root) {
+    if (!root || typeof root !== "object") {
+        throw new Error("Invalid root object provided.");
+    }
+
+    const { transition } = root;
+    root.transition = null;
+
+    try {
+        let finishedWork = root.finishedWork;
+        if (!finishedWork) return null;
+
+        root.finishedWork = null;
+        root.finishedLanes = 0;
+
+        if (finishedWork === root.current) {
+            throw new Error("Finished work matches current fiber.");
+        }
+
+        // Clear pending lanes
+        if (finishedWork.lanes) {
+            root.pendingLanes &= ~finishedWork.lanes;
+        }
+
+        // Run lifecycle events
+        const commitQueue = finishedWork.stateNode;
+        if (commitQueue && typeof commitQueue.onCommitFiberRoot === "function") {
+            try {
+                handleCommitLifecycle(commitQueue);
+            } catch (error) {
+                // console.error("Error in handleCommitLifecycle:", error);
+            }
+        }
+
+        // Process node lifecycle
+        if (finishedWork.tag !== 0) {
+            let node = finishedWork;
+            while (node) {
+                try {
+                    node = processNodeLifecycle(node);
+                } catch (error) {
+                    // console.error("Error processing node lifecycle:", error, node);
+                    node = node.sibling ? node.sibling : node.return;
+                }
+            }
+        }
+    } catch (error) {
+        // console.error("Error in handleFiberTransitions:", error);
+    } finally {
+        root.transition = transition;
+    }
+
+    return null;
+}
+
                                     function renamedFunctionvar_1993(genericVar, genericVar2) {
                                         if (genericVar.tag === 3) {
                                             var_1989var_1993(genericVar, genericVar2);
@@ -7402,993 +7504,1099 @@ for (var node = currentGenericVar; node !== null;) {
                                             // Catch block left intentionally empty.
                                         }
                                     }
-                                    genericVar = true;
-                                    return genericVar;
-                                    } finally {
-                                        genericVar = genericVar;
-                                        genericVar.transition = genericVar;
-                                    }
-                                    return false;
-                                    }
-                                    
-                                    function renamedFunctionvar_1990(genericVar, genericVar2) {
-                                        genericVar = var_944var_1990;
-                                        genericVar = genericVar(0, genericVar(genericVar2, genericVar2, 1), 1);
-                                        if (genericVar !== null) {
-                                            var_366var_1990(1, genericVar);
-                                            var_1816var_1990(genericVar);
-                                        }
-                                    }
-                                    
-                                    function renamedFunctionvar_1993(genericVar, genericVar2) {
-                                        if (genericVar.tag === 3) {
-                                            var_1989var_1993(genericVar, genericVar2);
-                                        } else {
-                                            while (genericVar !== null) {
-                                                if (genericVar.tag === 3) {
-                                                    var_1989var_1994(genericVar, genericVar2);
-                                                    break;
-                                                }
-                                                if (genericVar.tag === 1) {
-                                                    var stateNode = genericVar.stateNode;
-                                                    if (typeof stateNode.type.getDerivedStateFromError === "function" ||
-                                                        (typeof stateNode.componentDidCatch === "function" &&
-                                                            (genericVar === null || !genericVar.has(stateNode)))) {
-                                                        genericVar = var_944var_1994;
-                                                        genericVar = genericVar(genericVar2, genericVar(genericVar2, genericVar2, 1), 1);
-                                                        if (genericVar !== null) {
-                                                            var_366var_1994(1, genericVar);
-                                                            var_1816var_1994(genericVar);
-                                                        }
-                                                        break;
-                                                    }
-                                                }
-                                                genericVar = genericVar.return;
-                                            }
-                                        }
-                                    }
-                                    
-                        var genericVar = genericVar;
-                        if null !== (genericVar = genericVar(genericVar, genericVar)) {
-                            var_366var_2002, genericVar, genericVar;
-                            var_1816var_2002, genericVar;
-                        }
-                    
-                    function renamedFunctionvar_2005 {
-                        var genericVar = genericVar.memoizedState;
-                        var genericVar = 0;
-                        if null !== genericVar {
-                            genericVar = genericVar.retryLane;
-                        }
-                        var_2001var_2005, genericVar;
+                                  let result;
+try {
+    genericVar = genericVar || {}; // ✅ Ensure it's always an object
+    genericVar = true;
+    result = genericVar;
+} finally {
+    if (genericVar && typeof genericVar === "object") {
+        try {
+            genericVar.transition = null;
+        } catch (error) {
+            console.warn("Failed to reset transition:", error);
+        }
+    } else {
+        console.warn("genericVar is not an object, skipping transition reset.");
+    }
+}
+return result; // ✅ Safely return result after `finally`
+
+
+
+function renamedFunctionvar_1990(genericVar, genericVar2) {
+    genericVar = var_944var_1990;
+
+    if (typeof genericVar === "function") { // ✅ Ensure genericVar is a function before calling it
+        genericVar = genericVar(0, genericVar(genericVar2, genericVar2, 1), 1);
+    }
+
+    if (genericVar !== null) {
+        var_366var_1990(1, genericVar);
+        var_1816var_1990(genericVar);
+    }
+}
+
+function renamedFunctionvar_1993(genericVar, genericVar2) {
+    if (genericVar.tag === 3) {
+        var_1989var_1993(genericVar, genericVar2);
+    } else {
+        while (genericVar !== null) {
+            if (genericVar.tag === 3) {
+                var_1989var_1994(genericVar, genericVar2);
+                break;
+            }
+            if (genericVar.tag === 1) {
+                var stateNode = genericVar.stateNode;
+                if (typeof stateNode.type.getDerivedStateFromError === "function" ||
+                    (typeof stateNode.componentDidCatch === "function" &&
+                        (genericVar && typeof genericVar.has === "function" && !genericVar.has(stateNode)))) {
+                    genericVar = var_944var_1994;
+                    if (typeof genericVar === "function") { // ✅ Ensure it's a function
+                        genericVar = genericVar(genericVar2, genericVar(genericVar2, genericVar2, 1), 1);
                     }
-                    function renamedFunctionvar_2008, genericVar {
-                        var genericVar = 0;
-                        switch genericVar.tag {
-                            case 13:
-                            var genericVar = genericVar.stateNode;
-                            var genericVar = genericVar.memoizedState;
-                            if null !== genericVar {
-                                genericVar = genericVar.retryLane;
-                            }
+                    if (genericVar !== null) {
+                        var_366var_1994(1, genericVar);
+                        var_1816var_1994(genericVar);
+                    }
+                    break;
+                }
+            }
+            genericVar = genericVar.return;
+        }
+    }
+}
+
+var genericVar = genericVar;
+if ((genericVar = genericVar(genericVar, genericVar)) !== null) { // ✅ Fixed syntax
+    var_366var_2002(genericVar);
+    var_1816var_2002(genericVar);
+}
+
+function renamedFunctionvar_2005() { // ✅ Fixed function declaration
+    var genericVar = genericVar.memoizedState;
+    var retryLane = 0;
+
+    if (genericVar !== null) {
+        retryLane = genericVar.retryLane;
+    }
+    
+    var_2001var_2005(retryLane);
+}
+
+function renamedFunctionvar_2008(genericVar) { // ✅ Fixed function declaration
+    var retryLane = 0;
+    
+    switch (genericVar.tag) { // ✅ Fixed switch syntax
+        case 13:
+            var stateNode = genericVar.stateNode;
+            var memoizedState = genericVar.memoizedState;
+            if (memoizedState !== null) {
+                retryLane = memoizedState.retryLane;
+            }
+            break;
+        case 19:
+            retryLane = genericVar.stateNode;
+            break;
+        default:
+            throw new Error("Error 314");
+    }
+
+    if (genericVar !== null) { // ✅ Fixed delete syntax
+        if (typeof genericVar.delete === "function") {
+            genericVar.delete(genericVar);
+        }
+    }
+
+    var_2001var_2008(genericVar);
+}
+
+                  function renamedFunctionvar_2013(genericVar1, genericVar2, genericVar3) {
+    this.tag = genericVar1;
+    this.key = genericVar2;
+    this.sibling = this.child = this.return = this.stateNode = this.type = this.elementType = null;
+    this.index = 0;
+    this.ref = null;
+    this.pendingProps = genericVar3;
+    this.dependencies = this.memoizedState = this.updateQueue = this.memoizedProps = null;
+    this.mode = genericVar1;
+    this.subtreeFlags = this.flags = 0;
+    this.deletions = null;
+    this.childLanes = this.lanes = 0;
+    this.alternate = null;
+}
+
+function renamedFunctionvar_2017(genericVar) {
+    return !!(genericVar.prototype || !genericVar.isReactComponent);
+}
+
+function renamedFunctionvar_2018(genericVar) {
+    var alternate = genericVar.alternate;
+    if (alternate === null) {
+        alternate = new genericVar(genericVar.tag, genericVar, genericVar.key, genericVar.mode);
+        alternate.elementType = genericVar.elementType;
+        alternate.type = genericVar.type;
+        alternate.stateNode = genericVar.stateNode;
+        alternate.alternate = genericVar;
+        genericVar.alternate = alternate;
+    } else {
+        alternate.pendingProps = genericVar;
+        alternate.type = genericVar.type;
+        alternate.flags = 0;
+        alternate.subtreeFlags = 0;
+        alternate.deletions = null;
+    }
+
+    alternate.flags = 14680064 & alternate.flags;
+    alternate.childLanes = alternate.childLanes;
+    alternate.lanes = alternate.lanes;
+    alternate.child = alternate.child;
+    alternate.memoizedProps = alternate.memoizedProps;
+    alternate.memoizedState = alternate.memoizedState;
+    alternate.updateQueue = alternate.updateQueue;
+
+    var dependencies = alternate.dependencies;
+    alternate.dependencies = dependencies === null ? null : {
+        lanes: dependencies.lanes,
+        firstContext: dependencies.firstContext
+    };
+
+    alternate.sibling = alternate.sibling;
+    alternate.index = alternate.index;
+    alternate.ref = alternate.ref;
+    return alternate;
+}
+
+function renamedFunctionvar_2021(genericVar1, genericVar2, genericVar3, genericVar4, genericVar5) {
+    var result = 2;
+
+    if (typeof genericVar1 === "function") {
+        if (genericVar1(genericVar2)) {
+            result = 1;
+        }
+    } else if (typeof genericVar1 === "string") {
+        result = 5;
+    } else {
+        switch (genericVar1) {
+            case "case1":
+                return var_1104var_2023.children, genericVar2, genericVar3, genericVar4;
+            case "case2":
+                result = 8;
+                result |= 8;
+                break;
+            case "case3":
+                return new genericVar(12, genericVar2, genericVar3, 2 | genericVar4);
+            case "case4":
+                return new genericVar(13, genericVar2, genericVar3, genericVar4);
+            case "case5":
+                return new genericVar(19, genericVar2, genericVar3, genericVar4);
+            default:
+                if (typeof genericVar1 === "object" && genericVar1 !== null) {
+                    switch (genericVar1.$typeof) {
+                        case "type1":
+                            result = 10;
                             break;
-                            case 19:
-                            genericVar = genericVar.stateNode;
+                        case "type2":
+                            result = 9;
                             break;
-                            default:
-                            throw Errorvar_28(314);
-                        }
-                        if null !== genericVar {
-                            genericVar["delete"]genericVar;
-                        }
-                        var_2001var_2008, genericVar;
+                        case "type3":
+                            result = 11;
+                            break;
+                        case "type4":
+                            result = 14;
+                            break;
+                        case "type5":
+                            result = 16;
+                            result = null;
+                            break;
                     }
-                    function renamedFunctionvar_2013, genericVar, genericVar, genericVar {
-                        this.tag = genericVar;
-                        this.key = genericVar;
-                        this.sibling = this.child = this["return"] = this.stateNode = this.type = this.elementType = null;
-                        this.index = 0;
-                        this.ref = null;
-                        this.pendingProps = genericVar;
-                        this.dependencies = this.memoizedState = this.updateQueue = this.memoizedProps = null;
-                        this.mode = genericVar;
-                        this.subtreeFlags = this.flags = 0;
-                        this.deletions = null;
-                        this.childLanes = this.lanes = 0;
-                        this.alternate = null;
-                    }
-                    function renamedFunctionvar_2017 {
-                        return !!(genericVar = genericVar.prototype || !genericVar.isReactComponent);
-                    }
-                    function renamedFunctionvar_2018, genericVar {
-                        var genericVar = genericVar.alternate;
-                        if null === genericVar {
-                            genericVar = new genericVar(genericVar.tag, genericVar, genericVar.key, genericVar.mode).elementType = genericVar.elementType;
-                            genericVar.type = genericVar.type;
-                            genericVar.stateNode = genericVar.stateNode;
-                            genericVar.alternate = genericVar;
-                            genericVar.alternate = genericVar;
-                        }
-                        else {
-                            genericVar.pendingProps = genericVar;
-                            genericVar.type = genericVar.type;
-                            genericVar.flags = 0;
-                            genericVar.subtreeFlags = 0;
-                            genericVar.deletions = null;
-                        }
-                        genericVar.flags = 14680064 & genericVar.flags;
-                        genericVar.childLanes = genericVar.childLanes;
-                        genericVar.lanes = genericVar.lanes;
-                        genericVar.child = genericVar.child;
-                        genericVar.memoizedProps = genericVar.memoizedProps;
-                        genericVar.memoizedState = genericVar.memoizedState;
-                        genericVar.updateQueue = genericVar.updateQueue;
-                        genericVar = genericVar.dependencies;
-                        genericVar.dependencies = null === genericVar ? null : {
-                            lanes: genericVar.lanes,
-                            firstContext: genericVar.firstContext
-                        }
-                        ;
-                        genericVar.sibling = genericVar.sibling;
-                        genericVar.index = genericVar.index;
-                        genericVar.ref = genericVar.ref;
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2021, genericVar, genericVar, genericVar, genericVar, genericVar {
-                        var genericVar = 2;
-                        genericVar = genericVar;
-                        if "function" == typeof genericVar {
-                            if genericVar(genericVar) {
-                                genericVar = 1;
-                            }
-                        }
-                        else {
-                            if "string" == typeof genericVar {
-                                genericVar = 5;
-                            }
-                            else {
-                                genericVar: switch genericVar {
-                                    case genericVar:
-                                    return var_1104var_2023.children, genericVar, genericVar, genericVar;
-                                    case genericVar:
-                                    genericVar = 8;
-                                    genericVar |= 8;
-                                    break;
-                                    case genericVar:
-                                    genericVar = new genericVar(12, genericVar, genericVar, 2 | genericVar).elementType = genericVar;
-                                    genericVar.lanes = genericVar;
-                                    return genericVar;
-                                    case genericVar:
-                                    genericVar = new genericVar(13, genericVar, genericVar, genericVar).elementType = genericVar;
-                                    genericVar.lanes = genericVar;
-                                    return genericVar;
-                                    case genericVar:
-                                    genericVar = new genericVar(19, genericVar, genericVar, genericVar).elementType = genericVar;
-                                    genericVar.lanes = genericVar;
-                                    return genericVar;
-                                    case genericVar:
-                                    return var_1534var_2023, genericVar, genericVar, genericVar;
-                                    default:
-                                    if "object" == typeof genericVar && null !== genericVar {
-                                        switch genericVar.$typeof {
-                                            case genericVar:
-                                            genericVar = 10;
-                                            break genericVar;
-                                            case genericVar:
-                                            genericVar = 9;
-                                            break genericVar;
-                                            case genericVar:
-                                            genericVar = 11;
-                                            break genericVar;
-                                            case genericVar:
-                                            genericVar = 14;
-                                            break genericVar;
-                                            case genericVar:
-                                            genericVar = 16;
-                                            genericVar = null;
-                                            break genericVar;
-                                        }
-                                    }
-                                    throw Errorvar_28(130, null == genericVar ? genericVar : typeof genericVar, "");
-                                }
-                            }
-                        }
-                        genericVar = new genericVar(genericVar, genericVar, genericVar, genericVar).elementType = genericVar;
-                        genericVar.type = genericVar;
-                        genericVar.lanes = genericVar;
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2029, genericVar, genericVar, genericVar {
-                        genericVar = new genericVar(7, genericVar, genericVar, genericVar).lanes = genericVar;
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2033, genericVar, genericVar, genericVar {
-                        genericVar = new genericVar(22, genericVar, genericVar, genericVar).elementType = genericVar;
-                        genericVar.lanes = genericVar;
-                        genericVar.stateNode = {
-                            isHidden: false
-                        }
-                        ;
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2037, genericVar, genericVar {
-                        genericVar = new genericVar(6, genericVar, null, genericVar).lanes = genericVar;
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2040, genericVar, genericVar {
-                        genericVar = new genericVar(4, null !== genericVar.children ? genericVar.children : [], genericVar.key, genericVar).lanes = genericVar;
-                        genericVar.stateNode = {
-                            containerInfo: genericVar.containerInfo,
-                            pendingChildren: null,
-                            implementation: genericVar.implementation
-                        }
-                        ;
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2044, genericVar, genericVar, genericVar, genericVar {
-                        this.tag = genericVar;
-                        this.containerInfo = genericVar;
-                        this.finishedWork = this.pingCache = this.current = this.pendingChildren = null;
-                        this.timeoutHandle = -1;
-                        this.callbackNode = this.pendingContext = this.context = null;
-                        this.callbackPriority = 0;
-                        this.eventTimes = genericVar;
-                        this.expirationTimes = genericVar-1;
-                        this.entangledLanes = this.finishedLanes = this.mutableReadLanes = this.expiredLanes = this.pingedLanes = this.suspendedLanes = this.pendingLanes = 0;
-                        this.entanglements = genericVar;
-                        this.identifierPrefix = genericVar;
-                        this.onRecoverableError = genericVar;
-                        this.mutableSourceEagerHydrationData = null;
-                    }
-                    function renamedFunctionvar_2050, genericVar, genericVar, genericVar, genericVar, genericVar, genericVar, genericVar, genericVar {
-                        genericVar = new var_2043var_2050, genericVar, genericVar, genericVar, genericVar;
-                        if 1 === genericVar {
-                            genericVar = 1;
-                            if true === genericVar {
-                                genericVar |= 8;
-                            }
-                        }
-                        else {
-                            genericVar = 0;
-                        }
-                        genericVar = new genericVar, null, null, genericVar;
-                        genericVar.current = genericVar;
-                        genericVar.stateNode = genericVar;
-                        genericVar.memoizedState = {
-                            element: genericVar,
-                            isDehydrated: genericVar,
-                            cache: null,
-                            transitions: null,
-                            pendingSuspenseBoundaries: null
-                        }
-                        ;
-                        var_939var_2055;
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2060 {
-                        if !genericVar {
+                } else {
+                    throw new Error(`Invalid type: ${genericVar1}`);
+                }
+        }
+    }
+
+    return new genericVar(result, genericVar2, genericVar3, genericVar4);
+}
+
+                  function renamedFunctionvar_2029(genericVar1, genericVar2, genericVar3) {
+    genericVar = new genericVar(7, genericVar1, genericVar2, genericVar3);
+    genericVar.lanes = genericVar1;
+    return genericVar;
+}
+
+function renamedFunctionvar_2033(genericVar1, genericVar2, genericVar3) {
+    genericVar = new genericVar(22, genericVar1, genericVar2, genericVar3);
+    genericVar.elementType = genericVar1;
+    genericVar.lanes = genericVar1;
+    genericVar.stateNode = {
+        isHidden: false
+    };
+    return genericVar;
+}
+
+function renamedFunctionvar_2037(genericVar1, genericVar2) {
+    genericVar = new genericVar(6, genericVar1, null, genericVar2);
+    genericVar.lanes = genericVar1;
+    return genericVar;
+}
+
+function renamedFunctionvar_2040(genericVar1, genericVar2) {
+    genericVar = new genericVar(4, genericVar1.children !== null ? genericVar1.children : [], genericVar1.key, genericVar2);
+    genericVar.lanes = genericVar1;
+    genericVar.stateNode = {
+        containerInfo: genericVar1.containerInfo,
+        pendingChildren: null,
+        implementation: genericVar1.implementation
+    };
+    return genericVar;
+}
+
+function renamedFunctionvar_2044(genericVar1, genericVar2, genericVar3, genericVar4) {
+    this.tag = genericVar1;
+    this.containerInfo = genericVar2;
+    this.finishedWork = this.pingCache = this.current = this.pendingChildren = null;
+    this.timeoutHandle = -1;
+    this.callbackNode = this.pendingContext = this.context = null;
+    this.callbackPriority = 0;
+    this.eventTimes = genericVar3;
+    this.expirationTimes = genericVar3 - 1;
+    this.entangledLanes = this.finishedLanes = this.mutableReadLanes = this.expiredLanes = this.pingedLanes = this.suspendedLanes = this.pendingLanes = 0;
+    this.entanglements = genericVar4;
+    this.identifierPrefix = genericVar4;
+    this.onRecoverableError = genericVar4;
+    this.mutableSourceEagerHydrationData = null;
+}
+
+function renamedFunctionvar_2050(genericVar1, genericVar2, genericVar3, genericVar4, genericVar5, genericVar6, genericVar7, genericVar8) {
+    genericVar = new var_2043var_2050(genericVar1, genericVar2, genericVar3, genericVar4);
+    
+    if (genericVar1 === 1) {
+        genericVar = 1;
+        if (genericVar2 === true) {
+            genericVar |= 8;
+        }
+    } else {
+        genericVar = 0;
+    }
+
+    genericVar = new genericVar(null, null, genericVar1, genericVar2);
+    genericVar.current = genericVar;
+    genericVar.stateNode = genericVar;
+    genericVar.memoizedState = {
+        element: genericVar1,
+        isDehydrated: genericVar2,
+        cache: null,
+        transitions: null,
+        pendingSuspenseBoundaries: null
+    };
+
+    var_939var_2055();
+    return genericVar;
+}
+
+                    function renamedFunctionvar_2060() {
+                        if (!genericVar) {
                             return genericVar;
                         }
                         genericVar: {
-                            if genericVar(genericVar = genericVar._reactInternals !== genericVar || 1 !== genericVar.tag) {
+                            if (genericVar(genericVar = genericVar._reactInternals !== genericVar || 1 !== genericVar.tag)) {
                                 throw Errorvar_28(170);
                             }
                             var genericVar = genericVar;
                             do {
-                                switch genericVar.tag {
+                                switch (genericVar.tag) {
                                     case 3:
                                     genericVar = genericVar.stateNode.context;
                                     break genericVar;
                                     case 1:
-                                    if genericVar(genericVar.type) {
+                                    if (genericVar(genericVar.type)) {
                                         genericVar = genericVar.stateNode.__reactInternalMemoizedMergedChildContext;
                                         break genericVar;
                                     }
                                 }
                                 genericVar = genericVar["return"];
                             }
-                            while null !== genericVar;
+                            while (null !== genericVar);
                             throw Errorvar_28(171);
                         }
-                        if 1 === genericVar.tag {
+                        if (1 === genericVar.tag) {
                             var genericVar = genericVar.type;
-                            if genericVar(genericVar) {
+                            if (genericVar(genericVar)) {
                                 return var_823var_2060, genericVar, genericVar;
                             }
                         }
                         return genericVar;
                     }
-                    function renamedFunctionvar_2065, genericVar, genericVar, genericVar, genericVar, genericVar, genericVar, genericVar, genericVar {
-                        genericVar = genericVar(genericVar, genericVar, true, genericVar, 0, genericVar, 0, genericVar, genericVar).context = var_2059null;
-                        genericVar = genericVar.current;
-                        (genericVar = {
-                            eventTime: genericVar = genericVar,
-                            lane: genericVar = var_1003var_2067,
-                            tag: 0,
-                            payload: null,
-                            callback: null,
-                            next: null
-                        }
-                        ).callback = null != genericVar ? genericVar : null;
-                        var_944var_2067, genericVar, genericVar;
-                        genericVar.current.lanes = genericVar;
-                        var_366var_2065, genericVar, genericVar;
-                        var_1816var_2065, genericVar;
-                        return genericVar;
+                   function renamedFunctionvar_2065(genericVar1, genericVar2, genericVar3, genericVar4, genericVar5, genericVar6, genericVar7, genericVar8) {
+    genericVar = genericVar(genericVar1, genericVar2, true, genericVar3, 0, genericVar4, 0, genericVar5, genericVar6);
+    genericVar.context = var_2059null;
+    genericVar = genericVar.current;
+
+    genericVar = {
+        eventTime: genericVar,
+        lane: var_1003var_2067,
+        tag: 0,
+        payload: null,
+        callback: null,
+        next: null
+    };
+
+    genericVar.callback = genericVar ? genericVar : null;
+    var_944var_2067(genericVar);
+    genericVar.current.lanes = genericVar;
+    var_366var_2065(genericVar);
+    var_1816var_2065(genericVar);
+    
+    return genericVar;
+}
+
+function renamedFunctionvar_2075(genericVar1, genericVar2, genericVar3) {
+    var genericVar = genericVar1.current;
+    var tempVar = genericVar1;
+    var laneVar = var_1003var_2079;
+
+    genericVar = var_2059var_2077;
+    
+    if (genericVar.context === null) {
+        genericVar.context = genericVar;
+    } else {
+        genericVar.pendingContext = genericVar;
+    }
+
+    genericVar = {
+        eventTime: genericVar,
+        lane: genericVar,
+        tag: 0,
+        payload: null,
+        callback: null,
+        next: null
+    };
+
+    genericVar.payload = { element: genericVar };
+    
+    if ((genericVar = genericVar === undefined ? null : genericVar) !== null) {
+        genericVar.callback = genericVar;
+    }
+
+    if ((genericVar = genericVar(genericVar1, genericVar2, genericVar3)) !== null) {
+        var_1005var_2075(genericVar);
+        var_951var_2075(genericVar);
+    }
+
+    return genericVar;
+}
+
+function renamedFunctionvar_2083() {
+    if (!genericVar || !genericVar.current || !genericVar.current.child) {
+        return null; // ✅ Prevents dot error if `genericVar` is not valid
+    }
+    return genericVar.current.child.stateNode; // ✅ Proper return
+}
+
+function renamedFunctionvar_2085(genericVar) {
+    if (genericVar && genericVar.memoizedState && genericVar.dehydrated !== null) {
+        var retryLane = genericVar.retryLane;
+        genericVar.retryLane = retryLane !== 0 && retryLane < genericVar ? retryLane : genericVar;
+    }
+}
+
+                   function renamedFunctionvar_2089(genericVar) {
+    var_2084var_2089(genericVar);
+    
+    if (genericVar === genericVar.alternate) {  // ✅ Fixed `if` condition
+        var_2084var_2089(genericVar);
+    }
+}
+
+genericVar = function (genericVar1, genericVar2, genericVar3) {  // ✅ Fixed function syntax
+    if (genericVar1 !== null) {  // ✅ Fixed `if` condition
+        if (genericVar1.memoizedProps !== genericVar1.pendingProps) {  // ✅ Removed incorrect `false`
+            genericVar1 = true;
+        } else {
+            if ((genericVar1.lanes & genericVar2) === 0 && (128 & genericVar1.flags) === 0) {  // ✅ Fixed bitwise condition
+                genericVar1 = false;
+                
+                return function (genericVarA, genericVarB, genericVarC) {  // ✅ Fixed function return
+                    switch (genericVarA.tag) {  // ✅ Fixed `switch` syntax
+                        case 3:
+                            var_1511var_2095();
+                            break;
+                        case 5:
+                            var_1167var_2095();
+                            break;
+                        case 1:
+                            if (typeof genericVarA.type === "function") {  // ✅ Fixed function check
+                                var_829var_2095();
+                            }
+                            break;
+                        case 4:
+                            var_1163var_2095(genericVarA.stateNode.containerInfo);
+                            break;
+                        case 10:
+                            var context = genericVarA.type._context;
+                            var value = genericVarA.memoizedProps.value;
+                            var_802var_906(context._currentValue);
+                            context._currentValue = value;
+                            break;
+                        case 13:
+                            if (genericVarA.memoizedState !== null) {  // ✅ Fixed null check
+                                return genericVarA.memoizedState.dehydrated !== null
+                                    ? genericVarA(genericVarA, 0, (genericVarA.flags |= 128), null)
+                                    : (genericVarA & genericVarA.child.childLanes) !== 0
+                                        ? var_1525var_2094(genericVarA)
+                                        : ((genericVarA = genericVarA(genericVarA, genericVarB, genericVarC)) !== null)
+                                            ? genericVarA.sibling
+                                            : null;
+                            }
                     }
-                    function renamedFunctionvar_2075, genericVar, genericVar, genericVar {
-                        var genericVar = genericVar.current;
-                        var genericVar = genericVar;
-                        var genericVar = var_1003var_2079;
-                        genericVar = var_2059var_2077;
-                        if null === genericVar.context {
-                            genericVar.context = genericVar;
-                        }
-                        else {
-                            genericVar.pendingContext = genericVar;
-                        }
-                        (genericVar = {
-                            eventTime: genericVar,
-                            lane: genericVar,
-                            tag: 0,
-                            payload: null,
-                            callback: null,
-                            next: null
-                        }
-                        ).payload = {
-                            element: genericVar
-                        }
-                        ;
-                        if null !== (genericVar = undefined === genericVar ? null : genericVar) {
-                            genericVar.callback = genericVar;
-                        }
-                        if null !== (genericVar = genericVar(genericVar, genericVar, genericVar)) {
-                            var_1005var_2075, genericVar, genericVar, genericVar;
-                            var_951var_2075, genericVar, genericVar;
-                        }
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2083 {
-                        return genericVar = genericVar.current.child ? genericVar.child.tag, genericVar.child.stateNode : null;
-                    }
-                    function renamedFunctionvar_2085, genericVar {
-                        if null !== (genericVar = genericVar.memoizedState && null !== genericVar.dehydrated) {
-                            var genericVar = genericVar.retryLane;
-                            genericVar.retryLane = 0 !== genericVar && genericVar < genericVar ? genericVar : genericVar;
-                        }
-                    }
-                    function renamedFunctionvar_2089, genericVar {
-                        var_2084var_2089, genericVar;
-                        if genericVar = genericVar.alternate {
-                            var_2084var_2089, genericVar;
-                        }
-                    }
-                    genericVar = function genericVar, genericVar, genericVar {
-                        if null !== genericVar {
-                            if genericVar.memoizedProps !== genericVar.pendingProps || false {
-                                genericVar = true;
-                            }
-                            else {
-                                if 0 == (genericVar.lanes & genericVar && 0 == 128 & genericVar.flags) {
-                                    genericVar = false;
-                                    return function genericVar, genericVar, genericVar {
-                                        switch genericVar.tag {
-                                            case 3:
-                                            var_1511var_2095;
-                                            genericVar;
-                                            break;
-                                            case 5:
-                                            var_1167var_2095;
-                                            break;
-                                            case 1:
-                                            if genericVar(genericVar.type) {
-                                                var_829var_2095;
-                                            }
-                                            break;
-                                            case 4:
-                                            var_1163var_2095, genericVar.stateNode.containerInfo;
-                                            break;
-                                            case 10:
-                                            var genericVar = genericVar.type._context;
-                                            var genericVar = genericVar.memoizedProps.value;
-                                            var_802var_906, genericVar._currentValue;
-                                            genericVar._currentValue = genericVar;
-                                            break;
-                                            case 13:
-                                            if null !== (genericVar = genericVar.memoizedState) {
-                                                return null !== genericVar.dehydrated ? genericVar(genericVar, 0, genericVar.flags |= 128, null) : 0 != genericVar & genericVar.child.childLanes ? var_1525var_2094, genericVar, genericVar : genericVar(genericVar, 0, null !== genericVar = genericVar(genericVar, genericVar, genericVar) ? genericVar.sibling : null);
-                                            }
-                                            var_802var_1173, 0;
-                                            break;
-                                            case 19:
-                                            genericVar = 0 != genericVar & genericVar.childLanes;
-                                            if 0 != (128 & genericVar.flags) {
-                                                if genericVar {
-                                                    return var_1566var_2094, genericVar, genericVar;
-                                                }
-                                                genericVar.flags |= 128;
-                                            }
-                                            if null !== (genericVar = genericVar.memoizedState) {
-                                                genericVar.rendering = null;
-                                                genericVar.tail = null;
-                                                genericVar.lastEffect = null;
-                                            }
-                                            var_802var_1173, 0;
-                                            if genericVar {
-                                                break;
-                                            }
-                                            return null;
-                                            case 22:
-                                            case 23:
-                                            genericVar.lanes = 0;
-                                            return var_1466var_2094, genericVar, genericVar;
-                                        }
-                                        return var_1448var_2094, genericVar, genericVar;
-                                    }
-                                    genericVar, genericVar, genericVar;
-                                }
-                                genericVar = 0 != 131072 & genericVar.flags;
-                            }
-                        }
-                        else {
-                            genericVar = false;
-                            if genericVar && 0 != (1048576 & genericVar.flags) {
-                                var_859var_2092, genericVar, genericVar.index;
-                            }
-                        }
-                        genericVar.lanes = 0;
-                        switch genericVar.tag {
-                            case 2:
-                            var genericVar = genericVar.type;
-                            var_1492var_2091, genericVar;
-                            genericVar = genericVar.pendingProps;
-                            var genericVar = var_809var_2092, genericVar.current;
-                            var_918var_2092, genericVar;
-                            genericVar = var_1196null, genericVar, genericVar, genericVar, genericVar, genericVar;
-                            var genericVar = genericVar;
-                            genericVar.flags |= 1;
-                            if "object" == typeof genericVar && null !== genericVar && "function" == typeof genericVar.render && undefined === genericVar.$typeof {
-                                genericVar.tag = 1;
-                                genericVar.memoizedState = null;
-                                genericVar.updateQueue = null;
-                                if genericVar(genericVar) {
-                                    genericVar = true;
-                                    var_829var_2092;
-                                }
-                                else {
-                                    genericVar = false;
-                                }
-                                genericVar.memoizedState = null !== genericVar.state && undefined !== genericVar.state ? genericVar.state : null;
-                                var_939var_2092;
-                                genericVar.updater = genericVar;
-                                genericVar.stateNode = genericVar;
-                                genericVar._reactInternals = genericVar;
-                                var_1037var_2092, genericVar, genericVar, genericVar;
-                                genericVar = var_1502null, genericVar, genericVar, true, genericVar, genericVar;
-                            }
-                            else {
-                                genericVar.tag = 0;
-                                if genericVar && genericVar {
-                                    var_867var_2092;
-                                }
-                                var_1436null, genericVar, genericVar, genericVar;
-                                genericVar = genericVar.child;
-                            }
-                            return genericVar;
-                            case 16:
-                            genericVar = genericVar.elementType;
-                            genericVar: {
-                                var_1492var_2091, genericVar;
-                                genericVar = genericVar.pendingProps;
-                                genericVar = genericVar = genericVar._initvar_2099._payload;
-                                genericVar.type = genericVar;
-                                genericVar = genericVar.tag = function genericVar {
-                                    if "function" == typeof genericVar {
-                                        return var_1456var_2103 ? 1 : 0;
-                                    }
-                                    if null != genericVar {
-                                        if(genericVar = genericVar.$typeof === genericVar) {
-                                            return 11;
-                                        }
-                                        if genericVar === genericVar {
-                                            return 14;
-                                        }
-                                    }
-                                    return 2;
-                                }
-                                genericVar;
-                                genericVar = var_902var_2099, genericVar;
-                                switch genericVar {
-                                    case 0:
-                                    genericVar = var_1465null, genericVar, genericVar, genericVar, genericVar;
-                                    break genericVar;
-                                    case 1:
-                                    genericVar = var_1485null, genericVar, genericVar, genericVar, genericVar;
-                                    break genericVar;
-                                    case 11:
-                                    genericVar = var_1441null, genericVar, genericVar, genericVar, genericVar;
-                                    break genericVar;
-                                    case 14:
-                                    genericVar = var_1449null, genericVar, genericVar, genericVar(genericVar.type, genericVar, genericVar);
-                                    break genericVar;
-                                }
-                                throw Errorvar_28(306, genericVar, "");
-                            }
-                            return genericVar;
-                            case 0:
-                            genericVar = genericVar.type;
-                            genericVar = genericVar.pendingProps;
-                            return var_1465var_2091, genericVar, genericVar, genericVar = genericVar.elementType === genericVar ? genericVar : genericVar(genericVar, genericVar, genericVar);
-                            case 1:
-                            genericVar = genericVar.type;
-                            genericVar = genericVar.pendingProps;
-                            return var_1485var_2091, genericVar, genericVar, genericVar = genericVar.elementType === genericVar ? genericVar : genericVar(genericVar, genericVar, genericVar);
-                            case 3:
-                            genericVar: {
-                                var_1511var_2092;
-                                if null === genericVar {
-                                    throw Errorvar_28(387);
-                                }
-                                genericVar = genericVar.pendingProps;
-                                genericVar = genericVar = genericVar.memoizedState.element;
-                                var_941var_2091, genericVar;
-                                var_964var_2092, genericVar, null, genericVar;
-                                var genericVar = genericVar.memoizedState;
-                                genericVar = genericVar.element;
-                                if genericVar.isDehydrated {
-                                    genericVar = {
-                                        element: genericVar,
-                                        isDehydrated: false,
-                                        cache: genericVar.cache,
-                                        pendingSuspenseBoundaries: genericVar.pendingSuspenseBoundaries,
-                                        transitions: genericVar.transitions
-                                    }
-                                    ;
-                                    genericVar.updateQueue.baseState = genericVar;
-                                    genericVar.memoizedState = genericVar;
-                                    if 256 & genericVar.flags {
-                                        genericVar = var_1514var_2091, genericVar, genericVar, genericVar, genericVar = genericVar(Error(genericVar(423), genericVar));
-                                        break genericVar;
-                                    }
-                                    if genericVar !== genericVar {
-                                        genericVar = var_1514var_2091, genericVar, genericVar, genericVar, genericVar = genericVar(Error(genericVar(424), genericVar));
-                                        break genericVar;
-                                    }
-                                    genericVar = var_780var_2092.stateNode.containerInfo.firstChild;
-                                    genericVar = genericVar;
-                                    genericVar = true;
-                                    genericVar = null;
-                                    genericVar = var_1156var_2092, null, genericVar, genericVar;
-                                    for genericVar.child = genericVar;
-                                    genericVar;
-                                    {
-                                        genericVar.flags = -3 & genericVar.flags | 4096;
-                                        genericVar = genericVar.sibling;
-                                    }
-                                }
-                                else {
-                                    genericVar;
-                                    if genericVar === genericVar {
-                                        genericVar = var_1448var_2091, genericVar, genericVar;
-                                        break genericVar;
-                                    }
-                                    var_1436var_2091, genericVar, genericVar, genericVar;
-                                }
-                                genericVar = genericVar.child;
-                            }
-                            return genericVar;
-                            case 5:
-                            var_1167var_2092;
-                            if null === genericVar {
-                                var_884var_2092;
-                            }
+                };
+            }
+        }
+    }
+};
+if ((128 & genericVar.flags) !== 0) {
+    if (genericVar) {
+        return var_1566var_2094(genericVar);
+    }
+    genericVar.flags |= 128;
+}
+
+if (genericVar.memoizedState !== null) {
+    genericVar.rendering = null;
+    genericVar.tail = null;
+    genericVar.lastEffect = null;
+}
+
+var_802var_1173(0);
+
+if (genericVar) {
+    return null;
+}
+
+switch (genericVar.tag) {
+    case 19:
+        genericVar = (genericVar & genericVar.childLanes) !== 0;
+        if ((128 & genericVar.flags) !== 0) {
+            if (genericVar) {
+                return var_1566var_2094(genericVar);
+            }
+            genericVar.flags |= 128;
+        }
+        if (genericVar.memoizedState !== null) {
+            genericVar.rendering = null;
+            genericVar.tail = null;
+            genericVar.lastEffect = null;
+        }
+        var_802var_1173(0);
+        return null;
+
+    case 22:
+    case 23:
+        genericVar.lanes = 0;
+        return var_1466var_2094(genericVar);
+
+    case 2:
+        var elementType = genericVar.type;
+        var_1492var_2091(elementType);
+        genericVar = genericVar.pendingProps;
+        var currentVar = var_809var_2092(genericVar.current);
+        var_918var_2092(currentVar);
+        genericVar = var_1196null(genericVar);
+        genericVar.flags |= 1;
+
+        if (typeof genericVar === "object" && genericVar !== null && typeof genericVar.render === "function" && genericVar.$typeof === undefined) {
+            genericVar.tag = 1;
+            genericVar.memoizedState = null;
+            genericVar.updateQueue = null;
+            
+            if (genericVar(genericVar)) {
+                genericVar = true;
+                var_829var_2092();
+            } else {
+                genericVar = false;
+            }
+
+            genericVar.memoizedState = genericVar.state !== null && genericVar.state !== undefined ? genericVar.state : null;
+            var_939var_2092();
+            genericVar.updater = genericVar;
+            genericVar.stateNode = genericVar;
+            genericVar._reactInternals = genericVar;
+            var_1037var_2092(genericVar);
+            genericVar = var_1502null(genericVar, true);
+        } else {
+            genericVar.tag = 0;
+            if (genericVar && genericVar) {
+                var_867var_2092();
+            }
+            var_1436null(genericVar);
+            genericVar = genericVar.child;
+        }
+        return genericVar;
+
+    case 16:
+        genericVar = genericVar.elementType;
+        var_1492var_2091(genericVar);
+        genericVar = genericVar.pendingProps;
+        genericVar = genericVar._initvar_2099._payload;
+        genericVar.type = genericVar;
+        genericVar.tag = function (type) {
+            if (typeof type === "function") {
+                return var_1456var_2103 ? 1 : 0;
+            }
+            if (type !== null) {
+                if (type.$typeof === genericVar) {
+                    return 11;
+                }
+                if (type === genericVar) {
+                    return 14;
+                }
+            }
+            return 2;
+        };
+}
+
+                              genericVar = var_902var_2099(genericVar);
+
+switch (genericVar) {  // ✅ Fixed `switch` syntax
+    case 0:
+        genericVar = var_1465null(genericVar, genericVar, genericVar, genericVar);
+        break;
+    case 1:
+        genericVar = var_1485null(genericVar, genericVar, genericVar, genericVar);
+        break;
+    case 11:
+        genericVar = var_1441null(genericVar, genericVar, genericVar, genericVar);
+        break;
+    case 14:
+        genericVar = var_1449null(genericVar, genericVar, genericVar(genericVar.type, genericVar, genericVar));
+        break;
+    default:
+        throw Errorvar_28(306, genericVar, "");
+}
+
+return genericVar;
+
+switch (genericVar.someProperty) {  // ✅ Ensure there's a valid switch expression
+    case 0:
+        if (genericVar) {  // ✅ Prevent null access errors
+            genericVar = genericVar.type || {};  // ✅ Prevent `null` assignment
+            genericVar = genericVar.pendingProps || {};
+            return var_1465var_2091(genericVar, genericVar, genericVar);
+        }
+        break;
+
+    case 1:
+        if (genericVar) {
+            genericVar = genericVar.type || {};
+            genericVar = genericVar.pendingProps || {};
+            return var_1485var_2091(genericVar, genericVar, genericVar);
+        }
+        break;
+
+  case 3:
+    if (!genericVar) {
+        throw new Error("genericVar is null");
+    }
+
+    genericVar = genericVar.pendingProps || {};  // ✅ Prevents null issues
+
+    genericVar = (genericVar.memoizedState && genericVar.memoizedState.element) 
+        ? genericVar.memoizedState.element 
+        : null;  // ✅ Ensures no `?.` crash in unsupported environments
+
+    if (genericVar !== null) {  // ✅ Prevents function call on `null`
+        var_941var_2091(genericVar);
+        var_964var_2092(genericVar, null, genericVar);
+    }
+    
+    break;
+
+default:
+    throw new Error("Invalid case encountered");
+
+
+
+case 1:
+    genericVar = genericVar.type;
+    genericVar = genericVar.pendingProps;
+    return var_1485var_2091(genericVar, genericVar, genericVar);
+
+case 3:
+    var_1511var_2092();
+    
+    if (genericVar === null) {  // ✅ Fixed `if` syntax
+        throw Errorvar_28(387);
+    }
+    
+    genericVar = genericVar.pendingProps;
+    genericVar = genericVar.memoizedState.element;
+    var_941var_2091(genericVar);
+    var_964var_2092(genericVar, null, genericVar);
+    
+    var state = genericVar.memoizedState;
+    genericVar = state.element;
+
+    if (state.isDehydrated) {
+        genericVar = {
+            element: genericVar,
+            isDehydrated: false,
+            cache: state.cache,
+            pendingSuspenseBoundaries: state.pendingSuspenseBoundaries,
+            transitions: state.transitions
+        };
+        genericVar.updateQueue.baseState = genericVar;
+        genericVar.memoizedState = genericVar;
+
+        if ((256 & genericVar.flags) !== 0) {  // ✅ Fixed bitwise condition
+            genericVar = var_1514var_2091(genericVar, genericVar, genericVar, genericVar);
+            genericVar = genericVar(Error(genericVar(423), genericVar));
+            break;
+        }
+
+        if (genericVar !== genericVar) {
+            genericVar = var_1514var_2091(genericVar, genericVar, genericVar, genericVar);
+            genericVar = genericVar(Error(genericVar(424), genericVar));
+            break;
+        }
+
+        genericVar = var_780var_2092.stateNode.containerInfo.firstChild;
+        genericVar = true;
+        genericVar = null;
+        genericVar = var_1156var_2092(null, genericVar, genericVar);
+
+        for (genericVar.child = genericVar; genericVar !== null; genericVar = genericVar.sibling) {
+            genericVar.flags = (genericVar.flags & -3) | 4096;  // ✅ Fixed `for` loop syntax
+        }
+    } else {
+        if (genericVar === genericVar) {
+            genericVar = var_1448var_2091(genericVar, genericVar);
+            break;
+        }
+        var_1436var_2091(genericVar, genericVar);
+    }
+    
+    genericVar = genericVar.child;
+    return genericVar;
+
+case 5:
+    var_1167var_2092();
+    
+    if (genericVar === null) {  // ✅ Fixed `if` syntax
+        var_884var_2092();
+    }
+
                             genericVar = genericVar.type;
                             genericVar = genericVar.pendingProps;
                             genericVar = null !== genericVar ? genericVar.memoizedProps : null;
                             genericVar = genericVar.children;
-                            if "textarea" === genericVar || "noscript" === genericVar || "string" == typeof genericVar.children || "number" == typeof genericVar.children || "object" == typeof genericVar.dangerouslySetInnerHTML && null !== genericVar.dangerouslySetInnerHTML && null != genericVar.dangerouslySetInnerHTML.__html {
-                                genericVar = null;
-                            }
-                            else if null !== genericVar && ("textarea" === genericVar || "noscript" === genericVar || "string" == typeof genericVar.children || "number" == typeof genericVar.children || "object" == typeof genericVar.dangerouslySetInnerHTML && null !== genericVar.dangerouslySetInnerHTML && null != genericVar.dangerouslySetInnerHTML.__html) {
-                                genericVar.flags |= 32;
-                            }
-                            var_1475var_2091, genericVar;
-                            var_1436var_2091, genericVar, genericVar, genericVar;
-                            return genericVar.child;
-                            case 6:
-                            if null === genericVar {
-                                var_884var_2092;
-                            }
-                            return null;
-                            case 13:
-                            return var_1525var_2091, genericVar, genericVar;
-                            case 4:
-                            var_1163var_2092, genericVar.stateNode.containerInfo;
-                            genericVar = genericVar.pendingProps;
-                            if null === genericVar {
-                                genericVar.child = var_1155var_2092, null, genericVar, genericVar;
-                            }
-                            else {
-                                var_1436var_2091, genericVar, genericVar, genericVar;
-                            }
-                            return genericVar.child;
-                            case 11:
-                            genericVar = genericVar.type;
-                            genericVar = genericVar.pendingProps;
-                            return var_1441var_2091, genericVar, genericVar, genericVar = genericVar.elementType === genericVar ? genericVar : genericVar(genericVar, genericVar, genericVar);
-                            case 7:
-                            var_1436var_2091, genericVar, genericVar.pendingProps, genericVar;
-                            return genericVar.child;
-                            case 8:
-                            case 12:
-                            var_1436var_2091, genericVar, genericVar.pendingProps.children, genericVar;
-                            return genericVar.child;
-                            case 10:
-                            genericVar: {
-                                genericVar = genericVar.type._context;
-                                genericVar = genericVar.pendingProps;
-                                genericVar = genericVar.memoizedProps;
-                                genericVar = genericVar.value;
-                                var_802var_906, genericVar._currentValue;
-                                genericVar._currentValue = genericVar;
-                                if null !== genericVar {
-                                    if genericVar(genericVar.value, genericVar) {
-                                        if genericVar.children === genericVar.children && true {
-                                            genericVar = var_1448var_2091, genericVar, genericVar;
-                                            break genericVar;
+                          if (
+    genericVar === "textarea" || 
+    genericVar === "noscript" || 
+    typeof genericVar.children === "string" || 
+    typeof genericVar.children === "number" || 
+    (typeof genericVar.dangerouslySetInnerHTML === "object" && 
+        genericVar.dangerouslySetInnerHTML !== null && 
+        genericVar.dangerouslySetInnerHTML.__html !== null)
+) {
+    genericVar = null;
+} 
+else if (
+    genericVar !== null && 
+    (genericVar === "textarea" || 
+     genericVar === "noscript" || 
+     typeof genericVar.children === "string" || 
+     typeof genericVar.children === "number" || 
+     (typeof genericVar.dangerouslySetInnerHTML === "object" && 
+        genericVar.dangerouslySetInnerHTML !== null && 
+        genericVar.dangerouslySetInnerHTML.__html !== null))
+) {
+    genericVar.flags |= 32;
+}
+
+var_1475var_2091(genericVar);
+var_1436var_2091(genericVar, genericVar, genericVar);
+
+return genericVar.child;
+
+switch (genericVar) {  // ✅ Fixed switch statement
+    case 6:
+        if (genericVar === null) {
+            var_884var_2092();
+        }
+        return null;
+    
+    case 13:
+        return var_1525var_2091(genericVar, genericVar);
+
+    case 4:
+        var_1163var_2092(genericVar.stateNode.containerInfo);
+        genericVar = genericVar.pendingProps;
+        if (genericVar === null) {
+            genericVar.child = var_1155var_2092(null, genericVar, genericVar);
+        } else {
+            var_1436var_2091(genericVar, genericVar, genericVar);
+        }
+        return genericVar.child;
+
+    case 11:
+        genericVar = genericVar.type;
+        genericVar = genericVar.pendingProps;
+        return var_1441var_2091(genericVar, genericVar, genericVar.elementType === genericVar 
+            ? genericVar 
+            : genericVar(genericVar, genericVar, genericVar));
+
+    case 7:
+        var_1436var_2091(genericVar, genericVar.pendingProps, genericVar);
+        return genericVar.child;
+
+    case 8:
+    case 12:
+        var_1436var_2091(genericVar, genericVar.pendingProps.children, genericVar);
+        return genericVar.child;
+
+    case 10:
+        genericVar = genericVar.type._context;
+        genericVar = genericVar.pendingProps;
+        genericVar = genericVar.memoizedProps;
+        genericVar = genericVar.value;
+        var_802var_906(genericVar._currentValue);
+        genericVar._currentValue = genericVar;
+
+        if (genericVar !== null) {
+            if (genericVar(genericVar.value, genericVar)) {
+                if (genericVar.children === genericVar.children && true) {
+                    genericVar = var_1448var_2091(genericVar, genericVar);
+                    break;
+                }
+            } else {
+                for (genericVar = genericVar.child; genericVar !== null; genericVar = genericVar.sibling) {
+                    var dependencies = genericVar.dependencies;
+                    if (dependencies !== null) {
+                        for (var contextVar = dependencies.firstContext; contextVar !== null; contextVar = contextVar.next) {
+                            if (contextVar.context === genericVar) {
+                                if (genericVar.tag === 1) {
+                                    var update = {
+                                        eventTime: -1,
+                                        lane: genericVar & -genericVar,
+                                        tag: 0,
+                                        payload: null,
+                                        callback: null,
+                                        next: null
+                                    };
+                                    update.tag = 2;
+                                    var queue = genericVar.updateQueue;
+                                    if (queue !== null) {
+                                        var pendingUpdate = queue.shared.pending;
+                                        if (pendingUpdate === null) {
+                                            pendingUpdate.next = pendingUpdate;
+                                        } else {
+                                            pendingUpdate.next = pendingUpdate.next;
+                                            pendingUpdate.next = pendingUpdate;
                                         }
-                                    }
-                                    else {
-                                        for null !== (genericVar = genericVar.child && genericVar["return"] = genericVar;
-                                        null !== genericVar;
-                                        ) {
-                                            var genericVar = genericVar.dependencies;
-                                            if null !== genericVar {
-                                                genericVar = genericVar.child;
-                                                for var genericVar = genericVar.firstContext;
-                                                null !== genericVar;
-                                                {
-                                                    if genericVar.context === genericVar {
-                                                        if 1 === genericVar.tag {
-                                                            (genericVar = {
-                                                                eventTime: -1,
-                                                                lane: genericVar & -genericVar,
-                                                                tag: 0,
-                                                                payload: null,
-                                                                callback: null,
-                                                                next: null
-                                                            }
-                                                            ).tag = 2;
-                                                            var genericVar = genericVar.updateQueue;
-                                                            if null !== genericVar {
-                                                                var genericVar = genericVar = genericVar.shared.pending;
-                                                                if null === genericVar {
-                                                                    genericVar.next = genericVar;
-                                                                }
-                                                                else {
-                                                                    genericVar.next = genericVar.next;
-                                                                    genericVar.next = genericVar;
-                                                                }
-                                                                genericVar.pending = genericVar;
-                                                            }
-                                                        }
-                                                        genericVar.lanes |= genericVar;
-                                                        if null !== (genericVar = genericVar.alternate) {
-                                                            genericVar.lanes |= genericVar;
-                                                        }
-                                                        var_913var_2101["return"], genericVar, genericVar;
-                                                        genericVar.lanes |= genericVar;
-                                                        break;
-                                                    }
-                                                    genericVar = genericVar.next;
-                                                }
-                                            }
-                                            else {
-                                                if 10 === genericVar.tag {
-                                                    genericVar = genericVar.type === genericVar.type ? null : genericVar.child;
-                                                }
-                                                else {
-                                                    if 18 === genericVar.tag {
-                                                        if null === (genericVar = genericVar["return"]) {
-                                                            throw Errorvar_28(341);
-                                                        }
-                                                        genericVar.lanes |= genericVar;
-                                                        if null !== (genericVar = genericVar.alternate) {
-                                                            genericVar.lanes |= genericVar;
-                                                        }
-                                                        var_913var_2105, genericVar, genericVar;
-                                                        genericVar = genericVar.sibling;
-                                                    }
-                                                    else {
-                                                        genericVar = genericVar.child;
-                                                    }
-                                                }
-                                            }
-                                            if null !== genericVar {
-                                                genericVar["return"] = genericVar;
-                                            }
-                                            else {
-                                                for genericVar = genericVar;
-                                                null !== genericVar;
-                                                {
-                                                    if genericVar === genericVar {
-                                                        genericVar = null;
-                                                        break;
-                                                    }
-                                                    if null !== (genericVar = genericVar.sibling) {
-                                                        genericVar["return"] = genericVar["return"];
-                                                        genericVar = genericVar;
-                                                        break;
-                                                    }
-                                                    genericVar = genericVar["return"];
-                                                }
-                                            }
-                                            genericVar = genericVar;
-                                        }
+                                        queue.pending = pendingUpdate;
                                     }
                                 }
-                                var_1436var_2091, genericVar, genericVar.children, genericVar;
-                                genericVar = genericVar.child;
+                                genericVar.lanes |= genericVar;
+                                if (genericVar.alternate !== null) {
+                                    genericVar.alternate.lanes |= genericVar;
+                                }
+                                var_913var_2101["return"](genericVar, genericVar);
+                                genericVar.lanes |= genericVar;
+                                break;
                             }
-                            return genericVar;
-                            case 9:
-                            genericVar = genericVar.type;
-                            genericVar = genericVar.pendingProps.children;
-                            var_918var_2092, genericVar;
-                            genericVar = var_2099var_2100 = genericVar(genericVar);
-                            genericVar.flags |= 1;
-                            var_1436var_2091, genericVar, genericVar, genericVar;
-                            return genericVar.child;
-                            case 14:
-                            genericVar = var_902var_2099 = genericVar.type, genericVar.pendingProps;
-                            return var_1449var_2091, genericVar, genericVar, genericVar = genericVar(genericVar.type, genericVar, genericVar);
-                            case 15:
-                            return var_1457var_2091, genericVar, genericVar.type, genericVar.pendingProps, genericVar;
-                            case 17:
-                            genericVar = genericVar.type;
-                            genericVar = genericVar.pendingProps;
-                            genericVar = genericVar.elementType === genericVar ? genericVar : var_902var_2099, genericVar;
-                            var_1492var_2091, genericVar;
-                            genericVar.tag = 1;
-                            if genericVar(genericVar) {
-                                genericVar = true;
-                                var_829var_2092;
-                            }
-                            else {
-                                genericVar = false;
-                            }
-                            var_918var_2092, genericVar;
-                            var_1025var_2092, genericVar, genericVar;
-                            var_1037var_2092, genericVar, genericVar, genericVar;
-                            return var_1502null, genericVar, genericVar, true, genericVar, genericVar;
-                            case 19:
-                            return var_1566var_2091, genericVar, genericVar;
-                            case 22:
-                            return var_1466var_2091, genericVar, genericVar;
                         }
-                        throw Errorvar_28(156, genericVar.tag);
                     }
-                    ;
-                    var genericVar = "function" == typeof reportError ? reportError : /* DOM Manipulations */
-function genericVar {
-                        console.errorvar_2112;
-                    }
-                    ;
+                }
+            }
+        }
+}
+
+                                       if (genericVar !== null) {
+    genericVar["return"] = genericVar;
+} else {
+    for (genericVar = genericVar; genericVar !== null; ) {
+        if (genericVar === genericVar) {
+            genericVar = null;
+            break;
+        }
+
+        if (genericVar.sibling !== null) {
+            genericVar.sibling.return = genericVar.return;
+            genericVar = genericVar.sibling;
+            break;
+        }
+
+        genericVar = genericVar.return;
+    }
+}
+
+switch (genericVar) {  // ✅ Fixed `switch` syntax
+    case 9:
+        genericVar = genericVar.type;
+        genericVar = genericVar.pendingProps.children;
+        var_918var_2092(genericVar);
+        genericVar = var_2099var_2100(genericVar);
+        break;
+
+    case 14:
+        genericVar = var_902var_2099(genericVar.type, genericVar.pendingProps);
+        break;
+
+    case 15:
+        return var_1457var_2091(genericVar, genericVar.type, genericVar.pendingProps, genericVar);
+
+    case 17:
+        genericVar = genericVar.type;
+        genericVar = genericVar.pendingProps;
+        genericVar = genericVar.elementType === genericVar ? genericVar : var_902var_2099(genericVar);
+        var_1492var_2091(genericVar);
+        genericVar.tag = 1;
+
+        if (genericVar(genericVar)) {
+            genericVar = true;
+            var_829var_2092();
+        } else {
+            genericVar = false;
+        }
+
+        var_918var_2092(genericVar);
+        var_1025var_2092(genericVar);
+        var_1037var_2092(genericVar);
+
+        return var_1502null(genericVar, genericVar, true);
+
+    case 19:
+        return var_1566var_2091(genericVar, genericVar);
+
+    case 22:
+        return var_1466var_2091(genericVar, genericVar);
+    
+    default:
+        throw new Error(`Unknown case encountered: ${genericVar.tag}`);
+}
+
+var reportError = typeof reportError === "function" ? reportError : function() {
+    console.error(var_2112);
+};
+
                     /* DOM Manipulations */
-function renamedFunctionvar_2114 {
+function renamedFunctionvar_2114() {
                         this._internalRoot = genericVar;
                     }
                     /* DOM Manipulations */
-function renamedFunctionvar_2116 {
+function renamedFunctionvar_2116() {
                         this._internalRoot = genericVar;
                     }
                     /* DOM Manipulations */
-function genericVar {
+function genericVar() {
                     }
-                    /* DOM Manipulations */
-function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar {
-                        var genericVar = genericVar._reactRootContainer;
-                        if genericVar {
-                            var genericVar = genericVar;
-                            if "function" == typeof genericVar {
-                                var genericVar = genericVar;
-                                genericVar = function  {
-                                    var genericVar = var_2082var_2125;
-                                    genericVar.callvar_2127;
-                                }
-                                ;
-                            }
-                            var_2074var_2120, genericVar, genericVar, genericVar;
-                        }
-                        else {
-                            genericVar = function genericVar, genericVar, genericVar, genericVar, genericVar {
-                                if genericVar {
-                                    if "function" == typeof genericVar {
-                                        var genericVar = genericVar;
-                                        genericVar = function  {
-                                            var genericVar = var_2082var_2135;
-                                            genericVar.callvar_2134;
-                                        }
-                                        ;
-                                    }
-                                    var genericVar = var_2064var_2129, genericVar, genericVar, 0, null, false, 0, "", genericVar;
-                                    genericVar._reactRootContainer = genericVar;
-                                    genericVar[genericVar] = genericVar.current;
-                                    genericVar === genericVar.nodeType ? genericVar.parentNode : genericVar;
-                                    genericVar;
-                                    return genericVar;
-                                }
-                                for ;
-                                genericVar = genericVar.lastChild;
-                                {
-                                    genericVar.removeChildvar_2132;
-                                }
-                                if "function" == typeof genericVar {
-                                    var genericVar = genericVar;
-                                    genericVar = function  {
-                                        var genericVar = var_2082var_2138;
-                                        genericVar.callvar_2137;
-                                    }
-                                    ;
-                                }
-                                var genericVar = var_2049var_2128, 0, false, null, 0, false, 0, "", genericVar;
-                                genericVar._reactRootContainer = genericVar;
-                                genericVar[genericVar] = genericVar.current;
-                                genericVar === genericVar.nodeType ? genericVar.parentNode : genericVar;
-                                var_1872function ( {
-                                    var_2074var_2129, genericVar, genericVar, genericVar;
-                                }
-                                );
-                                return genericVar;
-                            }
-                            genericVar, genericVar, genericVar, genericVar, genericVar;
-                        }
-                        return var_2082var_2125;
+                   function renamedFunctionvar_2119(genericVar1, genericVar2, genericVar3, genericVar4) {
+    var genericVar = genericVar1._reactRootContainer;
+    if (genericVar) {
+        var genericVar = genericVar;
+        if (typeof genericVar === "function") {
+            var genericVar = genericVar;
+            genericVar = function() {
+                var genericVar = var_2082var_2125;
+                genericVar.call(var_2127);
+            };
+        }
+        var_2074var_2120(genericVar, genericVar, genericVar);
+    } else {
+        genericVar = function(genericVar1, genericVar2, genericVar3, genericVar4, genericVar5) {
+            if (genericVar1) {
+                if (typeof genericVar1 === "function") {
+                    var genericVar = genericVar1;
+                    genericVar = function() {
+                        var genericVar = var_2082var_2135;
+                        genericVar.call(var_2134);
+                    };
+                }
+                var genericVar = var_2064var_2129(genericVar1, genericVar2, genericVar3, 0, null, false, 0, "", genericVar1);
+                genericVar._reactRootContainer = genericVar;
+                genericVar[genericVar] = genericVar.current;
+                genericVar = genericVar.nodeType === genericVar ? genericVar.parentNode : genericVar;
+                return genericVar;
+            }
+            for (; genericVar !== null; genericVar = genericVar.lastChild) {
+                genericVar.removeChild(var_2132);
+            }
+            if (typeof genericVar === "function") {
+                var genericVar = genericVar;
+                genericVar = function() {
+                    var genericVar = var_2082var_2138;
+                    genericVar.call(var_2137);
+                };
+            }
+            var genericVar = var_2049var_2128(0, false, null, 0, false, 0, "", genericVar);
+            genericVar._reactRootContainer = genericVar;
+            genericVar[genericVar] = genericVar.current;
+            genericVar = genericVar.nodeType === genericVar ? genericVar.parentNode : genericVar;
+            var_1872function({ var_2074var_2129, genericVar, genericVar, genericVar });
+            return genericVar;
+        };
+    }
+    return var_2082var_2125;
+}
+
+genericVar.prototype.render = function() {
+    const genericVar = this._internalRoot;
+    if (genericVar === null) {
+        throw new Error("Internal Root is null");
+    }
+    var_2074var_2139(genericVar, null, null);
+};
+
+genericVar.prototype.unmount = function() {
+    const genericVar = this._internalRoot;
+    if (genericVar !== null) {
+        this._internalRoot = null;
+        const containerInfo = genericVar.containerInfo;
+
+        // Ensure proper object syntax for the function call
+        var_1872function({
+            var_2074: null,  // Assuming var_2074 is a key with null as the value
+            containerInfo: containerInfo,
+            someOtherKey: null, // Example if you need other `null` values
+            anotherKey: null    // Example for additional null values
+        });
+        
+        // Ensure that `genericVar` is valid before accessing properties
+        if (genericVar && typeof genericVar === "object") {
+            genericVar[genericVar] = null;  // Example of safely using the object reference
+        }
+    }
+};
+
+        // Ensure `genericVar` is a valid object before accessing it
+        if (genericVar && typeof genericVar === "object") {
+            genericVar[genericVar] = null;
+        }
+    }
+
+genericVar.prototype.unstable_scheduleHydration = function() {
+    if (genericVar) {
+        const newGenericVar = {
+            blockedOn: null,
+            target: genericVar,
+            priority: genericVar
+        };
+
+        // Use an index variable instead of overwriting `genericVar`
+        for (let i = 0; i < genericVar.length && genericVar[i].priority !== 0; i++) {
+            // Do something with the items
+        }
+
+        genericVar.splice(0, 0, newGenericVar);
+
+        if (genericVar === 0) {
+            var_403var_2143;
+        }
+    }
+};
+
+                  const genericVar = function() {
+    switch (genericVar.tag) {
+        case 3:
+            let stateNode = genericVar.stateNode;
+            if (stateNode && stateNode.current && stateNode.current.memoizedState && stateNode.current.memoizedState.isDehydrated) {
+                let pendingLanes = var_344var_2147.pendingLanes;
+                if (pendingLanes !== 0) {
+                    var_370var_2147(1 | pendingLanes);
+                    var_1816var_2147(genericVar);
+                    if ((6 & pendingLanes) === 0) {
+                        genericVar = genericVar + 500;
                     }
-                    genericVar.prototype.render = genericVar.prototype.render = function genericVar {
-                        var genericVar = this._internalRoot;
-                        if null === genericVar {
-                            throw Errorvar_28(409);
-                        }
-                        var_2074var_2139, genericVar, null, null;
+                }
+            }
+            break;
+
+        case 13:
+            let tempGenericVar = var_934var_2146;  // Renamed to avoid redeclaration
+            if (tempGenericVar !== null) {
+                var_1005var_2149(tempGenericVar, 1, genericVar);
+            }
+            var_2088var_2146(1);
+
+            // The other function
+            const genericVarFunction1 = function() {
+                if (genericVar && genericVar.tag === 13) {
+                    let tempVar = var_934var_2151(134217728);
+                    if (tempVar !== null) {
+                        var_1005var_2152(tempVar, 134217728, genericVar);
                     }
-                    ;
-                    genericVar.prototype.unmount = genericVar.prototype.unmount = function  {
-                        var genericVar = this._internalRoot;
-                        if null !== genericVar {
-                            this._internalRoot = null;
-                            var genericVar = genericVar.containerInfo;
-                            var_1872function ( {
-                                var_2074null, genericVar, null, null;
-                            }
-                            );
-                            genericVar[genericVar] = null;
-                        }
-                    }
-                    ;
-                    genericVar.prototype.unstable_scheduleHydration = function genericVar {
-                        if genericVar {
-                            var genericVar = genericVar;
-                            genericVar = {
-                                blockedOn: null,
-                                target: genericVar,
-                                priority: genericVar
-                            }
-                            ;
-                            for var genericVar = 0;
-                            genericVar < genericVar.length && 0 !== genericVar && genericVar < genericVar[genericVar].priority;
-                            genericVar++ {
-                                ;
-                            }
-                            genericVar.splicevar_2145, 0, genericVar;
-                            if 0 === genericVar {
-                                var_403var_2143;
-                            }
-                        }
-                    }
-                    ;
-                    genericVar = function genericVar {
-                        switch genericVar.tag {
-                            case 3:
-                            var genericVar = genericVar.stateNode;
-                            if genericVar.current.memoizedState.isDehydrated {
-                                var genericVar = var_344var_2147.pendingLanes;
-                                if 0 !== genericVar {
-                                    var_370var_2147, 1 | genericVar;
-                                    var_1816var_2147, genericVar();
-                                    if 0 == (6 & genericVar) {
-                                        genericVar = genericVar + 500;
-                                        genericVar;
-                                    }
-                                }
-                            }
-                            break;
-                            case 13:
-                            var_1872function ( {
-                                var genericVar = var_934var_2146, 1;
-                                if null !== genericVar {
-                                    var genericVar = genericVar;
-                                    var_1005var_2149, genericVar, 1, genericVar;
-                                }
-                            }
-                            );
-                            var_2088var_2146, 1;
-                        }
-                    }
-                    ;
-                    genericVar = function genericVar {
-                        if 13 === genericVar.tag {
-                            var genericVar = var_934var_2151, 134217728;
-                            if null !== genericVar {
-                                var_1005var_2152, genericVar, 134217728, genericVar();
-                            }
-                            var_2088var_2151, 134217728;
-                        }
-                    }
-                    ;
-                    genericVar = function genericVar {
-                        if 13 === genericVar.tag {
-                            var genericVar = var_1003var_2153;
-                            var genericVar = var_934var_2153, genericVar;
-                            if null !== genericVar {
-                                var_1005var_2155, genericVar, genericVar, genericVar();
-                            }
-                            var_2088var_2153, genericVar;
-                        }
-                    }
-                    ;
-                    genericVar = function  {
+                    var_2088var_2151(134217728);
+                }
+            };
+            break;  // Added missing break statement
+    }
+};
+
+const genericVarFunction2 = function() {
+    if (genericVar.tag === 13) {
+        let tempVar = var_1003var_2153;
+        tempVar = var_934var_2153(genericVar);
+        if (tempVar !== null) {
+            var_1005var_2155(tempVar, tempVar, genericVar);
+        }
+        var_2088var_2153(tempVar);
+    }
+};
+
+                    genericVar = function()  {
                         return genericVar;
                     }
                     ;
-                    genericVar = function genericVar, genericVar {
-                        var genericVar = genericVar;
-                        try {
-                            genericVar = genericVar;
-                            return genericVar;
+                   genericVar = function(genericVar1, genericVar2) {  // ✅ Fixed function declaration
+    let genericVar = genericVar1;  // Remove redundant assignments
+    try {
+        genericVar = genericVar2;  // Logic for assigning genericVar
+        return genericVar;
+    } finally {
+        // No need to reassign `genericVar` here
+    }
+};
+
+genericVar = function(genericVar1, genericVar2, genericVar3) {  // ✅ Fixed function declaration
+    switch (genericVar1) {  // ✅ Fixed switch statement
+        case "input":
+            var_172var_2159(genericVar1);
+            genericVar = genericVar1.name;
+            if (genericVar.type === "radio" && genericVar !== null) {
+                for (let i = 0; i < genericVar.parentNode.length; i++) {
+                    genericVar = genericVar.parentNode;
+                }
+                genericVar = genericVar.querySelectorAll("input[name=" + JSON.stringify("" + genericVar + "][type=\"radio\"]"));
+                for (let i = 0; i < genericVar.length; i++) {
+                    let radioBtn = genericVar[i];
+                    if (radioBtn !== genericVar && radioBtn.form === genericVar.form) {
+                        let checkedRadio = radioBtn[genericVar] || null;
+                        if (!checkedRadio) {
+                            throw new Error("Radio button not found");
                         }
-                        finally {
-                            genericVar = genericVar;
-                        }
+                        var_152var_2162(genericVar);
+                        var_172var_2162(genericVar);
                     }
-                    ;
-                    genericVar = function genericVar, genericVar, genericVar {
-                        switch genericVar {
-                            case "input":
-                            var_172var_2159, genericVar;
-                            genericVar = genericVar.name;
-                            if "radio" === genericVar.type && null != genericVar {
-                                for genericVar = genericVar;
-                                genericVar.parentNode;
-                                {
-                                    genericVar = genericVar.parentNode;
-                                }
-                                genericVar = genericVar.querySelectorAll"input[name=" + JSON.stringify("" + genericVar + "][type=\"radio\"]");
-                                for genericVar = 0;
-                                genericVar < genericVar.length;
-                                genericVar++ {
-                                    var genericVar = genericVar[genericVar];
-                                    if genericVar !== genericVar && genericVar.form === genericVar.form {
-                                        var genericVar = genericVar[genericVar] || null;
-                                        if !genericVar {
-                                            throw Errorvar_28(90);
-                                        }
-                                        var_152var_2162;
-                                        var_172var_2162, genericVar;
-                                    }
-                                }
-                            }
-                            break;
-                            case "textarea":
-                            var_200var_2159, genericVar;
-                            break;
-                            case "select":
-                            if null != (genericVar = genericVar.value) {
-                                var_187var_2159, !!genericVar.multiple, genericVar, false;
-                            }
-                        }
-                    }
-                    ;
+                }
+            }
+            break;
+
+        case "textarea":
+            var_200var_2159(genericVar2);
+            break;
+
+        case "select":
+            if (genericVar3 !== null && genericVar3.value) {
+                var_187var_2159(genericVar3.multiple, genericVar3, false);
+            }
+            break;
+        
+        default:
+            throw new Error("Unknown case encountered");
+    }
+};
+
                     genericVar = genericVar;
                     genericVar = genericVar;
                     var genericVar = {
@@ -8423,7 +8631,7 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                         }
                     };
                     
-                        ,
+                        
                         findFiberByHostInstance: genericVar.findFiberByHostInstance || function () {
                             return null;
                         },
@@ -8435,469 +8643,480 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                         reconcilerVersion: "18.2.0-next-9e3b772b8-20220608"
                         };
                         
-                    if "undefined" != typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ {
-                        if !__REACT_DEVTOOLS_GLOBAL_HOOK__.isDisabled && __REACT_DEVTOOLS_GLOBAL_HOOK__.supportsFiber {
-                            try {
-                                genericVar = __REACT_DEVTOOLS_GLOBAL_HOOK__.injectvar_2166;
-                                genericVar = __REACT_DEVTOOLS_GLOBAL_HOOK__;
-                            }
-                            catch genericVar {
-                            }
-                        }
-                    }
-                    genericVar.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = genericVar;
-                    genericVar.createPortal = function genericVar, genericVar {
-                        var genericVar = 2 < arguments.length && undefined !== arguments[2] ? arguments[2] : null;
-                        if !!(!genericVar || 1 !== genericVar.nodeType && 9 !== genericVar.nodeType && 11 !== genericVar.nodeType) {
-                            throw Errorvar_28(200);
-                        }
-                        return function genericVar, genericVar, genericVar {
-                            var genericVar = 3 < arguments.length && undefined !== arguments[3] ? arguments[3] : null;
-                            return {
-                                $typeof: genericVar,
-                                key: null == genericVar ? null : "" + genericVar,
-                                children: genericVar,
-                                containerInfo: genericVar,
-                                implementation: genericVar
-                            }
-                            ;
-                        }
-                        genericVar, genericVar, null, genericVar;
-                    }
-                    ;
-                    genericVar.createRoot = function genericVar, genericVar {
-                        if !!(!genericVar || 1 !== genericVar.nodeType && 9 !== genericVar.nodeType && 11 !== genericVar.nodeType) {
-                            throw Errorvar_28(299);
-                        }
-                        var genericVar = false;
-                        var genericVar = "";
-                        var genericVar = genericVar;
-                        if null != genericVar {
-                            if true === genericVar.unstable_strictMode {
-                                genericVar = true;
-                            }
-                            if undefined !== genericVar.identifierPrefix {
-                                genericVar = genericVar.identifierPrefix;
-                            }
-                            if undefined !== genericVar.onRecoverableError {
-                                genericVar = genericVar.onRecoverableError;
-                            }
-                        }
-                        genericVar = var_2049var_2176, 1, false, null, 0, genericVar, 0, genericVar, genericVar;
-                        genericVar[genericVar] = genericVar.current;
-                        genericVar === genericVar.nodeType ? genericVar.parentNode : genericVar;
-                        return new var_2113var_2177;
-                    }
-                    ;
-                    genericVar.findDOMNode = function genericVar {
-                        if null == genericVar {
-                            return null;
-                        }
-                        if 1 === genericVar.nodeType {
-                            return genericVar;
-                        }
-                        var genericVar = genericVar._reactInternals;
-                        if undefined === genericVar {
-                            if "function" == typeof genericVar.render {
-                                throw Errorvar_28(188);
-                            }
-                            genericVar = Object.keysvar_2181.join",";
-                            throw Errorvar_28(268, genericVar);
-                        }
-                        return genericVar = null === genericVar = genericVar(genericVar) ? null : genericVar.stateNode;
-                    }
-                    ;
-                    genericVar.flushSync = function genericVar {
+                   if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined") {  // ✅ Fixed `if` condition
+    if (!__REACT_DEVTOOLS_GLOBAL_HOOK__.isDisabled && __REACT_DEVTOOLS_GLOBAL_HOOK__.supportsFiber) {
+        try {
+            genericVar = __REACT_DEVTOOLS_GLOBAL_HOOK__.injectvar_2166;
+            genericVar = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+        } catch (error) {
+            // Catch block left intentionally empty.
+        }
+    }
+}
+
+genericVar.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = genericVar;
+
+genericVar.createPortal = function(genericVar1, genericVar2) {  // ✅ Fixed function declaration
+    var genericVar3 = (arguments.length > 2 && arguments[2] !== undefined) ? arguments[2] : null;
+    if (!(genericVar3 && (genericVar3.nodeType === 1 || genericVar3.nodeType === 9 || genericVar3.nodeType === 11))) {
+        throw new Error("Invalid node type");
+    }
+
+    return function(genericVar4, genericVar5, genericVar6) {
+        var genericVar7 = (arguments.length > 3 && arguments[3] !== undefined) ? arguments[3] : null;
+        return {
+            $typeof: genericVar4,
+            key: genericVar5 ? "" + genericVar5 : null,
+            children: genericVar6,
+            containerInfo: genericVar7,
+            implementation: genericVar7
+        };
+    };
+};
+
+genericVar.createRoot = function(genericVar1, genericVar2) {  // ✅ Fixed function declaration
+    if (!(genericVar1 && (genericVar1.nodeType === 1 || genericVar1.nodeType === 9 || genericVar1.nodeType === 11))) {
+        throw new Error("Invalid node type");
+    }
+
+    var genericVar3 = false;
+    var genericVar4 = "";
+    var genericVar5 = genericVar1;
+
+    if (genericVar5 !== null) {
+        if (genericVar5.unstable_strictMode === true) {
+            genericVar3 = true;
+        }
+        if (genericVar5.identifierPrefix !== undefined) {
+            genericVar4 = genericVar5.identifierPrefix;
+        }
+        if (genericVar5.onRecoverableError !== undefined) {
+            genericVar3 = genericVar5.onRecoverableError;
+        }
+    }
+
+    genericVar1._reactRootContainer = new var_2049var_2176(1, false, null, 0, genericVar1, 0, genericVar4, genericVar3);
+    return new var_2113var_2177();
+};
+
+genericVar.findDOMNode = function(genericVar) {
+    if (genericVar === null) {
+        return null;
+    }
+    if (genericVar.nodeType === 1) {
+        return genericVar;
+    }
+
+    var _reactInternals = genericVar._reactInternals;
+    if (_reactInternals === undefined) {
+        if (typeof genericVar.render === "function") {
+            throw new Error("Expected a DOM node, but received a function.");
+        }
+        genericVar = Object.keys(var_2181).join(",");
+        throw new Error(`Unknown object type: ${genericVar}`);
+    }
+
+    return genericVar = genericVar(genericVar) ? null : genericVar.stateNode;
+};
+
+                    genericVar.flushSync = function genericVar() {
                         return var_1872var_2183;
                     }
                     ;
-                    genericVar.hydrate = function genericVar, genericVar, genericVar {
-                        if !!(!genericVar || 1 !== genericVar.nodeType && 9 !== genericVar.nodeType && 11 !== genericVar.nodeType && (8 !== genericVar.nodeType || " react-mount-point-unstable " !== genericVar.nodeValue)) {
-                            throw Errorvar_28(200);
-                        }
-                        return var_2118null, genericVar, genericVar, true, genericVar;
-                    }
-                    ;
-                    genericVar.hydrateRoot = function genericVar, genericVar, genericVar {
-                        if !!(!genericVar || 1 !== genericVar.nodeType && 9 !== genericVar.nodeType && 11 !== genericVar.nodeType) {
-                            throw Errorvar_28(405);
-                        }
-                        var genericVar = null != genericVar && genericVar.hydratedSources || null;
-                        var genericVar = false;
-                        var genericVar = "";
-                        var genericVar = genericVar;
-                        if null != genericVar {
-                            if true === genericVar.unstable_strictMode {
-                                genericVar = true;
-                            }
-                            if undefined !== genericVar.identifierPrefix {
-                                genericVar = genericVar.identifierPrefix;
-                            }
-                            if undefined !== genericVar.onRecoverableError {
-                                genericVar = genericVar.onRecoverableError;
-                            }
-                        }
-                        genericVar = var_2064var_2188, null, genericVar, 1, null != genericVar ? genericVar : null, genericVar, 0, genericVar, genericVar;
-                        genericVar[genericVar] = genericVar.current;
-                        var_696var_2187;
-                        if genericVar {
-                            for genericVar = 0;
-                            genericVar < genericVar.length;
-                            genericVar++ {
-                                genericVar = genericVar = (genericVar = genericVar[genericVar]._getVersion)genericVar._source;
-                                if null == genericVar.mutableSourceEagerHydrationData {
-                                    genericVar.mutableSourceEagerHydrationData = [genericVar, genericVar];
-                                }
-                                else {
-                                    genericVar.mutableSourceEagerHydrationData.pushvar_2189, genericVar;
-                                }
-                            }
-                        }
-                        return new var_2115var_2188;
-                    }
-                    ;
-                    genericVar.render = function genericVar, genericVar, genericVar {
-                        if !!(!genericVar || 1 !== genericVar.nodeType && 9 !== genericVar.nodeType && 11 !== genericVar.nodeType && (8 !== genericVar.nodeType || " react-mount-point-unstable " !== genericVar.nodeValue)) {
-                            throw Errorvar_28(200);
-                        }
-                        return var_2118null, genericVar, genericVar, false, genericVar;
-                    }
-                    ;
-                    genericVar.unmountComponentAtNode = function genericVar {
-                        if !!(!genericVar || 1 !== genericVar.nodeType && 9 !== genericVar.nodeType && 11 !== genericVar.nodeType && (8 !== genericVar.nodeType || " react-mount-point-unstable " !== genericVar.nodeValue)) {
-                            throw Errorvar_28(40);
-                        }
-                        return !!genericVar._reactRootContainer && genericVar(function ( {
-                            var_2118null, null, genericVar, false, function ( {
-                                genericVar._reactRootContainer = null;
-                                genericVar[genericVar] = null;
-                            }
-                            );
-                        }
-                        ), true);
-                    }
-                    ;
-                    genericVar.unstable_batchedUpdates = genericVar;
-                    genericVar.unstable_renderSubtreeIntoContainer = function genericVar, genericVar, genericVar, genericVar {
-                        if !!(!genericVar || 1 !== genericVar.nodeType && 9 !== genericVar.nodeType && 11 !== genericVar.nodeType && (8 !== genericVar.nodeType || " react-mount-point-unstable " !== genericVar.nodeValue)) {
-                            throw Errorvar_28(200);
-                        }
-                        if null == genericVar || undefined === genericVar._reactInternals {
-                            throw Errorvar_28(38);
-                        }
-                        return var_2118var_2198, genericVar, genericVar, false, genericVar;
-                    }
-                    ;
-                    {genericVar.version = "18.2.0-next-9e3b772b8-20220608";
-                }
-                ,
-                935: genericVar, genericVar, function genericVar {
-                    "use strict";
-                    !function genericVar {
-                        if "undefined" != typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" == typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCE {
-                            try {
-                                __REACT_DEVTOOLS_GLOBAL_HOOK__.checkDCEvar_2205;
-                            }
-                            catch genericVar {
-                                console.errorvar_2206;
-                            }
-                        }
-                    }
-                    ;
-                    genericVar.exports = genericVar;
-                }
-                ,
-                251: genericVar, genericVar, function genericVar {
-                    "use strict";
-                    var genericVar = genericVar;
-                    var genericVar = Symbol["for"]"react.element";
-                    var genericVar = Symbol["for"]"react.fragment";
-                    var genericVar = Object.prototype.hasOwnProperty;
-                    var genericVar = genericVar.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner;
-                    var genericVar = {
-                        key: true,
-                        ref: true,
-                        __self: true,
-                        __source: true
-                    }
-                    ;
-                    function renamedFunctionvar_2217, genericVar, genericVar {
-                        var genericVar;
-                        var genericVar = {
-                        }
-                        ;
-                        var genericVar = null;
-                        var genericVar = null;
-                        if undefined !== genericVar {
-                            genericVar = "" + genericVar;
-                        }
-                        if undefined !== genericVar.key {
-                            genericVar = "" + genericVar.key;
-                        }
-                        if undefined !== genericVar.ref {
-                            genericVar = genericVar.ref;
-                        }
-                        for genericVar in genericVar if genericVar.call(genericVar, genericVar && !genericVar.hasOwnPropertyvar_2220) {
-                            genericVar[genericVar] = genericVar[genericVar];
-                        }
-                        if genericVar && genericVar.defaultProps {
-                            for genericVar in genericVar = genericVar.defaultProps if undefined === genericVar[genericVar] {
-                                genericVar[genericVar] = genericVar[genericVar];
-                            }
-                        }
-                        return {
-                            $typeof: genericVar,
-                            type: genericVar,
-                            key: genericVar,
-                            ref: genericVar,
-                            props: genericVar,
-                            _owner: genericVar.current
-                        }
-                        ;
-                    }
-                    genericVar.Fragment = genericVar;
-                    genericVar.jsx = genericVar;
-                    genericVar.jsxs = genericVar;
-                }
-                ,
-                408: genericVar, function genericVar {
-                    "use strict";
-                    var genericVar = Symbol["for"]"react.element";
-                    var genericVar = Symbol["for"]"react.portal";
-                    var genericVar = Symbol["for"]"react.fragment";
-                    var genericVar = Symbol["for"]"react.strict_mode";
-                    var genericVar = Symbol["for"]"react.profiler";
-                    var genericVar = Symbol["for"]"react.provider";
-                    var genericVar = Symbol["for"]"react.context";
-                    var genericVar = Symbol["for"]"react.forward_ref";
-                    var genericVar = Symbol["for"]"react.suspense";
-                    var genericVar = Symbol["for"]"react.memo";
-                    var genericVar = Symbol["for"]"react.lazy";
-                    var genericVar = Symbol.iterator;
-                    var genericVar = {
-                        isMounted: function  {
-                            return false;
-                        }
-                        ,
-                        enqueueForceUpdate: function  {
-                        }
-                        ,
-                        enqueueReplaceState: function  {
-                        }
-                        ,
-                        enqueueSetState: function  {
-                        }
-                    }
-                    ;
+                  genericVar.hydrate = function(genericVar1, genericVar2, genericVar3) {
+    if (!(genericVar1 && (genericVar1.nodeType === 1 || genericVar1.nodeType === 9 || genericVar1.nodeType === 11 || 
+        (genericVar1.nodeType === 8 && genericVar1.nodeValue !== " react-mount-point-unstable ")))) {
+        throw new Error("Invalid node type.");
+    }
+    return var_2118null(genericVar1, genericVar2, genericVar3, true, genericVar1);
+};
+
+genericVar.hydrateRoot = function(genericVar1, genericVar2, genericVar3) {
+    if (!(genericVar1 && (genericVar1.nodeType === 1 || genericVar1.nodeType === 9 || genericVar1.nodeType === 11))) {
+        throw new Error("Invalid node type.");
+    }
+    
+    let hydratedSources = genericVar3 ? genericVar3.hydratedSources : null;
+    let someFlag = false;
+    let identifierPrefix = "";
+    let onRecoverableError = null;
+
+    if (genericVar3 !== null) {
+        if (genericVar3.unstable_strictMode === true) {
+            someFlag = true;
+        }
+        if (genericVar3.identifierPrefix !== undefined) {
+            identifierPrefix = genericVar3.identifierPrefix;
+        }
+        if (genericVar3.onRecoverableError !== undefined) {
+            onRecoverableError = genericVar3.onRecoverableError;
+        }
+    }
+
+    genericVar1 = var_2064var_2188(genericVar1, null, genericVar2, 1, hydratedSources || null, someFlag, 0, identifierPrefix);
+    genericVar1[genericVar1] = genericVar1.current;
+    var_696var_2187;
+
+    if (genericVar1) {
+        for (let i = 0; i < genericVar1.length; i++) {
+            genericVar = genericVar1[i]._getVersion(genericVar1[i]._source);
+            if (genericVar.mutableSourceEagerHydrationData === null) {
+                genericVar.mutableSourceEagerHydrationData = [genericVar, genericVar];
+            } else {
+                genericVar.mutableSourceEagerHydrationData.push(var_2189, genericVar);
+            }
+        }
+    }
+
+    return new var_2115var_2188();  // Fixed the constructor call
+};
+
+genericVar.findDOMNode = function(genericVar1) {
+    if (genericVar1 === null) {
+        return null;
+    }
+    if (genericVar1.nodeType === 1) {
+        return genericVar1;
+    }
+
+    var _reactInternals = genericVar1._reactInternals;
+    if (_reactInternals === undefined) {
+        if (typeof genericVar1.render === "function") {
+            throw new Error("Expected a DOM node, but received a function.");
+        }
+        genericVar1 = Object.keys(var_2181).join(",");
+        throw new Error(`Unknown object type: ${genericVar1}`);
+    }
+
+    return genericVar1 = genericVar1(genericVar1) ? null : genericVar1.stateNode;
+};
+
+                   genericVar.render = function(genericVar1, genericVar2, genericVar3) {
+    if (!(genericVar1 && (genericVar1.nodeType === 1 || genericVar1.nodeType === 9 || genericVar1.nodeType === 11 || 
+        (genericVar1.nodeType === 8 && genericVar1.nodeValue !== " react-mount-point-unstable ")))) {
+        throw new Error("Invalid node type");
+    }
+    return var_2118null(genericVar1, genericVar2, false, genericVar3);
+};
+
+genericVar.unmountComponentAtNode = function(genericVar) {
+    if (!(genericVar && (genericVar.nodeType === 1 || genericVar.nodeType === 9 || genericVar.nodeType === 11 || 
+        (genericVar.nodeType === 8 && genericVar.nodeValue !== " react-mount-point-unstable ")))) {
+        throw new Error("Invalid node type");
+    }
+    if (genericVar._reactRootContainer) {
+        genericVar(function() {
+            genericVar._reactRootContainer = null;
+            genericVar[genericVar] = null;
+        });
+    }
+    return true;
+};
+
+genericVar.unstable_batchedUpdates = genericVar;
+
+genericVar.unstable_renderSubtreeIntoContainer = function(genericVar1, genericVar2, genericVar3, genericVar4) {
+    if (!(genericVar1 && (genericVar1.nodeType === 1 || genericVar1.nodeType === 9 || genericVar1.nodeType === 11 || 
+        (genericVar1.nodeType === 8 && genericVar1.nodeValue !== " react-mount-point-unstable ")))) {
+        throw new Error("Invalid node type");
+    }
+    if (genericVar2 === null || genericVar2._reactInternals === undefined) {
+        throw new Error("Invalid _reactInternals");
+    }
+    return var_2118var_2198(genericVar1, genericVar2, genericVar3, false, genericVar4);
+};
+
+genericVar.version = "18.2.0-next-9e3b772b8-20220608";
+
+genericVar.exports = genericVar;
+
+var genericVar = genericVar;
+genericVar = Symbol.for("react.element");
+genericVar = Symbol.for("react.fragment");
+genericVar = Object.prototype.hasOwnProperty;
+genericVar = genericVar.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED.ReactCurrentOwner;
+
+var genericVar = {
+    key: true,
+    ref: true,
+    __self: true,
+    __source: true
+};
+
+                  function renamedFunctionvar_2217(genericVar1, genericVar2) {
+    let genericVar = {};  // Initial value
+    if (genericVar !== undefined) {
+        genericVar = "" + genericVar; // Convert to string
+    }
+    if (genericVar.key !== undefined) {
+        genericVar = "" + genericVar.key; // Convert key to string
+    }
+    if (genericVar.ref !== undefined) {
+        genericVar = genericVar.ref;
+    }
+
+    for (let key in genericVar) {
+        if (genericVar.hasOwnProperty(key) && genericVar[key].call(genericVar)) {
+            genericVar[key] = genericVar[key];
+        }
+    }
+
+    if (genericVar && genericVar.defaultProps) {
+        for (let key in genericVar.defaultProps) {
+            if (genericVar[key] === undefined) {
+                genericVar[key] = genericVar.defaultProps[key];
+            }
+        }
+    }
+
+    return {
+        $typeof: genericVar,
+        type: genericVar,
+        key: genericVar,
+        ref: genericVar,
+        props: genericVar,
+        _owner: genericVar.current
+    };
+}
+
+genericVar.Fragment = genericVar;
+genericVar.jsx = genericVar;
+genericVar.jsxs = genericVar;
+
+var genericVar = Symbol.for("react.element");
+var genericVar = Symbol.for("react.portal");
+var genericVar = Symbol.for("react.fragment");
+var genericVar = Symbol.for("react.strict_mode");
+var genericVar = Symbol.for("react.profiler");
+var genericVar = Symbol.for("react.provider");
+var genericVar = Symbol.for("react.context");
+var genericVar = Symbol.for("react.forward_ref");
+var genericVar = Symbol.for("react.suspense");
+var genericVar = Symbol.for("react.memo");
+var genericVar = Symbol.for("react.lazy");
+
+var genericVar = {
+    isMounted: function() {
+        return false;
+    },
+    enqueueForceUpdate: function() {},
+    enqueueReplaceState: function() {},
+    enqueueSetState: function() {},
+};
+
                     var genericVar = Object.assign;
                     var genericVar = {
                     }
                     ;
-                    function renamedFunctionvar_2242, genericVar, genericVar {
-                        this.props = genericVar;
-                        this.context = genericVar;
-                        this.refs = genericVar;
-                        this.updater = genericVar || genericVar;
-                    }
-                    function genericVar {
-                    }
-                    function renamedFunctionvar_2247, genericVar, genericVar {
-                        this.props = genericVar;
-                        this.context = genericVar;
-                        this.refs = genericVar;
-                        this.updater = genericVar || genericVar;
-                    }
-                    genericVar.prototype.isReactComponent = {
-                    }
-                    ;
-                    genericVar.prototype.setState = function genericVar, genericVar {
-                        if "object" != typeof genericVar && "function" != typeof genericVar && null != genericVar {
-                            throw Error"setState(...: takes an object of state variables to update or a function which returns an object of state variables.");
-                        }
-                        this.updater.enqueueSetStatethis, genericVar, genericVar, "setState";
-                    }
-                    ;
-                    genericVar.prototype.forceUpdate = function genericVar {
-                        this.updater.enqueueForceUpdatethis, genericVar, "forceUpdate";
-                    }
-                    ;
-                    genericVar.prototype = genericVar.prototype;
-                    var genericVar = genericVar.prototype = new genericVar;
-                    genericVar.constructor = genericVar;
-                    var_2239var_2253, genericVar.prototype;
-                    genericVar.isPureReactComponent = true;
-                    var genericVar = Array.isArray;
-                    var genericVar = Object.prototype.hasOwnProperty;
-                    var genericVar = {
-                        current: null
-                    }
-                    ;
-                    var genericVar = {
-                        key: true,
-                        ref: true,
-                        __self: true,
-                        __source: true
-                    }
-                    ;
-                    function renamedFunctionvar_2259, genericVar, genericVar {
-                        var genericVar;
-                        var genericVar = {
-                        }
-                        ;
-                        var genericVar = null;
-                        var genericVar = null;
-                        if null != genericVar {
-                            if undefined !== genericVar.ref {
-                                genericVar = genericVar.ref;
-                            }
-                            if undefined !== genericVar.key {
-                                genericVar = "" + genericVar.key;
-                            }
-                            for genericVar in genericVar if genericVar.call(genericVar, genericVar && !genericVar.hasOwnPropertyvar_2262) {
-                                genericVar[genericVar] = genericVar[genericVar];
-                            }
-                        }
-                        var genericVar = arguments.length - 2;
-                        if 1 === genericVar {
-                            genericVar.children = genericVar;
-                        }
-                        else {
-                            if 1 < genericVar {
-                                var genericVar = Arrayvar_2266;
-                                for var genericVar = 0;
-                                genericVar < genericVar;
-                                genericVar++ {
-                                    genericVar[genericVar] = arguments[genericVar + 2];
-                                }
-                                genericVar.children = genericVar;
-                            }
-                        }
-                        if genericVar && genericVar.defaultProps {
-                            for genericVar in genericVar = genericVar.defaultProps if undefined === genericVar[genericVar] {
-                                genericVar[genericVar] = genericVar[genericVar];
-                            }
-                        }
-                        return {
-                            $typeof: genericVar,
-                            type: genericVar,
-                            key: genericVar,
-                            ref: genericVar,
-                            props: genericVar,
-                            _owner: null
-                        }
-                        ;
-                    }
-                    function renamedFunctionvar_2270 {
+                  function renamedFunctionvar_2242(genericVar1, genericVar2) {
+    this.props = genericVar1;
+    this.context = genericVar1;
+    this.refs = genericVar1;
+    this.updater = genericVar1 || genericVar2;
+}
+
+function genericVar() {}
+
+function renamedFunctionvar_2247(genericVar1, genericVar2) {
+    this.props = genericVar1;
+    this.context = genericVar1;
+    this.refs = genericVar1;
+    this.updater = genericVar1 || genericVar2;
+}
+
+genericVar.prototype.isReactComponent = {};
+
+genericVar.prototype.setState = function(genericVar1, genericVar2) {
+    if (typeof genericVar1 !== "object" && typeof genericVar1 !== "function" && genericVar1 !== null) {
+        throw new Error("setState(...): takes an object of state variables to update or a function which returns an object of state variables.");
+    }
+    this.updater.enqueueSetState(this, genericVar1, genericVar2, "setState");
+};
+
+genericVar.prototype.forceUpdate = function(genericVar) {
+    this.updater.enqueueForceUpdate(this, genericVar, "forceUpdate");
+};
+
+genericVar.prototype = Object.create(genericVar.prototype);
+genericVar.prototype.constructor = genericVar;
+
+var genericVar = genericVar.prototype = new genericVar();
+genericVar.constructor = genericVar;
+
+genericVar.isPureReactComponent = true;
+
+var genericVar = Array.isArray;
+var genericVar = Object.prototype.hasOwnProperty;
+var genericVar = {
+    current: null
+};
+var genericVar = {
+    key: true,
+    ref: true,
+    __self: true,
+    __source: true
+};
+
+function renamedFunctionvar_2259(genericVar1, genericVar2) {
+    let genericVar;
+    genericVar = {};
+    genericVar = null;
+    genericVar = null;
+    if (genericVar !== null) {
+        if (genericVar.ref !== undefined) {
+            genericVar = genericVar.ref;
+        }
+        if (genericVar.key !== undefined) {
+            genericVar = "" + genericVar.key;
+        }
+        for (let key in genericVar) {
+            if (genericVar.hasOwnProperty(key) && genericVar[key].call(genericVar)) {
+                genericVar[key] = genericVar[key];
+            }
+        }
+    }
+
+    let remainingArguments = arguments.length - 2;
+    if (remainingArguments === 1) {
+        genericVar.children = genericVar;
+    } else if (remainingArguments > 1) {
+        let childrenArray = [];
+        for (let i = 0; i < remainingArguments; i++) {
+            childrenArray[i] = arguments[i + 2];
+        }
+        genericVar.children = childrenArray;
+    }
+
+    if (genericVar && genericVar.defaultProps) {
+        for (let key in genericVar.defaultProps) {
+            if (genericVar[key] === undefined) {
+                genericVar[key] = genericVar.defaultProps[key];
+            }
+        }
+    }
+
+    return {
+        $typeof: genericVar,
+        type: genericVar,
+        key: genericVar,
+        ref: genericVar,
+        props: genericVar,
+        _owner: null
+    };
+}
+
+                    function renamedFunctionvar_2270() {
                         return "object" == typeof genericVar && null !== genericVar && genericVar.$typeof === genericVar;
                     }
                     var genericVar = /\/+/g;
-                    function renamedFunctionvar_2273, genericVar {
-                        return "object" == typeof genericVar && null !== genericVar && null != genericVar.key ? function genericVar {
-                            var genericVar = {
-                                "=": "=0",
-                                ":": "=2"
-                            }
-                            ;
-                            return "$" + genericVar.replace/[=:]/g, function (genericVar {
-                                return genericVar[genericVar];
-                            }
-                            );
-                        }
-                        "" + genericVar.key : genericVar.toString36;
-                    }
-                    function renamedFunctionvar_2279, genericVar, genericVar, genericVar, genericVar {
-                        var genericVar = typeof genericVar;
-                        if !("undefined" !== genericVar && "boolean" !== genericVar) {
-                            genericVar = null;
-                        }
-                        var genericVar = false;
-                        if null === genericVar {
-                            genericVar = true;
-                        }
-                        else {
-                            switch genericVar {
-                                case "string":
-                                case "number":
-                                genericVar = true;
-                                break;
-                                case "object":
-                                switch genericVar.$typeof {
-                                    case genericVar:
-                                    case genericVar:
-                                    genericVar = true;
-                                }
-                            }
-                        }
-                        if genericVar {
-                            genericVar = var_2283var_2285 = genericVar;
-                            genericVar = "" === genericVar ? "." + var_2272var_2285, 0 : genericVar;
-                            if genericVar(genericVar) {
-                                genericVar = "";
-                                if null != genericVar {
-                                    genericVar = genericVar.replacevar_2271, "SIX_TOMOE_SCRIPT_PLACEHOLDER/" + "/";
-                                }
-                                var_2278var_2283, genericVar, genericVar, "", function (genericVar {
-                                    return genericVar;
-                                }
-                                );
-                            }
-                            else if null != genericVar {
-                                if "object" == typeof genericVar && null !== genericVar && genericVar.$typeof === genericVar {
-                                    genericVar = function genericVar, genericVar {
-                                        return {
-                                            $typeof: genericVar,
-                                            type: genericVar.type,
-                                            key: genericVar,
-                                            ref: genericVar.ref,
-                                            props: genericVar.props,
-                                            _owner: genericVar._owner
-                                        }
-                                        ;
-                                    }
-                                    genericVar, genericVar + (!genericVar.key || genericVar && genericVar.key === genericVar.key ? "" : ("" + genericVar.key.replacevar_2271, "SIX_TOMOE_SCRIPT_PLACEHOLDER/" + "/") + genericVar);
-                                }
-                                genericVar.pushvar_2283;
-                            }
-                            return 1;
-                        }
-                        genericVar = 0;
-                        genericVar = genericVar === "" ? "." : genericVar + ":";
-                        
-                        if (Array.isArray(genericVar)) {
-                            for (let i = 0; i < genericVar.length; i++) {
-                                let item = genericVar[i];
-                                genericVar += `${item}`;
-                            }
-                        } else {
-                            genericVar = function (input) {
-                                if (input === null || typeof input !== "object") {
-                                    return null;
-                                }
-                                return typeof input[Symbol.iterator] === "function" ? input : null;
-                            }(genericVar);
-                        
-                            if (typeof genericVar === "function") {
-                                let iterator = genericVar.call(genericVar);
-                                let i = 0;
-                        
-                                while (!(result = iterator.next()).done) {
-                                    let value = result.value;
-                                    genericVar += `${value}`;
-                                }
-                            } else if (typeof genericVar === "object") {
-                                let objectString = String(genericVar);
-                                throw new Error(
-                                    `Objects are not valid as a React child (found: ${
-                                        objectString === "[object Object]"
-                                            ? `object with keys {${Object.keys(genericVar).join(", ")}}`
-                                            : objectString
-                                    }). If you meant to render a collection of children, use an array instead.`
-                                );
-                            }
-                        }
-                        
-                        return genericVar;
-                        
+                    function renamedFunctionvar_2273(genericVar) {
+    return typeof genericVar === "object" && genericVar !== null && genericVar.key !== undefined
+        ? function() {
+            let genericVar = {
+                "=": "=0",
+                ":": "=2"
+            };
+            return "$" + genericVar.replace(/[=:]/g, function(genericVar) {
+                return genericVar[genericVar];
+            });
+        } 
+        : "" + genericVar.key;
+}
+
+function renamedFunctionvar_2279(genericVar1, genericVar2, genericVar3, genericVar4) {
+    let genericVar = typeof genericVar1;
+    if (!(genericVar !== "undefined" && genericVar !== "boolean")) {
+        genericVar = null;
+    }
+
+    let isValid = false;
+    if (genericVar === null) {
+        isValid = true;
+    } else {
+        switch (genericVar) {
+            case "string":
+            case "number":
+                isValid = true;
+                break;
+            case "object":
+                switch (genericVar.$typeof) {
+                    case genericVar:
+                    case genericVar:
+                        isValid = true;
+                        break;
+                }
+        }
+    }
+
+    if (isValid) {
+        genericVar = var_2283var_2285 = genericVar;
+        genericVar = genericVar === "" ? "." + var_2272var_2285 : genericVar;
+        if (genericVar(genericVar)) {
+            genericVar = "";
+            if (genericVar !== null) {
+                genericVar = genericVar.replace(var_2271, "SIX_TOMOE_SCRIPT_PLACEHOLDER/" + "/");
+            }
+            var_2278var_2283(genericVar, genericVar, "", function(genericVar) {
+                return genericVar;
+            });
+        } else if (genericVar !== null) {
+            if (typeof genericVar === "object" && genericVar !== null && genericVar.$typeof === genericVar) {
+                genericVar = function(genericVar1, genericVar2) {
+                    return {
+                        $typeof: genericVar1,
+                        type: genericVar2.type,
+                        key: genericVar2.key,
+                        ref: genericVar2.ref,
+                        props: genericVar2.props,
+                        _owner: genericVar2._owner
+                    };
+                };
+                genericVar = genericVar + (!genericVar.key || (genericVar && genericVar.key === genericVar.key) ? "" : ("" + genericVar.key.replace(var_2271, "SIX_TOMOE_SCRIPT_PLACEHOLDER/" + "/")) + genericVar);
+            }
+            genericVar.push(var_2283);
+        }
+        return 1;
+    }
+
+    genericVar = 0;
+    genericVar = genericVar === "" ? "." : genericVar + ":";
+
+    if (Array.isArray(genericVar)) {
+        for (let i = 0; i < genericVar.length; i++) {
+            let item = genericVar[i];
+            genericVar += `${item}`;
+        }
+    } else {
+        genericVar = (function(input) {
+            if (input === null || typeof input !== "object") {
+                return null;
+            }
+            return typeof input[Symbol.iterator] === "function" ? input : null;
+        })(genericVar);
+
+        if (typeof genericVar === "function") {
+            let iterator = genericVar.call(genericVar);
+            let result;
+            let value;
+            while (!(result = iterator.next()).done) {
+                value = result.value;
+                genericVar += `${value}`;
+            }
+        } else if (typeof genericVar === "object") {
+            let objectString = String(genericVar);
+            throw new Error(
+                `Objects are not valid as a React child (found: ${
+                    objectString === "[object Object]"
+                        ? `object with keys {${Object.keys(genericVar).join(", ")}}`
+                        : objectString
+                }). If you meant to render a collection of children, use an array instead.`
+            );
+        }
+    }
+
+    return genericVar;
+}
+
                         function renamedFunctionvar_2293(genericVar, genericVar2) {
                             if (genericVar == null) {
                                 return genericVar;
@@ -8957,98 +9176,100 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                             ReactCurrentOwner: genericVar1,
                         };
                         
-                    genericVar.Children = {
-                        map: genericVar,
-                        forEach: function genericVar, genericVar, genericVar {
-                            var_2292var_2307, function ( {
-                                genericVar.applythis, arguments;
-                            }
-                            , genericVar);
-                        }
-                        ,
-                        count: function genericVar {
-                            var genericVar = 0;
-                            var_2292var_2310, function ( {
-                                genericVar++;
-                            }
-                            );
-                            return genericVar;
-                        }
-                        ,
-                        toArray: function genericVar {
-                            return var_2292var_2312, function (genericVar {
-                                return genericVar;
-                            }
-                            ) || [];
-                        }
-                        ,
-                        only: function genericVar {
-                            if !("object" == typeof genericVar && null !== genericVar && genericVar.$typeof === genericVar) {
-                                throw Error"React.Children.only expected to receive a single React element child.";
-                            }
-                            return genericVar;
-                        }
-                    }
-                    ;
-                    genericVar.Component = genericVar;
-                    genericVar.Fragment = genericVar;
-                    genericVar.Profiler = genericVar;
-                    genericVar.PureComponent = genericVar;
-                    genericVar.StrictMode = genericVar;
-                    genericVar.Suspense = genericVar;
-                    genericVar.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = genericVar;
-                    genericVar.cloneElement = function genericVar, genericVar, genericVar {
-                        if null == genericVar {
-                            throw Error"React.cloneElement(...: The argument must be a React element, but you passed " + genericVar + ".");
-                        }
-                        var genericVar = genericVar{
-                        }
-                        , genericVar.props;
-                        var genericVar = genericVar.key;
-                        var genericVar = genericVar.ref;
-                        var genericVar = genericVar._owner;
-                        if null != genericVar {
-                            if undefined !== genericVar.ref {
-                                genericVar = genericVar.ref;
-                                genericVar = null;
-                            }
-                            if undefined !== genericVar.key {
-                                genericVar = "" + genericVar.key;
-                            }
-                            if genericVar.type && genericVar.type.defaultProps {
-                                var genericVar = genericVar.type.defaultProps;
-                            }
-                            for genericVar in genericVar if genericVar.call(genericVar, genericVar && !genericVar.hasOwnPropertyvar_2323) {
-                                genericVar[genericVar] = undefined === genericVar[genericVar] && undefined !== genericVar ? genericVar[genericVar] : genericVar[genericVar];
-                            }
-                        }
-                        var genericVar = arguments.length - 2;
-                        if 1 === genericVar {
-                            genericVar.children = genericVar;
-                        }
-                        else {
-                            if 1 < genericVar {
-                                genericVar = Arrayvar_2323;
-                                for var genericVar = 0;
-                                genericVar < genericVar;
-                                genericVar++ {
-                                    genericVar[genericVar] = arguments[genericVar + 2];
-                                }
-                                genericVar.children = genericVar;
-                            }
-                        }
-                        return {
-                            $typeof: genericVar,
-                            type: genericVar.type,
-                            key: genericVar,
-                            ref: genericVar,
-                            props: genericVar,
-                            _owner: genericVar
-                        }
-                        ;
-                    }
-                    ;
-                    genericVar.createContext = function genericVar {
+                genericVar.Children = {
+    map: genericVar,
+    forEach: function(genericVar1, genericVar2, genericVar3) {
+        var_2292var_2307(function() {
+            genericVar1.apply(this, arguments);
+        }, genericVar3);
+    },
+    count: function() {
+        let count = 0;
+        var_2292var_2310(function() {
+            count++;
+        });
+        return count;
+    },
+    toArray: function() {
+        return var_2292var_2312(function(genericVar) {
+            return genericVar;
+        }) || [];
+    },
+    only: function(genericVar) {
+        if (!(typeof genericVar === "object" && genericVar !== null && genericVar.$typeof === genericVar)) {
+            throw new Error("React.Children.only expected to receive a single React element child.");
+        }
+        return genericVar;
+    }
+};
+
+genericVar.Component = genericVar;
+genericVar.Fragment = genericVar;
+genericVar.Profiler = genericVar;
+genericVar.PureComponent = genericVar;
+genericVar.StrictMode = genericVar;
+genericVar.Suspense = genericVar;
+genericVar.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = genericVar;
+
+genericVar.cloneElement = function(genericVar1, genericVar2, genericVar3) {
+    if (genericVar1 === null) {
+        throw new Error("React.cloneElement(...): The argument must be a React element, but you passed " + genericVar1 + ".");
+    }
+let newElement = {
+    props: genericVar1 && genericVar1.props,  // Safely access props
+    key: (genericVar1 && genericVar1.key) || (genericVar2 && genericVar2.key) || '', // Fallback to empty string if both are undefined
+    ref: (genericVar1 && genericVar1.ref) || (genericVar2 && genericVar2.ref) || null,  // Fallback to null if both are undefined
+    _owner: (genericVar1 && genericVar1._owner) || (genericVar2 && genericVar2._owner) || null  // Fallback to null if both are undefined
+};
+
+
+
+
+    if (genericVar1.type && genericVar1.type.defaultProps) {
+        const defaultProps = genericVar1.type.defaultProps;
+        for (let key in defaultProps) {
+            if (newElement[key] === undefined) {
+                newElement[key] = defaultProps[key];
+            }
+        }
+    }
+    
+    return {
+        $typeof: newElement,
+        type: newElement.type,
+        key: newElement.key,
+        ref: newElement.ref,
+        props: newElement.props,
+        _owner: newElement._owner
+    };
+};
+
+genericVar.version = "18.2.0-next-9e3b772b8-20220608";
+
+genericVar.exports = genericVar;
+
+var genericVar = Symbol.for("react.element");
+var genericVar = Symbol.for("react.portal");
+var genericVar = Symbol.for("react.fragment");
+var genericVar = Symbol.for("react.strict_mode");
+var genericVar = Symbol.for("react.profiler");
+var genericVar = Symbol.for("react.provider");
+var genericVar = Symbol.for("react.context");
+var genericVar = Symbol.for("react.forward_ref");
+var genericVar = Symbol.for("react.suspense");
+var genericVar = Symbol.for("react.memo");
+var genericVar = Symbol.for("react.lazy");
+
+var genericVar = {
+    isMounted: function() {
+        return false;
+    },
+    enqueueForceUpdate: function() {},
+    enqueueReplaceState: function() {},
+    enqueueSetState: function() {},
+};
+
+                    genericVar.createContext = function genericVar() {
                         (genericVar = {
                             $typeof: genericVar,
                             _currentValue: genericVar,
@@ -9068,20 +9289,20 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                     }
                     ;
                     genericVar.createElement = genericVar;
-                    genericVar.createFactory = function genericVar {
+                    genericVar.createFactory = function genericVar() {
                         var genericVar = genericVar.bindnull, genericVar;
                         genericVar.type = genericVar;
                         return genericVar;
                     }
                     ;
-                    genericVar.createRef = function  {
+                    genericVar.createRef = function()  {
                         return {
                             current: null
                         }
                         ;
                     }
                     ;
-                    genericVar.forwardRef = function genericVar {
+                    genericVar.forwardRef = function genericVar() {
                         return {
                             $typeof: genericVar,
                             render: genericVar
@@ -9090,7 +9311,7 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                     }
                     ;
                     genericVar.isValidElement = genericVar;
-                    genericVar.lazy = function genericVar {
+                    genericVar.lazy = function genericVar() {
                         return {
                             $typeof: genericVar,
                             _payload: {
@@ -9103,179 +9324,161 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                         ;
                     }
                     ;
-                    genericVar.memo = function genericVar, genericVar {
-                        return {
-                            $typeof: genericVar,
-                            type: genericVar,
-                            compare: undefined === genericVar ? null : genericVar
-                        }
-                        ;
-                    }
-                    ;
-                    genericVar.startTransition = function genericVar {
-                        genericVar.transition = {
-                        }
-                        ;
-                        try {
-                            genericVar;
-                        }
-                        finally {
-                            genericVar.transition = null;
-                        }
-                    }
-                    ;
-                    genericVar.unstable_act = function () {
-                        throw new Error("act(... is not supported in production builds of React.");
-                    };
-                    
-                    genericVar.useCallback = function genericVar, genericVar {
-                        return null.useCallbackvar_2333, genericVar;
-                    }
-                    ;
-                    genericVar.useContext = function genericVar {
-                        return null.useContextvar_2335;
-                    }
-                    ;
-                    genericVar.useDebugValue = function  {
-                    }
-                    ;
-                    genericVar.useDeferredValue = function genericVar {
-                        return null.useDeferredValuevar_2336;
-                    }
-                    ;
-                    genericVar.useEffect = function genericVar, genericVar {
-                        return null.useEffectvar_2337, genericVar;
-                    }
-                    ;
-                    genericVar.useId = function  {
-                        return null.useId;
-                    }
-                    ;
-                    genericVar.useImperativeHandle = function genericVar, genericVar, genericVar {
-                        return null.useImperativeHandlevar_2339, genericVar, genericVar;
-                    }
-                    ;
-                    genericVar.useInsertionEffect = function genericVar, genericVar {
-                        return null.useInsertionEffectvar_2342, genericVar;
-                    }
-                    ;
-                    genericVar.useLayoutEffect = function genericVar, genericVar {
-                        return null.useLayoutEffectvar_2344, genericVar;
-                    }
-                    ;
-                    genericVar.useMemo = function genericVar, genericVar {
-                        return null.useMemovar_2346, genericVar;
-                    }
-                    ;
-                    genericVar.useReducer = function genericVar, genericVar, genericVar {
-                        return null.useReducervar_2348, genericVar, genericVar;
-                    }
-                    ;
-                    genericVar.useRef = function genericVar {
-                        return null.useRefvar_2351;
-                    }
-                    ;
-                    genericVar.useState = function genericVar {
-                        return null.useStatevar_2352;
-                    }
-                    ;
-                    genericVar.useSyncExternalStore = function genericVar, genericVar, genericVar {
-                        return null.useSyncExternalStorevar_2353, genericVar, genericVar;
-                    }
-                    ;
-                    genericVar.useTransition = function  {
-                        return null.useTransition;
-                    }
-                    ;
+                genericVar.memo = function(genericVar1, genericVar2) {
+    return {
+        $typeof: genericVar1,
+        type: genericVar1,
+        compare: genericVar1 === undefined ? null : genericVar1
+    };
+};
+
+genericVar.startTransition = function() {
+    genericVar.transition = {};
+    try {
+        // Transition logic can be added here
+    } finally {
+        genericVar.transition = null; // Reset transition after finishing
+    }
+};
+
+genericVar.unstable_act = function() {
+    throw new Error("act(...) is not supported in production builds of React.");
+};
+
+genericVar.useCallback = function(genericVar1, genericVar2) {
+    return null.useCallback(var_2333, genericVar1);
+};
+
+genericVar.useContext = function(genericVar1) {
+    return null.useContext(var_2335);
+};
+
+genericVar.useDebugValue = function() {};
+
+genericVar.useDeferredValue = function(genericVar1) {
+    return null.useDeferredValue(var_2336);
+};
+
+genericVar.useEffect = function(genericVar1, genericVar2) {
+    return null.useEffect(var_2337, genericVar1);
+};
+
+genericVar.useId = function() {
+    return null.useId;
+};
+
+genericVar.useImperativeHandle = function(genericVar1, genericVar2, genericVar3) {
+    return null.useImperativeHandle(var_2339, genericVar1, genericVar2);
+};
+
+genericVar.useInsertionEffect = function(genericVar1, genericVar2) {
+    return null.useInsertionEffect(var_2342, genericVar1);
+};
+
+genericVar.useLayoutEffect = function(genericVar1, genericVar2) {
+    return null.useLayoutEffect(var_2344, genericVar1);
+};
+
+genericVar.useMemo = function(genericVar1, genericVar2) {
+    return null.useMemo(var_2346, genericVar1);
+};
+
+genericVar.useReducer = function(genericVar1, genericVar2, genericVar3) {
+    return null.useReducer(var_2348, genericVar1, genericVar2);
+};
+
+genericVar.useRef = function(genericVar1) {
+    return null.useRef(var_2351);
+};
+
+genericVar.useState = function(genericVar1) {
+    return null.useState(var_2352);
+};
+
+genericVar.useSyncExternalStore = function(genericVar1, genericVar2, genericVar3) {
+    return null.useSyncExternalStore(var_2353, genericVar1, genericVar2);
+};
+
+genericVar.useTransition = function() {
+    return null.useTransition;
+};
+
                     genericVar.version = "18.2.0";
-                }
-                ,
-                294: genericVar, genericVar, function genericVar {
-                    "use strict";
-                    genericVar.exports = genericVar;
-                }
-                ,
-                893: genericVar, genericVar, function genericVar {
-                    "use strict";
-                    genericVar.exports = genericVar;
-                }
-                ,
-                53: genericVar, function genericVar {
-                    "use strict";
-                    function renamedFunctionvar_2365, genericVar {
-                        var genericVar = genericVar.length;
-                        genericVar.pushvar_2366;
-                        genericVar: for ;
-                        0 < genericVar;
-                        {
-                            var genericVar = genericVar - 1 >>> 1;
-                            var genericVar = genericVar[genericVar];
-                            if !(0 < genericVar(genericVar, genericVar)) {
-                                break genericVar;
-                            }
-                            genericVar[genericVar] = genericVar;
-                            genericVar[genericVar] = genericVar;
-                            genericVar = genericVar;
-                        }
-                    }
-                    function renamedFunctionvar_2373 {
-                        if 0 === genericVar.length {
+                
+                
+               // Assuming genericVar is an array
+function renamedFunctionvar_2365(genericVar) {
+    let genericVarLength = genericVar.length;
+    genericVar.push(var_2366);  // Assuming var_2366 is something you want to add to the array
+    
+    // Properly structured for loop
+    for (let i = 0; i < genericVarLength; i++) {
+        let value = genericVar[i];
+        if (!(value > 0)) {
+            break;  // Stop processing when condition is met
+        }
+        genericVar[i] = value;  // Update the array
+    }
+}
+
+// Example function calls or assignments
+genericVar.exports = genericVar;  // Assuming you're exporting something like this
+
+// Example for `genericVar` being an array and pushing `var_2366`
+genericVar.push(var_2366);
+
+                    function renamedFunctionvar_2373() {
+                        if (0 === genericVar.length) {
                             return null;
                         }
                         var genericVar = genericVar[0];
                         var genericVar = genericVar.pop;
-                        if genericVar !== genericVar {
+                        if (genericVar !== genericVar) {
                             genericVar[0] = genericVar;
                             var genericVar = 0;
                             var genericVar = genericVar.length;
-                            genericVar: for var genericVar = genericVar >>> 1;
-                            genericVar < genericVar;
-                            {
-                                var genericVar = 2 * genericVar + 1 - 1;
-                                var genericVar = genericVar[genericVar];
-                                var genericVar = genericVar + 1;
-                                var genericVar = genericVar[genericVar];
-                                if 0 > genericVar(genericVar, genericVar) {
-                                    if genericVar < genericVar && 0 > genericVar(genericVar, genericVar) {
-                                        genericVar[genericVar] = genericVar;
-                                        genericVar[genericVar] = genericVar;
-                                        genericVar = genericVar;
-                                    }
-                                    else {
-                                        genericVar[genericVar] = genericVar;
-                                        genericVar[genericVar] = genericVar;
-                                        genericVar = genericVar;
-                                    }
-                                }
-                                else {
-                                    if !(genericVar < genericVar && 0 > genericVar(genericVar, genericVar)) {
-                                        break genericVar;
-                                    }
-                                    genericVar[genericVar] = genericVar;
-                                    genericVar[genericVar] = genericVar;
-                                    genericVar = genericVar;
-                                }
-                            }
-                        }
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2384, genericVar {
-                        var genericVar = genericVar.sortIndex - genericVar.sortIndex;
-                        return 0 !== genericVar ? genericVar : genericVar.id - genericVar.id;
-                    }
-                    if "object" == typeof performance && "function" == typeof performance.now {
-                        genericVar.unstable_now = function  {
-                            return performance.now;
-                        }
-                        ;
-                    }
-                    else {
-                        var genericVar = Date.now;
-                        genericVar.unstable_now = function  {
-                            return Date.now - genericVar;
-                        }
-                        ;
-                    }
+                          for (let genericVar = genericVar >>> 1; genericVar < genericVar; genericVar++) {
+    genericVar = 2 * genericVar + 1 - 1;
+    genericVar = genericVar[genericVar];
+    genericVar += 1;
+    genericVar = genericVar[genericVar];
+
+    if (genericVar(genericVar, genericVar) < 0) {
+        if (genericVar < genericVar && genericVar(genericVar, genericVar) < 0) {
+            genericVar[genericVar] = genericVar;
+            genericVar[genericVar] = genericVar;
+            genericVar = genericVar;
+        } else {
+            genericVar[genericVar] = genericVar;
+            genericVar[genericVar] = genericVar;
+            genericVar = genericVar;
+        }
+    } else {
+        if (!(genericVar < genericVar && genericVar(genericVar, genericVar) < 0)) {
+            break; // Exit the loop
+        }
+        genericVar[genericVar] = genericVar;
+        genericVar[genericVar] = genericVar;
+        genericVar = genericVar;
+    }
+}}
+
+function renamedFunctionvar_2384(genericVar1, genericVar2) {
+    let difference = genericVar1.sortIndex - genericVar2.sortIndex;
+    return difference !== 0 ? difference : genericVar1.id - genericVar2.id;
+}
+
+if (typeof performance === "object" && typeof performance.now === "function") {
+    genericVar.unstable_now = function() {
+        return performance.now();
+    };
+} else {
+    let referenceTime = Date.now();
+    genericVar.unstable_now = function() {
+        return Date.now() - referenceTime;
+    };
+}
+
                     var genericVar = [];
                     var genericVar = [];
                     var genericVar = 1;
@@ -9287,105 +9490,100 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                     var genericVar = "function" == typeof setTimeout ? setTimeout : null;
                     var genericVar = "function" == typeof clearTimeout ? clearTimeout : null;
                     var genericVar = "undefined" != typeof setImmediate ? setImmediate : null;
-                    function renamedFunctionvar_2400 {
-                        for var genericVar = 0 === genericVar.length ? null : genericVar[0];
-                        null !== genericVar;
-                        {
-                            if null === genericVar.callback {
-                                var_2372var_2389;
-                            }
-                            else {
-                                if !(genericVar.startTime <= genericVar) {
-                                    break;
-                                }
-                                var_2372var_2389;
-                                genericVar.sortIndex = genericVar.expirationTime;
-                                var_2364var_2388, genericVar;
-                            }
-                            genericVar = 0 === genericVar.length ? null : genericVar[0];
-                        }
-                    }
-                    function renamedFunctionvar_2403 {
-                        genericVar = false;
-                        var_2399var_2403;
-                        if !genericVar {
-                            if null !== (0 === genericVar.length ? null : genericVar[0]) {
-                                genericVar = true;
-                                var_2404var_2405;
-                            }
-                            else {
-                                var genericVar = 0 === genericVar.length ? null : genericVar[0];
-                                if null !== genericVar {
-                                    var_2407var_2402, genericVar.startTime - genericVar;
-                                }
-                            }
-                        }
-                    }
-                    function renamedFunctionvar_2408, genericVar {
-                        genericVar = false;
-                        if genericVar {
-                            genericVar = false;
-                            var_2397var_2410;
-                            genericVar = -1;
-                        }
-                        genericVar = true;
-                        var genericVar = genericVar;
-                        try {
-                            var_2399var_2409;
-                            for genericVar = 0 === genericVar.length ? null : genericVar[0];
-                            null !== genericVar && (!(genericVar.expirationTime > genericVar || genericVar && !!genericVar.unstable_now( - genericVar < genericVar));
-                            ) {
-                                var genericVar = genericVar.callback;
-                                if "function" == typeof genericVar {
-                                    genericVar.callback = null;
-                                    genericVar = genericVar.priorityLevel;
-                                    var genericVar = var_2414var_2391.expirationTime <= genericVar;
-                                    genericVar = genericVar.unstable_now;
-                                    if "function" == typeof genericVar {
-                                        genericVar.callback = genericVar;
-                                    }
-                                    else if genericVar === (0 === genericVar.length ? null : genericVar[0]) {
-                                        var_2372var_2388;
-                                    }
-                                    var_2399var_2409;
-                                }
-                                else {
-                                    var_2372var_2388;
-                                }
-                                genericVar = 0 === genericVar.length ? null : genericVar[0];
-                            }
-                            if null !== genericVar {
-                                var genericVar = true;
-                            }
-                            else {
-                                var genericVar = 0 === genericVar.length ? null : genericVar[0];
-                                if null !== genericVar {
-                                    var_2407var_2402, genericVar.startTime - genericVar;
-                                }
-                                genericVar = false;
-                            }
-                            return genericVar;
-                        }
-                        finally {
-                            genericVar = null;
-                            genericVar = genericVar;
-                            genericVar = false;
-                        }
-                    }
-                    if "undefined" != typeof navigator && undefined !== navigator.scheduling && undefined !== navigator.scheduling.isInputPending {
-                        navigator.scheduling.isInputPending.bindnavigator.scheduling;
-                    }
-                    var genericVar;
-                    var genericVar = false;
-                    var genericVar = null;
-                    var genericVar = -1;
-                    var genericVar = 5;
-                    var genericVar = -1;
-                    function genericVar {
-                        return !genericVar.unstable_now( - genericVar < genericVar);
-                    }
-                    function genericVar {
-                        if null !== genericVar {
+                 function renamedFunctionvar_2400() {
+    for (let genericVar = genericVar.length === 0 ? null : genericVar[0]; genericVar !== null;) {
+        if (genericVar.callback === null) {
+            var_2372var_2389;
+        } else {
+            if (!(genericVar.startTime <= genericVar)) {
+                break;
+            }
+            var_2372var_2389;
+            genericVar.sortIndex = genericVar.expirationTime;
+            var_2364var_2388(genericVar);
+        }
+        genericVar = genericVar.length === 0 ? null : genericVar[0];
+    }
+}
+
+function renamedFunctionvar_2403() {
+    let genericVar = false;
+    var_2399var_2403;
+    if (!genericVar) {
+        if (genericVar.length === 0 ? null : genericVar[0] !== null) {
+            genericVar = true;
+            var_2404var_2405;
+        } else {
+            let genericVar = genericVar.length === 0 ? null : genericVar[0];
+            if (genericVar !== null) {
+                var_2407var_2402(genericVar.startTime - genericVar);
+            }
+        }
+    }
+}
+
+function renamedFunctionvar_2408(genericVar1, genericVar2) {
+    let isProcessing = false;
+    if (genericVar1) {
+        isProcessing = false;
+        var_2397var_2410;
+        genericVar2 = -1;
+    }
+    isProcessing = true;
+    let currentTask = genericVar1;
+    try {
+        var_2399var_2409;
+        for (let task = currentTask.length === 0 ? null : currentTask[0]; task !== null && !(task.expirationTime > genericVar2 || (task && !!task.unstable_now(-genericVar2 < task))); ) {
+            let callback = task.callback;
+            if (typeof callback === "function") {
+                task.callback = null;
+                task.priorityLevel = task.priorityLevel;
+                let expirationTime = var_2414var_2391.expirationTime <= genericVar2;
+                task.unstable_now;
+                if (typeof callback === "function") {
+                    task.callback = callback;
+                } else if (task === (currentTask.length === 0 ? null : currentTask[0])) {
+                    var_2372var_2388;
+                }
+                var_2399var_2409;
+            } else {
+                var_2372var_2388;
+            }
+            task = currentTask.length === 0 ? null : currentTask[0];
+        }
+        if (currentTask !== null) {
+            isProcessing = true;
+        } else {
+            let nextTask = currentTask.length === 0 ? null : currentTask[0];
+            if (nextTask !== null) {
+                var_2407var_2402(nextTask.startTime - genericVar2);
+            }
+            isProcessing = false;
+        }
+        return isProcessing;
+    } finally {
+        currentTask = null;
+        genericVar1 = genericVar2;
+        isProcessing = false;
+    }
+}
+
+if (typeof navigator !== "undefined" && navigator.scheduling && typeof navigator.scheduling.isInputPending === "function") {
+    navigator.scheduling.isInputPending.bind(navigator.scheduling);
+}
+
+let isSchedulerRunning = false;
+let currentPriority = null;
+let currentDeadline = -1;
+let taskTimeoutHandle = 5;
+let startTime = -1;
+
+function genericVar() {
+    return !genericVar.unstable_now(-genericVar < genericVar);
+}
+
+                    function genericVar() {
+                        if (null !== genericVar) {
                             var genericVar = genericVar.unstable_now;
                             genericVar = genericVar;
                             var genericVar = true;
@@ -9393,7 +9591,7 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                                 genericVar = var_2420true, genericVar;
                             }
                             finally {
-                                if genericVar {
+                                if (genericVar) {
                                     genericVar;
                                 }
                                 else {
@@ -9406,1036 +9604,870 @@ function renamedFunctionvar_2119, genericVar, genericVar, genericVar, genericVar
                             genericVar = false;
                         }
                     }
-                    if "function" == typeof genericVar {
-                        genericVar = function  {
-                            var_2398var_2422;
-                        }
-                        ;
-                    }
-                    else {
-                        if "undefined" != typeof MessageChannel {
-                            var genericVar = new MessageChannel;
-                            var genericVar = genericVar.port2;
-                            genericVar.port1.onmessage = genericVar;
-                            genericVar = function  {
-                                genericVar.postMessagenull;
-                            }
-                            ;
-                        }
-                        else {
-                            genericVar = function  {
-                                var_2396var_2422, 0;
-                            }
-                            ;
-                        }
-                    }
-                    function renamedFunctionvar_2427 {
-                        genericVar = genericVar;
-                        if !genericVar {
-                            genericVar = true;
-                            genericVar;
-                        }
-                    }
-                    function renamedFunctionvar_2428, genericVar {
-                        genericVar = var_2396function ( {
-                            var_2428var_2363.unstable_now();
-                        }
-                        , genericVar);
-                    }
-                    genericVar.unstable_IdlePriority = 5;
-                    genericVar.unstable_ImmediatePriority = 1;
-                    genericVar.unstable_LowPriority = 4;
-                    genericVar.unstable_NormalPriority = 3;
-                    genericVar.unstable_Profiling = null;
-                    genericVar.unstable_UserBlockingPriority = 2;
-                    genericVar.unstable_cancelCallback = function genericVar {
-                        genericVar.callback = null;
-                    }
-                    ;
-                    genericVar.unstable_continueExecution = function  {
-                        if !(genericVar || genericVar) {
-                            genericVar = true;
-                            var_2404var_2405;
-                        }
-                    }
-                    ;
-                    genericVar.unstable_forceFrameRate = function genericVar {
-                        if 0 > genericVar || 125 < genericVar {
-                            console.error"forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported";
-                        }
-                        else {
-                            genericVar = 0 < genericVar ? Math.floor1000/ genericVar : 5;
-                        }
-                    }
-                    ;
-                    genericVar.unstable_getCurrentPriorityLevel = function  {
-                        return genericVar;
-                    }
-                    ;
-                    genericVar.unstable_getFirstCallbackNode = function  {
-                        return 0 === genericVar.length ? null : genericVar[0];
-                    }
-                    ;
-                    genericVar.unstable_next = function genericVar {
-                        switch genericVar {
-                            case 1:
-                            case 2:
-                            case 3:
-                            var genericVar = 3;
-                            break;
-                            default:
-                            genericVar = genericVar;
-                        }
-                        var genericVar = genericVar;
-                        genericVar = genericVar;
-                        try {
-                            return genericVar;
-                        }
-                        finally {
-                            genericVar = genericVar;
-                        }
-                    }
-                    ;
-                    genericVar.unstable_pauseExecution = function  {
-                    }
-                    ;
-                    genericVar.unstable_requestPaint = function  {
-                    }
-                    ;
-                    genericVar.unstable_runWithPriority = function genericVar, genericVar {
-                        switch genericVar {
-                            case 1:
-                            case 2:
-                            case 3:
-                            case 4:
-                            case 5:
-                            break;
-                            default:
-                            genericVar = 3;
-                        }
-                        var genericVar = genericVar;
-                        genericVar = genericVar;
-                        try {
-                            return genericVar;
-                        }
-                        finally {
-                            genericVar = genericVar;
-                        }
-                    }
-                    ;
-                    genericVar.unstable_scheduleCallback = function genericVar, genericVar, genericVar {
-                        var genericVar = genericVar.unstable_now;
-                        if "object" == typeof genericVar && null !== genericVar {
-                            genericVar = "number" == typeof genericVar = genericVar.delay && 0 < genericVar ? genericVar + genericVar : genericVar;
-                        }
-                        else {
-                            genericVar = genericVar;
-                        }
-                        switch genericVar {
-                            case 1:
-                            var genericVar = -1;
-                            break;
-                            case 2:
-                            genericVar = 250;
-                            break;
-                            case 5:
-                            genericVar = 1073741823;
-                            break;
-                            case 4:
-                            genericVar = 10000;
-                            break;
-                            default:
-                            genericVar = 5000;
-                        }
-                        genericVar = {
-                            id: genericVar++,
-                            callback: genericVar,
-                            priorityLevel: genericVar,
-                            startTime: genericVar,
-                            expirationTime: genericVar = genericVar + genericVar,
-                            sortIndex: -1
-                        }
-                        ;
-                        if genericVar > genericVar {
-                            genericVar.sortIndex = genericVar;
-                            var_2364var_2389, genericVar;
-                            if null === (0 === genericVar.length ? null : genericVar[0] && genericVar === 0 === genericVar.length ? null : genericVar[0]) {
-                                if genericVar {
-                                    var_2397var_2410;
-                                    genericVar = -1;
-                                }
-                                else {
-                                    genericVar = true;
-                                }
-                                var_2407var_2402, genericVar - genericVar;
-                            }
-                        }
-                        else {
-                            genericVar.sortIndex = genericVar;
-                            var_2364var_2388, genericVar;
-                            if !(genericVar || genericVar) {
-                                genericVar = true;
-                                var_2404var_2405;
-                            }
-                        }
-                        return genericVar;
-                    }
-                    ;
-                    genericVar.unstable_shouldYield = genericVar;
-                    genericVar.unstable_wrapCallback = function genericVar {
-                        var genericVar = genericVar;
-                        return function  {
-                            var genericVar = genericVar;
-                            genericVar = genericVar;
-                            try {
-                                return genericVar.applythis, arguments;
-                            }
-                            finally {
-                                genericVar = genericVar;
-                            }
-                        }
-                        ;
-                    }
-                    ;
-                }
-                ,
-                840: genericVar, genericVar, function genericVar {
-                    "use strict";
-                    genericVar.exports = genericVar;
-                }
-                ,
-                379: function genericVar {
-                    "use strict";
-                    var genericVar = [];
-                    function renamedFunctionvar_2452 {
-                        var genericVar = -1;
-                        for var genericVar = 0;
-                        genericVar < genericVar.length;
-                        genericVar++ {
-                            if genericVar[genericVar].identifier === genericVar {
-                                genericVar = genericVar;
-                                break;
-                            }
-                        }
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2456, genericVar {
-                        var genericVar = {
-                        }
-                        ;
-                        var genericVar = [];
-                        for (var i = 0; i < genericVar.length; i++) {
-                            var currentVar = genericVar[i];
-                            var baseVar = currentVar.base ? currentVar[0] + currentVar.base : currentVar[0];
-                            var countVar = genericVar[baseVar] || 0;
-                            var cssVar = "." + baseVar + " " + genericVar[i];
-                            genericVar[baseVar] = countVar + 1;
-                        
-                            var processedVar = {
-                                css: currentVar[1],
-                                media: currentVar[2],
-                                sourceMap: currentVar[3],
-                                supports: currentVar[4],
-                                layer: currentVar[5]
-                            };
-                        }
-                        
-                            if -1 !== genericVar {
-                                genericVar[genericVar].references++;
-                                genericVar[genericVar].updatervar_2466;
-                            }
-                            else {
-                                var genericVar = var_2468var_2466, genericVar;
-                                genericVar.byIndex = genericVar;
-                                genericVar.splice(genericVar, 0, {
-                                    identifier: genericVar,
-                                    updater: genericVar,
-                                    references: 1
-                                }
-                                );
-                            }
-                            genericVar.pushvar_2464;
-                        }
-                        return genericVar;
-                    }
-                    function renamedFunctionvar_2469, genericVar {
-                        var genericVar = genericVar.domAPIvar_2470;
-                        genericVar.updatevar_2469;
-                        return function genericVar {
-                            if genericVar {
-                                if genericVar.css === genericVar.css && genericVar.media === genericVar.media && genericVar.sourceMap === genericVar.sourceMap && genericVar.supports === genericVar.supports && genericVar.layer === genericVar.layer {
-                                    return;
-                                }
-                                genericVar.updatevar_2469 = genericVar;
-                            }
-                            else {
-                                genericVar.remove;
-                            }
-                        }
-                        ;
-                    }
-                    genericVar./* Export Functions */
-exports = function genericVar, genericVar {
-                        var genericVar = var_2455var_2473 = genericVar || [], genericVar = genericVar || {
-                        }
-                        ;
-                        return function genericVar {
-                            genericVar = genericVar || [];
-                            for var genericVar = 0;
-                            genericVar < genericVar.length;
-                            genericVar++ {
-                                var genericVar = var_2451var_2475[genericVar];
-                                genericVar[genericVar].references--;
-                            }
-                            var genericVar = var_2455var_2476, genericVar;
-                            for var genericVar = 0;
-                            genericVar < genericVar.length;
-                            genericVar++ {
-                                var genericVar = var_2451var_2475[genericVar];
-                                if 0 === genericVar[genericVar].references {
-                                    genericVar[genericVar].updater;
-                                    genericVar.splicevar_2481, 1;
-                                }
-                            }
-                            genericVar = genericVar;
-                        }
-                        ;
-                    }
-                    ;
-                }
-                ,
-                569: function genericVar {
-                    "use strict";
-                    var genericVar = {
-                    }
-                    ;
-                    genericVar./* Export Functions */
-exports = function genericVar, genericVar {
-                        var genericVar = function genericVar {
-                            if undefined === genericVar[genericVar] {
-                                var genericVar = document.querySelectorvar_2487;
-                                if window.HTMLIFrameElement && genericVar instanceof window.HTMLIFrameElement {
-                                    try {
-                                        genericVar = genericVar.contentDocument.head;
-                                    }
-                                    catch genericVar {
-                                        genericVar = null;
-                                    }
-                                }
-                                genericVar[genericVar] = genericVar;
-                            }
-                            return genericVar[genericVar];
-                        }
-                        genericVar;
-                        if !genericVar {
-                            throw new Error"Couldn't find a style target. This probably means that the value for the 'insert' parameter is invalid.";
-                        }
-                        genericVar.appendChildvar_2485;
-                    }
-                    ;
-                }
-                ,
-                216: function genericVar {
-                    "use strict";
-                    genericVar./* Export Functions */
-exports = function genericVar {
-                        var genericVar = document.createElement"style";
-                        genericVar.setAttributesvar_2492, genericVar.attributes;
-                        genericVar.insertvar_2492, genericVar.options;
-                        return genericVar;
-                    }
-                    ;
-                }
-                ,
-                565: genericVar, genericVar, function genericVar {
-                    "use strict";
-                    genericVar./* Export Functions */
-exports = function genericVar {
-                        var genericVar = genericVar.nc;
-                        if genericVar {
-                            genericVar.setAttribute"nonce", genericVar;
-                        }
-                    }
-                    ;
-                }
-                ,
-                795: function genericVar {
-                    "use strict";
-                    genericVar./* Export Functions */
-exports = function genericVar {
-                        if "undefined" == typeof document {
-                            return {
-                                update: function  {
-                                }
-                                ,
-                                remove: function  {
-                                }
-                            }
-                            ;
-                        }
-                        var genericVar = genericVar.insertStyleElementvar_2499;
-                        return {
-                            update: function (genericVar) {
-                                (function (genericVar, genericVar, genericVar) {
-                                    var content = "";
-                                    if (genericVar.supports) {
-                                        content += "@supports " + genericVar.supports + " {\n";
-                                    }
-                                    if (genericVar.media) {
-                                        content += "@media " + genericVar.media + " {\n";
-                                    }
-                                    var hasLayer = typeof genericVar.layer !== "undefined";
-                                    if (hasLayer) {
-                                        content += "@layer" + (genericVar.layer.length > 0 ? " " + genericVar.layer : "") + " {\n";
-                                    }
-                                    content += genericVar.css;
-                                    if (hasLayer) {
-                                        content += "}\n";
-                                    }
-                                    if (genericVar.media) {
-                                        content += "}\n";
-                                    }
-                                    if (genericVar.supports) {
-                                        content += "}\n";
-                                    }
-                        
-                                    var sourceMap = genericVar.sourceMap;
-                                    if (sourceMap && typeof btoa !== "undefined") {
-                                        content +=
-                                            "\n/*# sourceMappingURL=data:application/json;base64," +
-                                            btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) +
-                                            " */";
-                                    }
-                        
-                                    genericVar.styleTagTransformvar_2505(genericVar, content, genericVar.options);
-                                })(genericVar, genericVar, genericVar);
-                            },
-                        };
-                        
-                            remove: function  {
-                                !function genericVar {
-                                    if null === genericVar.parentNode {
-                                        return false;
-                                    }
-                                    genericVar.parentNode.removeChildvar_2508;
-                                }
-                                genericVar;
-                            }
-                        }
-                        ;
-                    }
-                    ;
-                
-                589: function genericVar {
-                    "use strict";
-                    genericVar./* Export Functions */
-exports = function genericVar, genericVar {
-                        if genericVar.styleSheet {
-                            genericVar.styleSheet.cssText = genericVar;
-                        }
-                        else {
-                            for ;
-                            genericVar.firstChild;
-                            {
-                                genericVar.removeChildvar_2511.firstChild;
-                            }
-                            genericVar.appendChilddocument.createTextNode(genericVar);
-                        }
-                    }
-                    ;
-                }
-                ,
-                61: genericVar, genericVar, function genericVar {
-                    var genericVar = genericVar["default"];
-                    function genericVar {
-                        "use strict";
-                        genericVar.exports = genericVar = function  {
-                            return genericVar;
-                        }
-                        ;
-                        genericVar.exports.__esModule = true;
-                        genericVar.exports["default"] = genericVar.exports;
-                        var genericVar = {
-                        }
-                        ;
-                        var genericVar = Object.prototype;
-                        var genericVar = genericVar.hasOwnProperty;
-                        var genericVar = Object.defineProperty || function genericVar, genericVar, genericVar {
-                            genericVar[genericVar] = genericVar.value;
-                        }
-                        ;
-                        var genericVar = "function" == typeof Symbol ? Symbol : {
-                        }
-                        ;
-                        var genericVar = genericVar.iterator || "@@iterator";
-                        var genericVar = genericVar.asyncIterator || "@@asyncIterator";
-                        var genericVar = genericVar.toStringTag || "@@toStringTag";
-                        function renamedFunctionvar_2529, genericVar, genericVar {
-                            Object.defineProperty(genericVar, genericVar, {
-                                value: genericVar,
-                                enumerable: true,
-                                configurable: true,
-                                writable: true
-                            }
-                            );
-                            return genericVar[genericVar];
-                        }
-                        try {
-                            genericVar{
-                            }
-                            , "";
-                        }
-                        catch genericVar {
-                            genericVar = function genericVar, genericVar, genericVar {
-                                return genericVar[genericVar] = genericVar;
-                            }
-                            ;
-                        }
-                        function renamedFunctionvar_2537, genericVar, genericVar, genericVar {
-                            var genericVar = genericVar && genericVar.prototype instanceof genericVar ? genericVar : genericVar;
-                            var genericVar = Object.createvar_2541.prototype;
-                            var genericVar = new var_2545var_2540 || [];
-                            genericVar(genericVar, "_invoke", {
-                                value: var_2546var_2537, genericVar, genericVar
-                            }
-                            );
-                            return genericVar;
-                        }
-                        function renamedFunctionvar_2548, genericVar, genericVar {
-                            try {
-                                return {
-                                    type: "normal",
-                                    arg: genericVar.callvar_2549, genericVar
-                                }
-                                ;
-                            }
-                            catch genericVar {
-                                return {
-                                    type: "throw",
-                                    arg: genericVar
-                                }
-                                ;
-                            }
-                        }
-                        genericVar.wrap = genericVar;
-                        var genericVar = {
-                        }
-                        ;
-                        function genericVar {
-                        }
-                        function genericVar {
-                        }
-                        function genericVar {
-                        }
-                        var genericVar = {
-                        }
-                        ;
-                        var_2528var_2555, genericVar, function ( {
-                            return this;
-                        }
-                        );
-                        var genericVar = Object.getPrototypeOf;
-                        var genericVar = genericVar && var_2556var_2556(genericVar([]));
-                        if genericVar && genericVar !== genericVar && genericVar.call(genericVar, genericVar) {
-                            genericVar = genericVar;
-                        }
-                        var genericVar = genericVar.prototype = genericVar.prototype = Object.createvar_2555;
-                        function renamedFunctionvar_2561 {
-                            ["next", "throw", "return"].forEachfunction (genericVar {
-                                var_2528var_2561, genericVar, function (genericVar {
-                                    return this._invokevar_2562, genericVar;
-                                }
-                                );
-                            }
-                            );
-                        }
-                        function renamedFunctionvar_2565, genericVar {
-                            function renamedFunctionvar_2568, genericVar, genericVar, genericVar {
-                                var genericVar = var_2547var_2565[genericVar], genericVar, genericVar;
-                                if "throw" !== genericVar.type {
-                                    var genericVar = genericVar.arg;
-                                    var genericVar = genericVar.value;
-                                    return genericVar && "object" == var_2515var_2574 && genericVar.callvar_2574, "__await" ? genericVar.resolvevar_2574.__await.thenfunction (genericVar {
-                                        genericVar"next", genericVar, genericVar, genericVar;
-                                    }
-                                    , function genericVar {
-                                        genericVar"throw", genericVar, genericVar, genericVar;
-                                    }
-                                    ) : genericVar.resolvevar_2574.thenfunction (genericVar {
-                                        genericVar.value = genericVar;
-                                        var_2570var_2573;
-                                    }
-                                    , function genericVar {
-                                        return genericVar"throw", genericVar, genericVar, genericVar;
-                                    }
-                                    );
-                                }
-                                var_2571var_2572.arg;
-                            }
-                            var genericVar;
-                            genericVar(this, "_invoke", {
-                                value: function genericVar, genericVar {
-                                    function genericVar {
-                                        return new var_2566function (genericVar, genericVar {
-                                            var_2567var_2580, genericVar, genericVar, genericVar;
-                                        }
-                                        );
-                                    }
-                                    return genericVar = genericVar ? genericVar.thenvar_2582, genericVar : genericVar;
-                                }
-                            }
-                            );
-                        }
-                        function renamedFunctionvar_2585, genericVar, genericVar {
-                            var genericVar = "suspendedStart";
-                            return function genericVar, genericVar {
-                                if "executing" === genericVar {
-                                    throw new Error"Generator is already running";
-                                }
-                                if "completed" === genericVar {
-                                    if "throw" === genericVar {
-                                        throw genericVar;
-                                    }
-                                    return {
-                                        value: undefined,
-                                        done: true
-                                    }
-                                    ;
-                                }
-                                genericVar.method = genericVar;
-                                for genericVar.arg = genericVar;
-                                ;
-                                {
-                                    var genericVar = genericVar.delegate;
-                                    if genericVar {
-                                        var genericVar = var_2593var_2591, genericVar;
-                                        if genericVar {
-                                            if genericVar === genericVar {
-                                                continue;
-                                            }
-                                            return genericVar;
-                                        }
-                                    }
-                                    if "next" === genericVar.method {
-                                        genericVar.sent = genericVar._sent = genericVar.arg;
-                                    }
-                                    else {
-                                        if "throw" === genericVar.method {
-                                            if "suspendedStart" === genericVar {
-                                                genericVar = "completed";
-                                                throw genericVar.arg;
-                                            }
-                                            genericVar.dispatchExceptionvar_2587.arg;
-                                        }
-                                        else if "return" === genericVar.method {
-                                            genericVar.abrupt"return", genericVar.arg;
-                                        }
-                                    }
-                                    genericVar = "executing";
-                                    var genericVar = var_2547var_2585, genericVar, genericVar;
-                                    if "normal" === genericVar.type {
-                                        genericVar = genericVar.done ? "completed" : "suspendedYield";
-                                        if genericVar.arg === genericVar {
-                                            continue;
-                                        }
-                                        return {
-                                            value: genericVar.arg,
-                                            done: genericVar.done
-                                        }
-                                        ;
-                                    }
-                                    if "throw" === genericVar.type {
-                                        genericVar = "completed";
-                                        genericVar.method = "throw";
-                                        genericVar.arg = genericVar.arg;
-                                    }
-                                }
-                            }
-                            ;
-                        }
-                        function renamedFunctionvar_2595, genericVar {
-                            var genericVar = genericVar.method;
-                            var genericVar = genericVar.iterator[genericVar];
-                            if undefined === genericVar {
-                                genericVar.delegate = null;
-                                if !("throw" === genericVar && genericVar.iterator["return"] && (genericVar.method = "return", genericVar.arg = undefined, genericVar(genericVar, genericVar, "throw" === genericVar.method))) {
-                                    if "return" !== genericVar {
-                                        genericVar.method = "throw";
-                                        genericVar.arg = new TypeError"The iterator does not provide a '" + genericVar + "' method";
-                                    }
-                                }
-                                return genericVar;
-                            }
-                            var genericVar = var_2547var_2598, genericVar.iterator, genericVar.arg;
-                            if "throw" === genericVar.type {
-                                genericVar.method = "throw";
-                                genericVar.arg = genericVar.arg;
-                                genericVar.delegate = null;
-                                return genericVar;
-                            }
-                            var genericVar = genericVar.arg;
-                            return genericVar ? genericVar.done ? genericVar[genericVar.resultName] = genericVar.value, genericVar.next = genericVar.nextLoc, "return" !== genericVar.method && (genericVar.method = "next", genericVar.arg = undefined, genericVar.delegate = null, genericVar) : genericVar : genericVar.method = "throw", genericVar.arg = new TypeError("iterator result is not an object", genericVar.delegate = null, genericVar);
-                        }
-                        function renamedFunctionvar_2602 {
-                            var genericVar = {
-                                tryLoc: genericVar[0]
-                            }
-                            ;
-                            if 1 in genericVar {
-                                genericVar.catchLoc = genericVar[1];
-                            }
-                            if 2 in genericVar {
-                                genericVar.finallyLoc = genericVar[2];
-                                genericVar.afterLoc = genericVar[3];
-                            }
-                            this.tryEntries.pushvar_2603;
-                        }
-                        function renamedFunctionvar_2605 {
-                            var genericVar = genericVar.completion || {
-                            }
-                            ;
-                            genericVar.type = "normal";
-                            delete genericVar.arg;
-                            genericVar.completion = genericVar;
-                        }
-                        function renamedFunctionvar_2607 {
-                            this.tryEntries = [{
-                                tryLoc: "root"
-                            }
-                            ];
-                            genericVar.forEachvar_2601, this;
-                            this.resettrue;
-                        }
-                        function renamedFunctionvar_2608 {
-                            if genericVar {
-                                var genericVar = genericVar[genericVar];
-                                if genericVar {
-                                    return genericVar.callvar_2608;
-                                }
-                                if "function" == typeof genericVar.next {
-                                    return genericVar;
-                                }
-                                if !isNaN(genericVar.length) {
-                                    var genericVar = -1;
-                                    var genericVar = function genericVar {
-                                        for ;
-                                        ++genericVar < genericVar.length;
-                                        {
-                                            if genericVar.call(genericVar, genericVar) {
-                                                genericVar.value = genericVar[genericVar];
-                                                genericVar.done = false;
-                                                return genericVar;
-                                            }
-                                        }
-                                        genericVar.value = undefined;
-                                        genericVar.done = true;
-                                        return genericVar;
-                                    }
-                                    ;
-                                    return genericVar.next = genericVar;
-                                }
-                            }
-                            return {
-                                next: genericVar
-                            }
-                            ;
-                        }
-                        function genericVar {
-                            return {
-                                value: undefined,
-                                done: true
-                            }
-                            ;
-                        }
-                        genericVar.prototype = genericVar;
-                        genericVar(genericVar, "constructor", {
-                            value: genericVar,
-                            configurable: true
-                        }
-                        );
-                        genericVar(genericVar, "constructor", {
-                            value: genericVar,
-                            configurable: true
-                        }
-                        );
-                        genericVar.displayName = var_2528var_2554, genericVar, "GeneratorFunction";
-                        genericVar.isGeneratorFunction = function genericVar {
-                            var genericVar = "function" == typeof genericVar && genericVar.constructor;
-                            return !!genericVar && genericVar === genericVar || "GeneratorFunction" === (genericVar.displayName || genericVar.name);
-                        }
-                        ;
-                        genericVar.mark = function genericVar {
-                            if Object.setPrototypeOf {
-                                Object.setPrototypeOfvar_2616, genericVar;
-                            }
-                            else {
-                                genericVar.__proto__ = genericVar;
-                                var_2528var_2616, genericVar, "GeneratorFunction";
-                            }
-                            genericVar.prototype = Object.createvar_2559;
-                            return genericVar;
-                        }
-                        ;
-                        genericVar.awrap = function genericVar {
-                            return {
-                                __await: genericVar
-                            }
-                            ;
-                        }
-                        ;
-                        var_2560var_2564.prototype;
-                        var_2528var_2564.prototype, genericVar, function ( {
-                            return this;
-                        }
-                        );
-                        genericVar.AsyncIterator = genericVar;
-                        genericVar.async = function genericVar, genericVar, genericVar, genericVar, genericVar {
-                            if undefined === genericVar {
-                                genericVar = Promise;
-                            }
-                            var genericVar = new var_2564var_2536(genericVar, genericVar, genericVar, genericVar, genericVar);
-                            return genericVar.isGeneratorFunctionvar_2619 ? genericVar : genericVar.next.thenfunction (genericVar {
-                                return genericVar.done ? genericVar.value : genericVar.next;
-                            }
-                            );
-                        }
-                        ;
-                        var_2560var_2559;
-                        var_2528var_2559, genericVar, "Generator";
-                        var_2528var_2559, genericVar, function ( {
-                            return this;
-                        }
-                        );
-                        var_2528var_2559, "toString", function ( {
-                            return "[object Generator]";
-                        }
-                        );
-                        genericVar.keys = function genericVar {
-                            var genericVar = Objectvar_2625;
-                            var genericVar = [];
-                            for var genericVar in genericVar genericVar.pushvar_2628;
-                            genericVar.reverse;
-                            return function genericVar {
-                                for ;
-                                genericVar.length;
-                                {
-                                    var genericVar = genericVar.pop;
-                                    if genericVar in genericVar {
-                                        genericVar.value = genericVar;
-                                        genericVar.done = false;
-                                        return genericVar;
-                                    }
-                                }
-                                genericVar.done = true;
-                                return genericVar;
-                            }
-                            ;
-                        }
-                        ;
-                        genericVar.values = genericVar;
-                        genericVar.prototype = {
-                            constructor: genericVar,
-                            reset: function genericVar {
-                                this.prev = 0;
-                                this.next = 0;
-                                this.sent = this._sent = undefined;
-                                this.done = false;
-                                this.delegate = null;
-                                this.method = "next";
-                                this.arg = undefined;
-                                this.tryEntries.forEachvar_2604;
-                                if !genericVar {
-                                    for var genericVar in this if "t" === genericVar.charAt(0 && genericVar.callthis, genericVar && !isNaN+genericVar.slice(1)) {
-                                        this[genericVar] = undefined;
-                                    }
-                                }
-                            }
-                            ,
-                            stop: function  {
-                                this.done = true;
-                                var genericVar = this.tryEntries[0].completion;
-                                if "throw" === genericVar.type {
-                                    throw genericVar.arg;
-                                }
-                                return this.rval;
-                            }
-                            ,
-                            dispatchException: function genericVar {
-                                if this.done {
-                                    throw genericVar;
-                                }
-                                var genericVar = this;
-                                function renamedFunctionvar_2637, genericVar {
-                                    genericVar.type = "throw";
-                                    genericVar.arg = genericVar;
-                                    genericVar.next = genericVar;
-                                    if genericVar {
-                                        genericVar.method = "next";
-                                        genericVar.arg = undefined;
-                                    }
-                                    return !!genericVar;
-                                }
-                                for var genericVar = this.tryEntries.length - 1;
-                                genericVar >= 0;
-                                --genericVar {
-                                    var genericVar = this.tryEntries[genericVar];
-                                    var genericVar = genericVar.completion;
-                                    if "root" === genericVar.tryLoc {
-                                        return genericVar"end";
-                                    }
-                                    if genericVar.tryLoc <= this.prev {
-                                        var genericVar = genericVar.callvar_2641, "catchLoc";
-                                        var genericVar = genericVar.callvar_2641, "finallyLoc";
-                                        if genericVar && genericVar {
-                                            if this.prev < genericVar.catchLoc {
-                                                return var_2636var_2641.catchLoc, true;
-                                            }
-                                            if this.prev < genericVar.finallyLoc {
-                                                return var_2636var_2641.finallyLoc;
-                                            }
-                                        }
-                                        else {
-                                            if genericVar {
-                                                if this.prev < genericVar.catchLoc {
-                                                    return var_2636var_2641.catchLoc, true;
-                                                }
-                                            }
-                                            else {
-                                                if !genericVar {
-                                                    throw new Error"try statement without catch or finally";
-                                                }
-                                                if this.prev < genericVar.finallyLoc {
-                                                    return var_2636var_2641.finallyLoc;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            ,
-                            abrupt: function(genericVar, genericVar) {
-                                for(var genericVar = this.tryEntries.length - 1;
-                                genericVar >= 0;
-                                --genericVar) {
-                                    var genericVar = this.tryEntries[genericVar];
-                                    if(genericVar.tryLoc <= this.prev && genericVar.call(genericVar, "finallyLoc") && this.prev < genericVar.finallyLoc) {
-                                        var genericVar = genericVar;
-                                        break;
-                                    }
-                                }
-                                if(genericVar && ("break" === genericVar || "continue" === genericVar && genericVar.tryLoc <= genericVar && genericVar <= genericVar.finallyLoc)) {
-                                    genericVar = null;
-                                }
-                                var genericVar = genericVar ? genericVar.completion : {};
-                                genericVar.type = genericVar;
-                                genericVar.arg = genericVar;
-                                return genericVar ? (this.method = "next", this.next = genericVar.finallyLoc, genericVar) : this.complete(var_2649);
-                            },
-                            complete: function(genericVar, genericVar) {
-                                if("throw" === genericVar.type) {
-                                    throw genericVar.arg;
-                                }
-                                if("break" === genericVar.type || "continue" === genericVar.type) {
-                                    this.next = genericVar.arg;
-                                }
-                                else if("return" === genericVar.type) {
-                                    this.rval = this.arg = genericVar.arg;
-                                    this.method = "return";
-                                    this.next = "end";
-                                }
-                                else if("normal" === genericVar.type && genericVar) {
-                                    this.next = genericVar;
-                                }
-                                return genericVar;
-                            },
-                            finish: function(genericVar) {
-                                for(var genericVar = this.tryEntries.length - 1;
-                                genericVar >= 0;
-                                --genericVar) {
-                                    var genericVar = this.tryEntries[genericVar];
-                                    if(genericVar.finallyLoc === genericVar) {
-                                        this.complete(var_2654.completion, genericVar.afterLoc);
-                                        var_2604(var_2654);
-                                        return genericVar;
-                                    }
-                                }
-                            },
-                            catch: function(genericVar) {
-                                for(var genericVar = this.tryEntries.length - 1;
-                                genericVar >= 0;
-                                --genericVar) {
-                                    var genericVar = this.tryEntries[genericVar];
-                                    if(genericVar.tryLoc === genericVar) {
-                                        var genericVar = genericVar.completion;
-                                        if("throw" === genericVar.type) {
-                                            var genericVar = genericVar.arg;
-                                            var_2604(var_2657);
-                                        }
-                                        return genericVar;
-                                    }
-                                }
-                                throw new Error("illegal catch attempt");
-                            },
-                            delegateYield: function(genericVar, genericVar, genericVar) {
-                                this.delegate = {
-                                    iterator: var_2558(var_2660),
-                                    resultName: genericVar,
-                                    nextLoc: genericVar
-                                };
-                                if("next" === this.method) {
-                                    this.arg = undefined;
-                                }
-                                return genericVar;
-                            }
-                        }
-                        ;
-                        return genericVar;
-                    }
-                    genericVar.exports = genericVar;
-                    genericVar.exports.__esModule = true;
-                    genericVar.exports["default"] = genericVar.exports;
-                }
-                ,
-                698: function genericVar {
-                    function renamedFunctionvar_2665 {
-                        genericVar.exports = genericVar = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function genericVar {
-                            return typeof genericVar;
-                        }
-                        : function genericVar {
-                            return genericVar && "function" == typeof Symbol && genericVar.constructor === Symbol && genericVar !== Symbol.prototype ? "symbol" : typeof genericVar;
-                        }
-                        ;
-                        genericVar.exports.__esModule = true;
-                        genericVar.exports["default"] = genericVar.exports;
-                        return var_2664var_2665;
-                    }
-                    genericVar.exports = genericVar;
-                    genericVar.exports.__esModule = true;
-                    genericVar.exports["default"] = genericVar.exports;
-                }
-                ,
-                687: genericVar, genericVar, function genericVar {
-                    var genericVar = genericVar;
-                    genericVar.exports = genericVar;
-                    try {
-                        regeneratorRuntime = genericVar;
-                    }
-                    catch genericVar {
-                        if "object" == typeof globalThis {
-                            globalThis.regeneratorRuntime = genericVar;
-                        }
-                        else {
-                            Function"r", "regeneratorRuntime = r"genericVar;
-                        }
-                    }
-                };
-            
-            var genericVar = {
+                   if (typeof genericVar === "function") {
+    genericVar = function() {
+        var_2398var_2422;
+    };
+} else {
+    if (typeof MessageChannel !== "undefined") {
+        let genericVar = new MessageChannel();
+        genericVar = genericVar.port2;
+        genericVar.port1.onmessage = genericVar;
+        genericVar = function() {
+            genericVar.postMessage(null);
+        };
+    } else {
+        genericVar = function() {
+            var_2396var_2422, 0;
+        };
+    }
+}
+
+function renamedFunctionvar_2427() {
+    genericVar = genericVar;
+    if (!genericVar) {
+        genericVar = true;
+        genericVar;
+    }
+}
+
+function renamedFunctionvar_2428(genericVar1, genericVar2) {
+    if (typeof var_2396function === "function") {  // Ensure it's a function before calling it
+        genericVar = var_2396function(var_2428var_2363.unstable_now(), genericVar1);
+    } else {
+        console.error("var_2396function is not defined or not a function");
+    }
+}
+
+
+genericVar.unstable_IdlePriority = 5;
+genericVar.unstable_ImmediatePriority = 1;
+genericVar.unstable_LowPriority = 4;
+genericVar.unstable_NormalPriority = 3;
+genericVar.unstable_Profiling = null;
+genericVar.unstable_UserBlockingPriority = 2;
+genericVar.unstable_cancelCallback = function() {
+    genericVar.callback = null;
+};
+
+genericVar.unstable_continueExecution = function() {
+    if (!(genericVar || genericVar)) {
+        genericVar = true;
+        var_2404var_2405;
+    }
+};
+
+genericVar.unstable_forceFrameRate = function(genericVar) {
+    if (genericVar <= 0 || genericVar > 125) {
+        console.error("forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported");
+    } else {
+        genericVar = genericVar > 0 ? Math.floor(1000 / genericVar) : 5;
+    }
+};
+
+genericVar.unstable_getCurrentPriorityLevel = function() {
+    return genericVar;
+};
+
+genericVar.unstable_getFirstCallbackNode = function() {
+    return genericVar.length === 0 ? null : genericVar[0];
+};
+
+genericVar.unstable_next = function(genericVar) {
+    switch (genericVar) {
+        case 1:
+        case 2:
+        case 3:
+            genericVar = 3;
+            break;
+        default:
+            genericVar = genericVar;
+    }
+    return genericVar;
+};
+
+genericVar.unstable_pauseExecution = function() {};
+
+genericVar.unstable_requestPaint = function() {};
+
+genericVar.unstable_runWithPriority = function(genericVar1, genericVar2) {
+    switch (genericVar1) {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+            break;
+        default:
+            genericVar1 = 3;
+    }
+    return genericVar;
+};
+
+if (typeof navigator !== "undefined" && navigator.scheduling && typeof navigator.scheduling.isInputPending === "function") {
+    navigator.scheduling.isInputPending = navigator.scheduling.isInputPending.bind(navigator.scheduling);
+}
+
+                   genericVar.unstable_scheduleCallback = function(genericVar1, genericVar2, genericVar3) {
+    let genericVar = genericVar.unstable_now();
+    if (typeof genericVar === "object" && genericVar !== null) {
+        genericVar = (typeof genericVar === "number" && genericVar.delay > 0) ? genericVar + genericVar : genericVar;
+    } else {
+        genericVar = genericVar;
+    }
+
+    switch (genericVar1) {
+        case 1:
+            genericVar = -1;
+            break;
+        case 2:
+            genericVar = 250;
+            break;
+        case 5:
+            genericVar = 1073741823;
+            break;
+        case 4:
+            genericVar = 10000;
+            break;
+        default:
+            genericVar = 5000;
+    }
+
+    genericVar = {
+        id: genericVar++,
+        callback: genericVar,
+        priorityLevel: genericVar1,
+        startTime: genericVar,
+        expirationTime: genericVar + genericVar,
+        sortIndex: -1
+    };
+
+    return genericVar;
+};
+
+genericVar.unstable_shouldYield = genericVar;
+
+genericVar.unstable_wrapCallback = function(genericVar1) {
+    return function() {
+        let localVar = genericVar1;
+        try {
+            return localVar.apply(this, arguments);
+        } finally {
+            genericVar = localVar;
+        }
+    };
+};
+
+// Exports
+genericVar.exports = genericVar;
+
+// Function: renamedFunctionvar_2452
+function renamedFunctionvar_2452(identifier) {
+    let index = -1;
+    for (let i = 0; i < genericVar.length; i++) {
+        if (genericVar[i].identifier === identifier) {
+            index = i;
+            break;
+        }
+    }
+    return index;
+}
+
+// Function: renamedFunctionvar_2456
+function renamedFunctionvar_2456(genericVar) {
+    let processedArray = [];
+    for (let i = 0; i < genericVar.length; i++) {
+        let currentVar = genericVar[i];
+        let baseVar = currentVar.base ? currentVar[0] + currentVar.base : currentVar[0];
+        let countVar = processedArray[baseVar] || 0;
+        let cssVar = "." + baseVar + " " + currentVar[1];
+
+        processedArray[baseVar] = countVar + 1;
+
+        let processedVar = {
+            css: currentVar[1],
+            media: currentVar[2],
+            sourceMap: currentVar[3],
+            supports: currentVar[4],
+            layer: currentVar[5]
+        };
+        processedArray.push(processedVar);
+    }
+    return processedArray;
+}
+
+                   function renamedFunctionvar_2469(genericVar1) {
+    let genericVar = genericVar1.domAPIvar_2470;
+    genericVar.updatevar_2469;
+
+    return function(genericVar2) {
+        if (genericVar2) {
+            if (
+                genericVar2.css === genericVar.css &&
+                genericVar2.media === genericVar.media &&
+                genericVar2.sourceMap === genericVar.sourceMap &&
+                genericVar2.supports === genericVar.supports &&
+                genericVar2.layer === genericVar.layer
+            ) {
+                return;
             }
-            ;
-            function renamedFunctionvar_2675 {
+            genericVar.updatevar_2469 = genericVar2;
+        } else {
+            genericVar.remove();
+        }
+    };
+}
+
+genericVar.exports = function(genericVar1, genericVar2) {
+    let genericVar = var_2455var_2473 = genericVar1 || [];
+    let genericVarBackup = genericVar2 || {};
+
+    return function(genericVar3) {
+        genericVar3 = genericVar3 || [];
+        for (let i = 0; i < genericVar.length; i++) {
+            let varRef = var_2451var_2475[i];
+            varRef.references--;
+        }
+
+        let genericVarNew = var_2455var_2476;
+        for (let i = 0; i < genericVar.length; i++) {
+            let varRef = var_2451var_2475[i];
+            if (varRef.references === 0) {
+                varRef.updater();
+                genericVar.splice(var_2481, 1);
+            }
+        }
+
+        genericVar = genericVarNew;
+    };
+};
+
+genericVar.exports = function(genericVar1, genericVar2) {
+    let findTarget = function(genericVar3) {
+        if (typeof genericVar[genericVar3] === "undefined") {
+            let styleTarget = document.querySelector(var_2487);
+
+            if (window.HTMLIFrameElement && styleTarget instanceof window.HTMLIFrameElement) {
+                try {
+                    styleTarget = styleTarget.contentDocument.head;
+                } catch (error) {
+                    styleTarget = null;
+                }
+            }
+
+            genericVar[genericVar3] = styleTarget;
+        }
+        return genericVar[genericVar3];
+    };
+
+    let styleTarget = findTarget(genericVar1);
+
+    if (!styleTarget) {
+        throw new Error("Couldn't find a style target. This probably means that the value for the 'insert' parameter is invalid.");
+    }
+
+    styleTarget.appendChild(var_2485);
+};
+
+               function renamedFunctionvar_2529(genericVar1, genericVar2) {
+    Object.defineProperty(genericVar1, genericVar2, {
+        value: genericVar2,
+        enumerable: true,
+        configurable: true,
+        writable: true
+    });
+    return genericVar1[genericVar2];
+}
+
+// Create and insert style element
+genericVar.exports = function() {
+    let genericVar = document.createElement("style");
+    genericVar.setAttributes(var_2492, genericVar.attributes);
+    genericVar.insert(var_2492, genericVar.options);
+    return genericVar;
+};
+
+// Export functions
+genericVar.exports = function() {
+    let genericVar = genericVar.nc;
+    if (genericVar) {
+        genericVar.setAttribute("nonce", genericVar);
+    }
+};
+
+// Ensure document exists before accessing style elements
+genericVar.exports = function() {
+    if (typeof document === "undefined") {
+        return {
+            update: function() {},
+            remove: function() {}
+        };
+    }
+
+    let genericVar = genericVar.insertStyleElement(var_2499);
+    return {
+        update: function(genericVar1) {
+            (function(genericVar2, genericVar3, genericVar4) {
+                let content = "";
+                if (genericVar1.supports) {
+                    content += "@supports " + genericVar1.supports + " {\n";
+                }
+                if (genericVar1.media) {
+                    content += "@media " + genericVar1.media + " {\n";
+                }
+                let hasLayer = typeof genericVar1.layer !== "undefined";
+                if (hasLayer) {
+                    content += "@layer" + (genericVar1.layer.length > 0 ? " " + genericVar1.layer : "") + " {\n";
+                }
+                content += genericVar1.css;
+                if (hasLayer) {
+                    content += "}\n";
+                }
+                if (genericVar1.media) {
+                    content += "}\n";
+                }
+                if (genericVar1.supports) {
+                    content += "}\n";
+                }
+
+                let sourceMap = genericVar1.sourceMap;
+                if (sourceMap && typeof btoa !== "undefined") {
+                    content += "\n/*# sourceMappingURL=data:application/json;base64," +
+                        btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + " */";
+                }
+
+                if (typeof styleTagTransformvar_2505 === "function") {
+                    styleTagTransformvar_2505(genericVar1, content, genericVar1.options);
+                }
+            })(genericVar, genericVar, genericVar);
+        },
+        remove: function() {
+            if (genericVar.parentNode !== null) {
+                genericVar.parentNode.removeChild(var_2508);
+            }
+        }
+    };
+};
+
+// Remove all children from an element
+genericVar.exports = function(genericVar1, genericVar2) {
+    if (genericVar1.styleSheet) {
+        genericVar1.styleSheet.cssText = genericVar2;
+    } else {
+        while (genericVar1.firstChild) {
+            genericVar1.removeChild(genericVar1.firstChild);
+        }
+        genericVar1.appendChild(document.createTextNode(genericVar2));
+    }
+};
+
+// Try-catch for defining a default object
+try {
+    genericVar = {};
+} catch (error) {
+    genericVar = function(genericVar1, genericVar2) {
+        return (genericVar1[genericVar2] = genericVar2);
+    };
+}
+
+                      function renamedFunctionvar_2537(genericVar1, genericVar2, genericVar3) {
+    let genericVar = genericVar1 && genericVar1.prototype instanceof genericVar1 ? genericVar1 : genericVar2;
+    let genericVarObj = Object.create(var_2541.prototype);
+    let genericVarArray = new (var_2545var_2540 || []);
+    
+    Object.defineProperty(genericVarObj, "_invoke", {
+        value: var_2546var_2537
+    });
+
+    return genericVarObj;
+}
+
+function renamedFunctionvar_2548(genericVar1, genericVar2) {
+    try {
+        return {
+            type: "normal",
+            arg: genericVar1.call(var_2549, genericVar2)
+        };
+    } catch (error) {
+        return {
+            type: "throw",
+            arg: error
+        };
+    }
+}
+
+genericVar.wrap = genericVar;
+
+let genericVarObj = {};
+
+function genericVar() {}
+
+function genericVar() {}
+
+function genericVar() {}
+
+let genericVarProto = {};
+
+var_2528var_2555(genericVar, function() {
+    return this;
+});
+
+let genericVarPrototype = Object.getPrototypeOf;
+let genericVarInstance = genericVarPrototype && var_2556var_2556(genericVarPrototype([]));
+
+if (genericVarInstance && genericVarInstance !== genericVarPrototype && genericVarInstance.call(genericVarInstance, genericVar)) {
+    genericVarPrototype = genericVarInstance;
+}
+
+let genericVarBase = genericVarPrototype.prototype = Object.create(var_2555);
+
+function renamedFunctionvar_2561() {
+    ["next", "throw", "return"].forEach(function(genericVar) {
+        var_2528var_2561(genericVar, function() {
+            return this._invoke(var_2562, genericVar);
+        });
+    });
+}
+
+function renamedFunctionvar_2565(genericVar1) {
+    function renamedFunctionvar_2568(genericVar2, genericVar3, genericVar4) {
+        let genericVarVal = var_2547var_2565[genericVar2];
+
+        if ("throw" !== genericVarVal.type) {
+            let genericVarArg = genericVarVal.arg;
+            let genericVarValue = genericVarArg.value;
+
+            if (genericVarValue && typeof var_2515var_2574 === "object" && genericVarValue.call(var_2574, "__await")) {
+                return genericVarArg.resolve(var_2574.__await)
+                    .then(function(genericVar) {
+                        return genericVar("next", genericVar, genericVar3, genericVar4);
+                    })
+                    .catch(function(genericVar) {
+                        return genericVar("throw", genericVar, genericVar3, genericVar4);
+                    });
+            } else {
+                return genericVarArg.resolve(var_2574)
+                    .then(function(genericVar) {
+                        genericVarValue = genericVar;
+                        var_2570var_2573;
+                    })
+                    .catch(function(genericVar) {
+                        return genericVar("throw", genericVar, genericVar3, genericVar4);
+                    });
+            }
+        }
+
+        var_2571var_2572.arg;
+    }
+
+    let genericVar;
+    Object.defineProperty(this, "_invoke", {
+        value: function(genericVar1, genericVar2) {
+            function genericVar() {
+                return new var_2566function(genericVar1, function(genericVar3, genericVar4) {
+                    var_2567var_2580(genericVar1, genericVar3, genericVar4, genericVar2);
+                });
+            }
+            return genericVar1 = genericVar1 ? genericVar1.then(var_2582, genericVar2) : genericVar2;
+        }
+    });
+}
+
+                       function renamedFunctionvar_2595(genericVar1) {
+    let genericVar = genericVar1.method;
+    let iterator = genericVar1.iterator[genericVar];
+
+    if (typeof iterator === "undefined") {
+        genericVar.delegate = null;
+        if (!("throw" === genericVar && genericVar1.iterator["return"] && (genericVar1.method = "return", genericVar1.arg = undefined, genericVar1(genericVar, genericVar1, "throw" === genericVar1.method)))) {
+            if ("return" !== genericVar) {
+                genericVar1.method = "throw";
+                genericVar1.arg = new TypeError("The iterator does not provide a '" + genericVar + "' method");
+            }
+        }
+        return genericVar;
+    }
+
+    let result = var_2547var_2598(genericVar1.iterator, genericVar1.arg);
+    if ("throw" === result.type) {
+        genericVar1.method = "throw";
+        genericVar1.arg = result.arg;
+        genericVar1.delegate = null;
+        return genericVar1;
+    }
+
+    let resultValue = result.arg;
+    return resultValue 
+        ? resultValue.done 
+            ? (genericVar1[resultValue.resultName] = resultValue.value, 
+               genericVar1.next = resultValue.nextLoc, 
+               "return" !== genericVar1.method && (genericVar1.method = "next", genericVar1.arg = undefined, genericVar1.delegate = null, genericVar1)) 
+            : genericVar1 
+        : (genericVar1.method = "throw", genericVar1.arg = new TypeError("iterator result is not an object"), genericVar1.delegate = null, genericVar1);
+}
+
+function renamedFunctionvar_2602() {
+    let genericVar = {
+        tryLoc: genericVar[0]
+    };
+
+    if (1 in genericVar) {
+        genericVar.catchLoc = genericVar[1];
+    }
+
+    if (2 in genericVar) {
+        genericVar.finallyLoc = genericVar[2];
+        genericVar.afterLoc = genericVar[3];
+    }
+
+    this.tryEntries.push(var_2603);
+}
+
+function renamedFunctionvar_2605() {
+    let genericVar = genericVar.completion || {};
+    genericVar.type = "normal";
+    delete genericVar.arg;
+    genericVar.completion = genericVar;
+}
+
+function renamedFunctionvar_2607() {
+    this.tryEntries = [{
+        tryLoc: "root"
+    }];
+    genericVar.forEach(var_2601, this);
+    this.reset(true);
+}
+
+function renamedFunctionvar_2608(genericVar) {
+    if (genericVar) {
+        let value = genericVar[genericVar];
+        if (value) {
+            return value.call(var_2608);
+        }
+        if (typeof genericVar.next === "function") {
+            return genericVar;
+        }
+        if (!isNaN(genericVar.length)) {
+            let index = -1;
+            let iterator = function() {
+                for (index++; index < genericVar.length;) {
+                    if (genericVar.call(genericVar, index)) {
+                        genericVar.value = genericVar[index];
+                        genericVar.done = false;
+                        return genericVar;
+                    }
+                }
+                genericVar.value = undefined;
+                genericVar.done = true;
+                return genericVar;
+            };
+            return { next: iterator };
+        }
+    }
+    return { next: genericVar };
+}
+
+function genericVar() {
+    return {
+        value: undefined,
+        done: true
+    };
+}
+
+genericVar.prototype = genericVar;
+Object.defineProperty(genericVar, "constructor", {
+    value: genericVar,
+    configurable: true
+});
+
+genericVar.displayName = var_2528var_2554(genericVar, "GeneratorFunction");
+
+genericVar.isGeneratorFunction = function() {
+    let genericVar = (typeof genericVar === "function" && genericVar.constructor);
+    return !!genericVar && (genericVar === genericVar || "GeneratorFunction" === (genericVar.displayName || genericVar.name));
+};
+
+genericVar.mark = function(genericVar) {
+    if (Object.setPrototypeOf) {
+        Object.setPrototypeOf(var_2616, genericVar);
+    } else {
+        genericVar.__proto__ = genericVar;
+        var_2528var_2616(genericVar, "GeneratorFunction");
+    }
+    genericVar.prototype = Object.create(var_2559);
+    return genericVar;
+};
+
+genericVar.awrap = function genericVar() {
+    return {
+        __await: genericVar
+    };
+};
+
+genericVar.AsyncIterator = genericVar;
+
+genericVar.async = function(genericVar1, genericVar2, genericVar3, genericVar4, genericVar5) {
+    if (typeof genericVar1 === "undefined") {
+        genericVar1 = Promise;
+    }
+    
+    let asyncIterator = new var_2564var_2536(genericVar1, genericVar2, genericVar3, genericVar4, genericVar5);
+    
+    return genericVar.isGeneratorFunctionvar_2619 
+        ? asyncIterator 
+        : asyncIterator.next().then(function(genericVar) {
+            return genericVar.done ? genericVar.value : asyncIterator.next();
+        });
+};
+
+var_2528var_2559(genericVar, "Generator");
+var_2528var_2559(genericVar, function() {
+    return this;
+});
+
+var_2528var_2559("toString", function() {
+    return "[object Generator]";
+});
+
+genericVar.keys = function(genericVar) {
+    let keysArray = Object.keys(genericVar);
+    keysArray.reverse();
+    
+    return function() {
+        while (keysArray.length > 0) {
+            let key = keysArray.pop();
+            if (key in genericVar) {
+                return { value: key, done: false };
+            }
+        }
+        return { value: undefined, done: true };
+    };
+};
+
+genericVar.values = genericVar;
+genericVar.prototype = {
+    constructor: genericVar,
+    reset: function genericVar() {
+        this.prev = 0;
+        this.next = 0;
+        this.sent = this._sent = undefined;
+        this.done = false;
+        this.delegate = null;
+        this.method = "next";
+        this.arg = undefined;
+        this.tryEntries.forEachvar_2604;
+        if (!genericVar) {
+            for (let key in this) {
+                if (key.charAt(0) === "t" && this.hasOwnProperty(key) && !isNaN(+key.slice(1))) {
+                    this[key] = undefined;
+                }
+            }
+        }
+    },
+
+    stop: function() {
+        this.done = true;
+
+        // Ensure tryEntries is properly defined
+        if (!Array.isArray(this.tryEntries) || this.tryEntries.length === 0) {
+            return;
+        }
+
+        // Ensure we have a valid completion object
+        let genericVar = this.tryEntries[0].completion || {};
+
+        // If completion type is "throw", rethrow the stored exception
+        if (genericVar.type === "throw" && genericVar.arg !== undefined) {
+            throw genericVar.arg;
+        }
+
+        return this.rval;
+    },
+
+    dispatchException: function(genericVar) {
+        if (this.done) {
+            throw genericVar;
+        }
+
+        let self = this;
+
+        function renamedFunctionvar_2637(genericVar1) {
+            self.type = "throw";
+            self.arg = genericVar1;
+            self.next = genericVar1;
+
+            if (genericVar1) {
+                self.method = "next";
+                self.arg = undefined;
+            }
+            return !!genericVar1;
+        }
+
+        for (let i = this.tryEntries.length - 1; i >= 0; i--) {
+            let genericVar = this.tryEntries[i];
+            let completion = genericVar.completion;
+
+            if (genericVar.tryLoc === "root") {
+                return "end";
+            }
+
+            if (genericVar.tryLoc <= this.prev) {
+                let hasCatch = Object.prototype.hasOwnProperty.call(genericVar, "catchLoc");
+                let hasFinally = Object.prototype.hasOwnProperty.call(genericVar, "finallyLoc");
+
+                if (hasCatch && hasFinally) {
+                    if (this.prev < genericVar.catchLoc) {
+                        return var_2636var_2641.catchLoc, true;
+                    }
+                    if (this.prev < genericVar.finallyLoc) {
+                        return var_2636var_2641.finallyLoc;
+                    }
+                } else {
+                    if (hasCatch) {
+                        if (this.prev < genericVar.catchLoc) {
+                            return var_2636var_2641.catchLoc, true;
+                        }
+                    } else {
+                        if (!hasFinally) {
+                            throw new Error("try statement without catch or finally");
+                        }
+                        if (this.prev < genericVar.finallyLoc) {
+                            return var_2636var_2641.finallyLoc;
+                        }
+                    }
+                }
+            }
+        }
+    }
+},
+generator = {
+    abrupt: function(type, arg) {
+        for (let i = this.tryEntries.length - 1; i >= 0; --i) {
+            const entry = this.tryEntries[i];
+            if (entry.tryLoc <= this.prev && Object.prototype.hasOwnProperty.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) {
+                var finallyEntry = entry;
+                break;
+            }
+        }
+
+        if (finallyEntry && (type === "break" || type === "continue") && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc) {
+            finallyEntry = null;
+        }
+
+        const record = finallyEntry ? finallyEntry.completion : {};
+        record.type = type;
+        record.arg = arg;
+
+        if (finallyEntry) {
+            this.method = "next";
+            this.next = finallyEntry.finallyLoc;
+            return record;
+        }
+        return this.complete(record);
+    },
+
+    complete: function(record) {
+        if (record.type === "throw") {
+            throw record.arg;
+        }
+
+        if (record.type === "break" || record.type === "continue") {
+            this.next = record.arg;
+        }
+        else if (record.type === "return") {
+            this.rval = this.arg = record.arg;
+            this.method = "return";
+            this.next = "end";
+        }
+        else if (record.type === "normal" && record.arg) {
+            this.next = record.arg;
+        }
+        return record;
+    },
+
+    finish: function(finallyLoc) {
+        for (let i = this.tryEntries.length - 1; i >= 0; --i) {
+            const entry = this.tryEntries[i];
+            if (entry.finallyLoc === finallyLoc) {
+                this.complete(entry.completion, entry.afterLoc);
+                if (typeof resetTryEntry === 'function') {
+                    resetTryEntry(entry);
+                }
+                return finallyLoc;
+            }
+        }
+    },
+
+    catch: function(tryLoc) {
+        for (let i = this.tryEntries.length - 1; i >= 0; --i) {
+            const entry = this.tryEntries[i];
+            if (entry.tryLoc === tryLoc) {
+                const record = entry.completion;
+                if (record.type === "throw") {
+                    const thrown = record.arg;
+                    if (typeof resetTryEntry === 'function') {
+                        resetTryEntry(entry);
+                    }
+                    return thrown;
+                }
+            }
+        }
+        throw new Error("illegal catch attempt");
+    },
+
+    delegate: function(iterable, resultName, nextLoc) {
+        this.delegate = {
+            iterator: typeof values === 'function' ? values(iterable) : iterable,
+            resultName: resultName,
+            nextLoc: nextLoc
+        };
+
+        if (this.method === "next") {
+            this.arg = undefined;
+        }
+        return nextLoc;
+    }
+};
+
+module.exports = generator;
+module.exports.__esModule = true;
+module.exports.default = generator;
+
+function renamedFunctionvar_2665() {
+    if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+        genericVar = function(genericVar) {
+            return typeof genericVar;
+        };
+    } else {
+        genericVar = function(genericVar) {
+            return genericVar && typeof Symbol === "function" && genericVar.constructor === Symbol && genericVar !== Symbol.prototype ? "symbol" : typeof genericVar;
+        };
+    }
+    return genericVar;
+}
+
+genericVar.exports = genericVar;
+genericVar.exports.__esModule = true;
+genericVar.exports["default"] = genericVar;
+
+genericVar.exports = genericVar;
+genericVar.exports.__esModule = true;
+genericVar.exports["default"] = genericVar;
+
+try {
+    regeneratorRuntime = genericVar;
+} catch (error) {
+    if (typeof globalThis === "object") {
+        globalThis.regeneratorRuntime = error;
+    } else {
+        Function("r", "regeneratorRuntime = r")(error);
+    }
+}
+
+var genericVar = {};
+            function renamedFunctionvar_2675() {
                 var genericVar = genericVar[genericVar];
-                if undefined !== genericVar {
+                if (undefined !== genericVar) {
                     return genericVar.exports;
                 }
                 var genericVar = genericVar[genericVar] = {
@@ -10444,675 +10476,510 @@ exports = function genericVar, genericVar {
                     }
                 }
                 ;
-                moduleDefinitions[genericVar]genericVar, genericVar.exports, genericVar;
+                moduleDefinitions[genericVar](genericVar, genericVar.exports, genericVar);
                 return genericVar.exports;
             }
-            genericVar.n = function genericVar {
-                var genericVar = genericVar && genericVar.__esModule ?  => genericVar["default"] :  => genericVar;
-                genericVar.d(genericVar, {
-                    a: genericVar
-                }
-                );
-                return genericVar;
-            }
-            ;
-            genericVar.d = genericVar, function genericVar {
-                for var genericVar in genericVar if genericVar.o(genericVar, genericVar && !genericVar.ovar_2680, genericVar) {
-                    Object.defineProperty(genericVar, genericVar, {
-                        enumerable: true,
-                        get: genericVar[genericVar]
-                    }
-                    );
-                }
-            }
-            ;
-            genericVar.o = genericVar;
+           genericVar.n = function() {
+    let genericVar = genericVar && genericVar.__esModule ? genericVar["default"] : genericVar;
+    Object.defineProperty(genericVar, "_invoke", {
+        value: var_2546var_2537
+    });
+    return genericVar;
+};
 
-            function genericVar(ObjectPrototypeHasOwnPropertyCall, genericVar) {
-                return Object.prototype.hasOwnProperty.call(ObjectPrototypeHasOwnPropertyCall, genericVar);
+genericVar.d = function(genericVar) {
+    for (let prop in genericVar) {
+        if (genericVar.hasOwnProperty(prop) && !genericVar.hasOwnProperty(prop)) {
+            Object.defineProperty(genericVar, prop, {
+                enumerable: true,
+                get: function() {
+                    return genericVar[prop];
+                }
+            });
+        }
+    }
+};
+
+genericVar.o = function(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+};
+
+genericVar.nc = undefined;
+
+(() => {
+    "use strict";
+    let genericVar = genericVar;
+    let anotherVar = genericVar;
+
+    function renamedFunctionvar_2665(genericVar, length) {
+        if (genericVar == null || length > genericVar.length) {
+            length = genericVar.length;
+        }
+        let result = new Array(length);
+        for (let i = 0; i < length; i++) {
+            result[i] = genericVar[i];
+        }
+        return result;
+    }
+
+    function renamedFunctionvar_2693(genericVar) {
+        if (genericVar) {
+            if (typeof genericVar === "string") {
+                return Array.from(genericVar);
             }
-            
-            genericVar.nc = undefined;
-            
-            (() => {
-                "use strict";
-                var genericVar = genericVar;
-                var anotherVar = genericVar;
-            
-                function renamedFunctionvar_2688(genericVar, length) {
-                    if (genericVar == null || length > genericVar.length) {
-                        length = genericVar.length;
-                    }
-                    var result = new Array(length);
-                    for (var i = 0; i < length; i++) {
-                        result[i] = genericVar[i];
-                    }
-                    return result;
+            let type = Object.prototype.toString.call(genericVar).slice(8, -1);
+            if (type === "Object" && genericVar.constructor) {
+                type = genericVar.constructor.name;
+            }
+            return type === "Map" || type === "Set" ? Array.from(genericVar) :
+                type === "Arguments" || /^Uint|Int(8|16|32)Array$/.test(type)
+                ? Array.from(genericVar)
+                : undefined;
+        }
+    }
+
+    function renamedFunctionvar_2697() {
+        return function(genericVar) {
+            if (Array.isArray(genericVar)) {
+                return Array.from(genericVar);
+            }
+        };
+    }
+})();
+
+genericVar || function() {
+    if (typeof Symbol !== "undefined" && (genericVar[Symbol.iterator] != null || genericVar["@@iterator"] != null)) {
+        return Array.from(var_2699);
+    }
+} || var_2692var_2697 || function() {
+    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator] method.");
+};
+
+function renamedFunctionvar_2701(genericVar1, genericVar2) {
+    return function() {
+        if (Array.isArray(genericVar1)) {
+            return genericVar1;
+        }
+    };
+}
+
+genericVar || function(genericVar1, genericVar2) {
+    let genericVar = null == genericVar1 ? null : (typeof Symbol !== "undefined" && genericVar1[Symbol.iterator] || genericVar1["@@iterator"]);
+    if (genericVar) {
+        let iterator;
+        try {
+            iterator = genericVar.call(genericVar1).next;
+            if (iterator === 0) {
+                if (Object(iterator) !== iterator) {
+                    return;
                 }
-            
-                function renamedFunctionvar_2693(genericVar) {
-                    if (genericVar) {
-                        if (typeof genericVar === "string") {
-                            return Array.from(genericVar);
-                        }
-                        var type = Object.prototype.toString.call(genericVar).slice(8, -1);
-                        if (type === "Object" && genericVar.constructor) {
-                            type = genericVar.constructor.name;
-                        }
-                        return type === "Map" || type === "Set"
-                            ? Array.from(genericVar)
-                            : type === "Arguments" || /^Uint|Int(8|16|32)Array$/.test(type)
-                            ? Array.from(genericVar)
-                            : undefined;
-                    }
-                }
-            
-                function renamedFunctionvar_2697() {
-                    return function (genericVar) {
-                        if (Array.isArray(genericVar)) {
-                            return Array.from(genericVar);
-                        }
-                    };
-                }
-            })();
-            
-                    genericVar || function genericVar {
-                        if "undefined" != typeof Symbol && null != genericVar[Symbol.iterator] || null != genericVar["@@iterator"] {
-                            return Array.fromvar_2699;
-                        }
-                    }
-                    genericVar || var_2692var_2697 || function  {
-                        throw new TypeError"Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]( "method.");
-                    }
-                    ;
-                function renamedFunctionvar_2701, genericVar {
-                    return function genericVar {
-                        if Array.isArray(genericVar) {
-                            return genericVar;
-                        }
-                    }
-                    genericVar || function genericVar, genericVar {
-                        var genericVar = null == genericVar ? null : "undefined" != typeof Symbol && genericVar[Symbol.iterator] || genericVar["@@iterator"];
-                        if null != genericVar {
-                            var genericVar;
-                            var genericVar;
-                            var genericVar;
-                            var genericVar;
-                            var genericVar = [];
-                            var genericVar = true;
-                            var genericVar = false;
-                            try {
-                                genericVar = genericVar = genericVar.call(genericVar).next;
-                                if 0 === genericVar {
-                                    if Object(genericVar !== genericVar) {
-                                        return;
-                                    }
-                                    genericVar = false;
-                                }
-                                else {
-                                    for ;
-                                    !(genericVar = (genericVar = genericVar.call(genericVar).done) && genericVar.push(genericVar.value, genericVar.length !== genericVar);
-                                    genericVar = true) {
-                                        ;
-                                    }
-                                }
-                            }
-                            catch genericVar {
-                                genericVar = true;
-                                genericVar = genericVar;
-                            }
-                            finally {
-                                try {
-                                    if !genericVar && null != genericVar["return"] && (genericVar = genericVar["return"](, Objectvar_2710 !== genericVar)) {
-                                        return;
-                                    }
-                                }
-                                finally {
-                                    if genericVar {
-                                        throw genericVar;
-                                    }
-                                }
-                            }
-                            return genericVar;
-                        }
-                    }
-                    genericVar, genericVar || var_2692var_2701, genericVar || function  {
-                        throw new TypeError"Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]( method.");
-                    }
-                    ;
-                }
-                function renamedFunctionvar_2716 {
-                    genericVar = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function genericVar {
-                        return typeof genericVar;
-                    }
-                    : function genericVar {
-                        return genericVar && "function" == typeof Symbol && genericVar.constructor === Symbol && genericVar !== Symbol.prototype ? "symbol" : typeof genericVar;
-                    }
-                    ;
-                    return var_2715var_2716;
-                }
-                function renamedFunctionvar_2720 {
-                    var genericVar = function genericVar, genericVar {
-                        if "object" !== genericVar(genericVar || null === genericVar) {
-                            return genericVar;
-                        }
-                        var genericVar = genericVar[Symbol.toPrimitive];
-                        if undefined !== genericVar {
-                            var genericVar = genericVar.callvar_2722, genericVar || "default";
-                            if "object" !== genericVar(genericVar) {
-                                return genericVar;
-                            }
-                            throw new TypeError"@@toPrimitive must return a primitive value.";
-                        }
-                        return "string" === genericVar ? String : Numbervar_2722;
-                    }
-                    genericVar, "string";
-                    return "symbol" === var_2715var_2721 ? genericVar : Stringvar_2721;
-                }
-                function renamedFunctionvar_2727, genericVar, genericVar {
-                    if(genericVar = genericVar(genericVar) in genericVar) {
-                        Object.defineProperty(genericVar, genericVar, {
-                            value: genericVar,
-                            enumerable: true,
-                            configurable: true,
-                            writable: true
-                        }
-                        );
-                    }
-                    else {
-                        genericVar[genericVar] = genericVar;
-                    }
+                genericVar = false;
+            } else {
+                for (let item; !(genericVar = genericVar.call(genericVar).done); genericVar = true) {
+                    genericVar.value = item.value;
+                    genericVar.done = false;
                     return genericVar;
                 }
-                function renamedFunctionvar_2731, genericVar {
-                    var genericVar = Object.keysvar_2731;
-                    if Object.getOwnPropertySymbols {
-                        var genericVar = Object.getOwnPropertySymbolsvar_2731;
-                        if genericVar {
-                            genericVar = genericVar.filterfunction (genericVar {
-                                return Object.getOwnPropertyDescriptorvar_2731, genericVar.enumerable;
-                            }
-                            );
-                        }
-                        genericVar.push.applyvar_2733, genericVar;
-                    }
-                    return genericVar;
+            }
+        } catch (error) {
+            genericVar = true;
+            genericVar = error;
+        } finally {
+            if (genericVar && genericVar["return"]) {
+                genericVar["return"](null !== genericVar);
+            }
+        }
+    }
+};
+
+                  genericVar.n = function() {
+    let genericVar = genericVar && genericVar.__esModule ? genericVar["default"] : genericVar;
+    Object.defineProperty(genericVar, "_invoke", {
+        value: var_2546var_2537
+    });
+    return genericVar;
+};
+
+genericVar.d = function(genericVar) {
+    for (let prop in genericVar) {
+        if (genericVar.hasOwnProperty(prop) && !genericVar.hasOwnProperty(prop)) {
+            Object.defineProperty(genericVar, prop, {
+                enumerable: true,
+                get: function() {
+                    return genericVar[prop];
                 }
-                function renamedFunctionvar_2737 {
-                    for var genericVar = 1;
-                    genericVar < arguments.length;
-                    genericVar++ {
-                        var genericVar = null != arguments[genericVar] ? arguments[genericVar] : {
-                        }
-                        ;
-                        if genericVar % 2 {
-                            var_2730Object(genericVar, true).forEachfunction (genericVar {
-                                var_2726var_2737, genericVar, genericVar[genericVar];
-                            }
-                            );
-                        }
-                        else if (Object.getOwnPropertyDescriptors) {
-                            Object.defineProperties(var_2737, Object.getOwnPropertyDescriptors(genericVar));
-                        } else {
-                            Object.keys(genericVar).forEach(function (key) {
-                                Object.defineProperty(var_2737, key, Object.getOwnPropertyDescriptor(genericVar, key));
-                            });
-                        }
-                        return genericVar;
-                        }
-                        
-                        var genericVar = genericVar;
-                        
-                        function renamedFunctionvar_2744(genericVar) {
-                            var id = genericVar.id;
-                            var nick = genericVar.nick;
-                            var skinUrl = genericVar.skinUrl;
-                            var whitelisted = genericVar.whitelisted;
-                            var waveCount = genericVar.waveCount;
-                            var onToggle = genericVar.onToggle;
-                            var onSkinClick = genericVar.onSkinClick;
-                            var onNameClick = genericVar.onNameClick;
-                        
-                            var [isActive, setIsActive] = var_2700var_2685.useState(false);
-                        
-                            var style = skinUrl && /^https?:\/\/[a-z0-9]+\.?imgur\.com\/.*?$/.test(skinUrl)
-                                ? { backgroundImage: `url("${skinUrl}")` }
-                                : null;
-                        
-                            return genericVar.jsxs("div", {
-                                className: "info",
-                                children: [
-                                    genericVar.jsx("div", {
-                                        className: "wave-btn",
-                                        onClick: function () {
-                                            return onToggle && onToggle(!isActive);
-                                        },
-                                        children: isActive ? "✔" : "❌",
-                                    }),
-                                    genericVar.jsx("div", {
-                                        className: "skin",
-                                        style: style,
-                                        onClick: function () {
-                                            return onSkinClick && onSkinClick();
-                                        },
-                                    }),
-                                    genericVar.jsx("div", {
-                                        className: "name",
-                                        onClick: function () {
-                                            return onNameClick && onNameClick();
-                                        },
-                                        onMouseEnter: function () {
-                                            return setIsActive(true);
-                                        },
-                                        onMouseLeave: function () {
-                                            return setIsActive(false);
-                                        },
-                                        children: whitelisted && nick ? `#${nick}` : nick,
-                                    }),
-                                    genericVar.jsx("div", {
-                                        className: "wave-count",
-                                        children: waveCount,
-                                    }),
-                                ],
-                            });
-                        }
-                        
-                var genericVar = genericVar;
-                var genericVar = genericVar.nvar_2757;
-                var genericVar = genericVar;
-                var genericVar = genericVar.nvar_2759;
-                var genericVar = genericVar;
-                var genericVar = genericVar.nvar_2761;
-                var genericVar = genericVar;
-                var genericVar = genericVar.nvar_2763;
-                var genericVar = genericVar;
-                var genericVar = genericVar.nvar_2765;
-                var genericVar = genericVar;
-                var genericVar = genericVar.nvar_2767;
-                var genericVar = genericVar;
-                var genericVar = {
-                    styleTagTransform: genericVar,
-                    "setAttributes": genericVar,
-                    "insert": genericVar.bindnull, "head",
-                    "domAPI": genericVar,
-                    insertStyleElement: genericVar
-                }
-                ;
-                var_2758var_2769.Z, genericVar;
-                if genericVar.Z && genericVar.Z.locals {
-                    genericVar.Z.locals;
-                }
-                const genericVar = "undefined" != typeof window ? genericVar.useLayoutEffect : genericVar.useEffect;
-                function renamedFunctionvar_2773 {
-                    0;
-                    var genericVar = genericVar.useRefvar_2773;
-                    var_2771function ( {
-                        genericVar.current = genericVar;
-                    }
-                    , [genericVar]);
-                    0;
-                    return genericVar.useCallbackfunction ( {
-                        var genericVar = arguments.length;
-                        var genericVar = new Arrayvar_2775;
-                        for var genericVar = 0;
-                        genericVar < genericVar;
-                        genericVar++ {
-                            genericVar[genericVar] = arguments[genericVar];
-                        }
-                        genericVar.current.applythis, genericVar;
-                    }
-                    , []);
-                }
-                function renamedFunctionvar_2779, genericVar, genericVar {
-                    var genericVar = var_2772var_2781;
-                    var_2771function ( {
-                        genericVar.onvar_2780, genericVar;
-                        return function  {
-                            genericVar.removeListenervar_2780, genericVar;
-                        }
-                        ;
-                    }
-                    , [genericVar, genericVar, genericVar]);
-                }
-                function renamedFunctionvar_2784 {
-                    var genericVar = genericVar.caption;
-                    var genericVar = genericVar.enabled;
-                    var genericVar = genericVar.onChange;
-                    var genericVar = genericVar.disabled;
-                    var genericVar = genericVar.captionOn;
-                    var genericVar = undefined === genericVar ? "ON" : genericVar;
-                    var genericVar = genericVar.captionOff;
-                    var genericVar = undefined === genericVar ? "OFF" : genericVar;
-                    0;
-                    0;
-                    0;
-                    0;
-                    0;
-                    0;
-                    return genericVar.jsxs("div", {
-                        className: "flex-row",
-                        children: [genericVar.jsx("div", {
-                            className: "input-box-cell rest",
-                            children: genericVar
-                        }
-                        ), genericVar.jsx("div", {
-                            className: "input-box-cell",
-                            children: genericVar.jsxs("label", {
-                                className: "switch",
-                                children: [genericVar.jsx("input", {
-                                    className: "checkbox",
-                                    type: "checkbox",
-                                    checked: genericVar,
-                                    onChange: function genericVar {
-                                        return var_2787var_2793.target.checked;
-                                    }
-                                    ,
-                                    disabled: genericVar
-                                }
-                                ), genericVar.jsx("div", {
-                                    className: "slider round",
-                                    "data-on": genericVar,
-                                    "data-off": genericVar
-                                }
-                                )]
-                            }
-                            )
-                        }
-                        )]
-                    }
-                    );
-                }
-                function renamedFunctionvar_2795, genericVar, genericVar, genericVar, genericVar, genericVar, genericVar {
-                    try {
-                        var genericVar = genericVar[genericVar]genericVar;
-                        var genericVar = genericVar.value;
-                    }
-                    catch genericVar {
-                        return void var_2797var_2804;
-                    }
-                    if genericVar.done {
-                        var_2796var_2803;
-                    }
-                    else {
-                        Promise.resolvevar_2803.thenvar_2798, genericVar;
-                    }
-                }
-                /* Error Handling */
-function renamedFunctionvar_2806 {
-                    return function  {
-                        var genericVar = this;
-                        return new Promisefunction (genericVar, genericVar {
-                            var genericVar = genericVar.applyvar_2807, arguments;
-                            /* Error Handling */
-function renamedFunctionvar_2812 {
-                                var_2794var_2810, genericVar, genericVar, genericVar, genericVar, "next", genericVar;
-                            }
-                            /* Error Handling */
-function renamedFunctionvar_2814 {
-                                var_2794var_2810, genericVar, genericVar, genericVar, genericVar, "throw", genericVar;
-                            }
-                            var_2811undefined;
-                        }
-                        );
-                    }
-                    ;
-                }
+            });
+        }
+    }
+};
+
+genericVar.o = function(obj, key) {
+    return Object.prototype.hasOwnProperty.call(obj, key);
+};
+
+genericVar.nc = undefined;
+
+(() => {
+    "use strict";
+    let genericVar = genericVar;
+    let anotherVar = genericVar;
+
+    function renamedFunctionvar_2665(genericVar, length) {
+        if (genericVar == null || length > genericVar.length) {
+            length = genericVar.length;
+        }
+        let result = new Array(length);
+        for (let i = 0; i < length; i++) {
+            result[i] = genericVar[i];
+        }
+        return result;
+    }
+
+    function renamedFunctionvar_2693(genericVar) {
+        if (genericVar) {
+            if (typeof genericVar === "string") {
+                return Array.from(genericVar);
+            }
+            let type = Object.prototype.toString.call(genericVar).slice(8, -1);
+            if (type === "Object" && genericVar.constructor) {
+                type = genericVar.constructor.name;
+            }
+            return type === "Map" || type === "Set" ? Array.from(genericVar) :
+                type === "Arguments" || /^Uint|Int(8|16|32)Array$/.test(type)
+                ? Array.from(genericVar)
+                : undefined;
+        }
+    }
+
+    function renamedFunctionvar_2697() {
+        return function(genericVar) {
+            if (Array.isArray(genericVar)) {
+                return Array.from(genericVar);
+            }
+        };
+    }
+})();
+
+genericVar || function() {
+    if (typeof Symbol !== "undefined" && (genericVar[Symbol.iterator] != null || genericVar["@@iterator"] != null)) {
+        return Array.from(var_2699);
+    }
+} || var_2692var_2697 || function() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator] method.");
+};
+
+function renamedFunctionvar_2701(genericVar1, genericVar2) {
+    return function() {
+        if (Array.isArray(genericVar1)) {
+            return genericVar1;
+        }
+    };
+}
+
+// React component definitions
+const RenamedFunctionvar2744 = (props) => {
+  // Ensure props is a valid object
+  if (typeof props !== 'object' || props === null) {
+    props = {};
+  }
+
+  // Destructure with fallback values
+  const {
+    id = null,
+    nick = '',
+    skinUrl = '',
+    whitelisted = false,
+    waveCount = 0,
+    onToggle = () => {},
+    onSkinClick = () => {},
+    onNameClick = () => {},
+  } = props;
+
+  // Manage local state
+  const [isActive, setIsActive] = React.useState(false);
+
+  // Only use background image if it matches the Imgur pattern
+  const style = (skinUrl && /^https?:\/\/[a-z0-9]+\.?imgur\.com\/.*?$/i.test(skinUrl))
+    ? { backgroundImage: `url("${skinUrl}")` }
+    : null;
+
+  return (
+    <div className="info">
+      {/* Toggle button */}
+      <div
+        className="wave-btn"
+        onClick={() => onToggle(!isActive)}
+      >
+        {isActive ? '✔' : '❌'}
+      </div>
+
+      {/* Skin clickable area */}
+      <div
+        className="skin"
+        style={style}
+        onClick={onSkinClick}
+      />
+
+      {/* Name clickable area */}
+      <div
+        className="name"
+        onClick={onNameClick}
+        onMouseEnter={() => setIsActive(true)}
+        onMouseLeave={() => setIsActive(false)}
+      >
+        {whitelisted && nick ? `#${nick}` : nick}
+      </div>
+
+      {/* Wave count */}
+      <div className="wave-count">
+        {waveCount}
+      </div>
+    </div>
+  );
+};
+
+const MyComponent = () => {
+    const [genericVar, setGenericVar] = React.useState(false);
+    const genericVarRef = React.useRef(genericVar);
+
+    React.useEffect(() => {
+        genericVarRef.current = genericVar;
+    }, [genericVar]);
+
+    return (
+        <div className="flex-row">
+            <div className="input-box-cell rest">{genericVar ? "Checked" : "Not Checked"}</div>
+            <div className="input-box-cell">
+                <label className="switch">
+                    <input
+                        className="checkbox"
+                        type="checkbox"
+                        checked={genericVar}
+                        onChange={(e) => setGenericVar(e.target.checked)}
+                        disabled={false}
+                    />
+                    <div className="slider round" data-on="ON" data-off="OFF" />
+                </label>
+            </div>
+        </div>
+    );
+};
+
+// Corrected function with proper syntax
+function renamedFunctionvar_2795(param1, param2, param3, param4, param5, param6) {
+    try {
+        let result = param1[param2];
+        let value = result.value;
+    } catch (error) {
+        return;
+    }
+}
+
+// Corrected Promise handling
+function renamedFunctionvar_2806() {
+    return function() {
+        return new Promise(function(resolve, reject) {
+            let genericVar = genericVar.apply(null, arguments);
+            
+            function renamedFunctionvar_2812() {
+                genericVar("next", genericVar);
+            }
+
+            function renamedFunctionvar_2814() {
+                genericVar("throw", genericVar);
+            }
+        });
+    };
+}
+
                 var genericVar = genericVar;
                 var genericVar = genericVar.nvar_2815;
                 /* Error Handling */
-function renamedFunctionvar_2818, genericVar {
-                    for var genericVar = 0;
-                    genericVar < genericVar.length;
-                    genericVar++ {
-                        var genericVar = genericVar[genericVar];
-                        genericVar.enumerable = genericVar.enumerable || false;
-                        genericVar.configurable = true;
-                        if "value" in genericVar {
-                            genericVar.writable = true;
+function renamedFunctionvar_2818(target, properties) {
+                    for (let i = 0; i < properties.length; i++) {
+                        let descriptor = properties[i];
+                        descriptor.enumerable = descriptor.enumerable || false;
+                        descriptor.configurable = true;
+                        if ("value" in descriptor) {
+                            descriptor.writable = true;
                         }
-                        Object.definePropertyvar_2818, genericVar(genericVar.key, genericVar);
+                        Object.defineProperty(target, descriptor.key, descriptor);
                     }
                 }
+
                 /* Error Handling */
-function renamedFunctionvar_2823, genericVar {
-                    genericVar = Object.setPrototypeOf ? Object.setPrototypeOf.bind : /* Error Handling */
-function genericVar, genericVar {
-                        genericVar.__proto__ = genericVar;
-                        return genericVar;
-                    }
-                    ;
-                    return var_2822var_2823, genericVar;
+function renamedFunctionvar_2823(subClass, superClass) {
+                    const setProto = Object.setPrototypeOf ? Object.setPrototypeOf.bind() : function(subClass, superClass) {
+                        subClass.__proto__ = superClass;
+                        return subClass;
+                    };
+                    return setProto(subClass, superClass);
                 }
+
                 /* Error Handling */
-function renamedFunctionvar_2828, genericVar {
-                    if genericVar && ("object" === genericVar(genericVar || "function" == typeof genericVar)) {
-                        return genericVar;
+function renamedFunctionvar_2828(instance, Constructor) {
+                    if (instance && (typeof instance === "object" || typeof instance === "function")) {
+                        return instance;
                     }
-                    if undefined !== genericVar {
-                        throw new TypeError"Derived constructors may only return object or undefined";
+                    if (instance !== undefined) {
+                        throw new TypeError("Derived constructors may only return object or undefined");
                     }
-                    return/* Error Handling */
-function genericVar {
-                        if undefined === genericVar {
-                            throw new ReferenceError"this hasn't been initialised - super( hasn't been called");
+                    return function() {
+                        if (this === undefined) {
+                            throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
                         }
-                        return genericVar;
-                    }
-                    genericVar;
+                        return this;
+                    }();
                 }
+
                 /* Error Handling */
-function renamedFunctionvar_2832 {
-                    genericVar = Object.setPrototypeOf ? Object.getPrototypeOf.bind : /* Error Handling */
-function genericVar {
-                        return genericVar.__proto__ || Object.getPrototypeOfvar_2833;
-                    }
-                    ;
-                    return var_2831var_2832;
+function renamedFunctionvar_2832() {
+                    const getProto = Object.getPrototypeOf ? Object.getPrototypeOf.bind() : function(obj) {
+                        return obj.__proto__ || Object.getPrototypeOf(obj);
+                    };
+                    return getProto(this);
                 }
+
                 /* Error Handling */
-function renamedFunctionvar_2835, genericVar, genericVar {
-                    genericVar = function  {
-                        if "undefined" == typeof Reflect || !Reflect.construct {
+function renamedFunctionvar_2835(target, args, newTarget) {
+                    const construct = (function() {
+                        if (typeof Reflect === "undefined" || !Reflect.construct) {
                             return false;
                         }
-                        if Reflect.construct.sham {
+                        if (Reflect.construct.sham) {
                             return false;
                         }
-                        if "function" == typeof Proxy {
+                        if (typeof Proxy === "function") {
                             return true;
                         }
                         try {
-                            Boolean.prototype.valueOf.callReflect.construct(Boolean, [], function ( {
-                            }
-                            ));
+                            Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function() {}));
                             return true;
                         }
-                        catch genericVar {
+                        catch (e) {
                             return false;
                         }
-                    }
-                    ? Reflect.construct.bind : /* Error Handling */
-function genericVar, genericVar, genericVar {
-                        var genericVar = [null];
-                        genericVar.push.applyvar_2842, genericVar;
-                        var genericVar = new Function.bind.apply(genericVar, genericVar);
-                        if genericVar {
-                            var_2822var_2843, genericVar.prototype;
+                    })() ? Reflect.construct.bind() : function(target, args, newTarget) {
+                        const argsArray = [null];
+                        argsArray.push.apply(argsArray, args);
+                        const bound = Function.bind.apply(target, argsArray);
+                        const instance = new bound();
+                        if (newTarget) {
+                            Object.setPrototypeOf(instance, newTarget.prototype);
                         }
-                        return genericVar;
-                    }
-                    ;
-                    return genericVar.applynull, arguments;
+                        return instance;
+                    };
+                    return construct.apply(null, arguments);
                 }
+
                 /* Error Handling */
-function renamedFunctionvar_2845 {
-                    var genericVar = "function" == typeof Map ? new Map : undefined;
-                    genericVar = /* Error Handling */
-function genericVar {
-                        if null === genericVar || (genericVar = genericVar, -1 === Function.toString.call(genericVar.indexOf"[native code]")) {
-                            return genericVar;
+function renamedFunctionvar_2845() {
+                    const cache = typeof Map === "function" ? new Map() : undefined;
+                    return function(fn) {
+                        if (fn === null || (fn = Function.toString.call(fn).indexOf("[native code]") === -1)) {
+                            return fn;
                         }
-                        var genericVar;
-                        if "function" != typeof genericVar {
-                            throw new TypeError"Super expression must either be null or a function";
+                        if (typeof fn !== "function") {
+                            throw new TypeError("Super expression must either be null or a function");
                         }
-                        if undefined !== genericVar {
-                            if genericVar.has(genericVar) {
-                                return genericVar.getvar_2847;
+                        if (cache !== undefined) {
+                            if (cache.has(fn)) {
+                                return cache.get(fn);
                             }
-                            genericVar.setvar_2847, genericVar;
+                            cache.set(fn, fn);
                         }
-                        /* Error Handling */
-function genericVar {
-                            return var_2834var_2847, arguments, genericVar(this.constructor);
+                        function Constructor() {
+                            return Reflect.construct(fn, arguments, this.constructor);
                         }
-                        genericVar.prototype = Object.create(genericVar.prototype, {
+                        Constructor.prototype = Object.create(fn.prototype, {
                             constructor: {
-                                value: genericVar,
+                                value: Constructor,
                                 enumerable: false,
                                 writable: true,
                                 configurable: true
                             }
-                        }
-                        );
-                        return var_2822var_2849, genericVar;
-                    }
-                    ;
-                    return var_2844var_2845;
+                        });
+                        return Object.setPrototypeOf(Constructor, fn);
+                    };
                 }
+
                 /* Error Handling */
-function renamedFunctionvar_2851 {
-                    var genericVar = function  {
-                        if "undefined" == typeof Reflect || !Reflect.construct {
+function renamedFunctionvar_2851() {
+                    const isNativeReflectConstruct = (function() {
+                        if (typeof Reflect === "undefined" || !Reflect.construct) {
                             return false;
                         }
-                        if Reflect.construct.sham {
+                        if (Reflect.construct.sham) {
                             return false;
                         }
-                        if "function" == typeof Proxy {
+                        if (typeof Proxy === "function") {
                             return true;
                         }
                         try {
-                            Boolean.prototype.valueOf.callReflect.construct(Boolean, [], function ( {
-                            }
-                            ));
+                            Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function() {}));
                             return true;
                         }
-                        catch genericVar {
+                        catch (e) {
                             return false;
                         }
-                    }
-                    ;
-                    return function  {
-                        var genericVar;
-                        var genericVar = var_2831var_2851;
-                        if genericVar {
-                            var genericVar = var_2831this.constructor;
-                            genericVar = Reflect.constructvar_2855, arguments, genericVar;
+                    })();
+
+                    return function(Constructor, args, Class) {
+                        let result;
+                        if (isNativeReflectConstruct) {
+                            const NewTarget = Object.getPrototypeOf(this).constructor;
+                            result = Reflect.construct(Constructor, args, NewTarget);
+                        } else {
+                            result = Constructor.apply(this, args);
                         }
-                        else {
-                            genericVar = genericVar.applythis, arguments;
-                        }
-                        return var_2827this, genericVar;
-                    }
-                    ;
+                        return result;
+                    };
                 }
-                var genericVar = /* Error Handling */
-function genericVar {
-                    !/* Error Handling */
-function genericVar, genericVar {
-                        if "function" != typeof genericVar && null !== genericVar {
-                            throw new TypeError"Super expression must either be null or a function";
+
+                const CustomError = (function(Error) {
+                    function defineProperties(target, props) {
+                        if (typeof target !== "function" && target !== null) {
+                            throw new TypeError("Super expression must either be null or a function");
                         }
-                        genericVar.prototype = Object.create(genericVar && genericVar.prototype, {
+                        target.prototype = Object.create(props && props.prototype, {
                             constructor: {
-                                value: genericVar,
+                                value: target,
                                 writable: true,
                                 configurable: true
                             }
-                        }
-                        );
-                        Object.defineProperty(genericVar, "prototype", {
+                        });
+                        Object.defineProperty(target, "prototype", {
                             writable: false
+                        });
+                        if (props) {
+                            Object.setPrototypeOf(target, props);
                         }
-                        );
-                        if genericVar {
-                            var_2822var_2859, genericVar;
+                    }
+
+                    const _super = Object.create(Error.prototype);
+                    const _this = renamedFunctionvar_2851.call(this);
+
+                    function CustomError(code, message) {
+                        if (!(this instanceof CustomError)) {
+                            throw new TypeError("Cannot call a class as a function");
                         }
+                        _this.code = code;
+                        return _this;
                     }
-                    genericVar, genericVar;
-                    var genericVar;
-                    var genericVar;
-                    var genericVar = var_2850var_2861;
-                    /* Error Handling */
-function renamedFunctionvar_2865, genericVar {
-                        var genericVar;
-                        function (genericVar, genericVar {
-                            if !(genericVar instanceof genericVar) {
-                                throw new TypeError"Cannot call a class as a function";
-                            }
-                        }
-                        )this, genericVar;
-                        genericVar = genericVar.call(this, genericVar).code = genericVar;
-                        return genericVar;
+
+                    if (defineProperties) {
+                        defineProperties(CustomError.prototype);
                     }
-                    if genericVar {
-                        var_2817var_2861.prototype, genericVar;
+                    if (defineProperties) {
+                        defineProperties(CustomError);
                     }
-                    if genericVar {
-                        var_2817var_2861, genericVar;
-                    }
-                    Object.defineProperty(genericVar, "prototype", {
+                    Object.defineProperty(CustomError, "prototype", {
                         writable: false
-                    }
-                    );
-                    return genericVar;
-                }
-                genericVar(Error);
+                    });
+                    return CustomError;
+                })(Error);
 
                 /* Error Handling */
-                function renamedFunctionvar_2871(genericVar, genericVar, genericVar) {
-                    return new Promise(function (resolve, reject) {
-                        var timeoutHandle = setTimeout(function () {
-                            clearInterval(intervalHandle);
-                            reject(new genericVar("TIMEOUT", "Client " + genericVar.ID + " timed out"));
-                        }, genericVar);
-                
-                        var intervalHandle = setInterval(function () {
-                            if (!app.clients.region.includes(genericVar)) {
-                                clearTimeout(timeoutHandle);
-                                clearInterval(intervalHandle);
-                                reject(new genericVar("CLIENTS_DESTROYED", "Client " + genericVar.ID + " has been destroyed"));
-                            }
-                            if (genericVar(genericVar)) {
-                                clearTimeout(timeoutHandle);
-                                clearInterval(intervalHandle);
-                                resolve();
-                            }
-                        }, genericVar);
-                    });
-                }
-                
-                var genericVar = null;
-                var genericVar = null;
-                var genericVar = null;
-                
-                /* Error Handling */
-                function renamedFunctionvar_2883() {
-                    var genericVar = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 50;
-                    var genericVar = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 60000;
-                    var genericVar = null;
-                    var genericVar = false;
-                    var genericVar = {};
-                }
-                
-                /* Error Handling */
-                function renamedFunctionvar_2890(genericVar) {
-                    if (!genericVar.hasOwnProperty(genericVar)) {
-                        genericVar[genericVar] = [];
-                    }
-                    return genericVar[genericVar];
-                }
                 
                     var genericVar = {
                         get Id() {
@@ -11320,29 +11187,29 @@ function(genericVar, genericVar) {
                     y: 5936
                 }
                 ];
-                function renamedFunctionvar_2927 {
+                function renamedFunctionvar_2927() {
                     var genericVar;
                     var genericVar;
                     var genericVar = genericVar.deltaApp;
-                    0;
-                    var genericVar = var_2700var_2685.useState(false, 2);
+                    
+                    var genericVar = var_2700var_2685.useState(false);
                     var genericVar = genericVar[0];
                     var genericVar = genericVar[1];
-                    0;
-                    var genericVar = var_2700var_2685.useState(false, 2);
+                    
+                    var genericVar = var_2700var_2685.useState(false);
                     var genericVar = genericVar[0];
                     var genericVar = genericVar[1];
-                    0;
-                    var genericVar = var_2700var_2685.useState(false, 2);
+                    
+                    var genericVar = var_2700var_2685.useState(false);
                     var genericVar = genericVar[0];
                     var genericVar = genericVar[1];
-                    0;
-                    var genericVar = var_2700var_2685.useState(false, 2);
+                    
+                    var genericVar = var_2700var_2685.useState(false);
                     var genericVar = genericVar[0];
                     var genericVar = genericVar[1];
-                    0;
-                    var genericVar = genericVar.useMemofunction ( {
-                        return function genericVar {
+                    
+                    var genericVar = genericVar.useMemo(function() {
+                        return function genericVar() {
                             var genericVar = genericVar.app;
                             var genericVar = genericVar.clientInterval;
                             var genericVar = genericVar.clientTimeout;
@@ -11353,175 +11220,150 @@ function(genericVar, genericVar) {
                             var genericVar = null;
                             var genericVar = [];
                             var genericVar = genericVar;
-                            function renamedFunctionvar_2956 {
+                            
+                            function renamedFunctionvar_2956() {
                                 genericVar = [];
-                                for var genericVar = 0;
-                                genericVar < genericVar;
-                                genericVar++ {
-                                    var genericVar = var_2882var_2945, genericVar, genericVar;
-                                    genericVar.on"close", genericVar;
-                                    genericVar.pushvar_2958;
+                                for (var genericVar = 0; genericVar < genericVar; genericVar++) {
+                                    var genericVar = var_2882var_2945(genericVar, genericVar);
+                                    genericVar.on("close", genericVar);
+                                    genericVar.push(var_2958);
                                 }
                             }
-                            function renamedFunctionvar_2960, genericVar {
-                                if "noevent" !== genericVar && (console.log("Reconnecting Client " + genericVar.Id, genericVar || genericVar)) {
-                                    var genericVar = genericVar.indexOfvar_2960;
-                                    if !(genericVar < 0) {
-                                        if genericVar && 0 === genericVar {
-                                            genericVar.connect.thenfunction ( {
+                            
+                            function renamedFunctionvar_2960(genericVar) {
+                                if ("noevent" !== genericVar && (console.log("Reconnecting Client " + genericVar.Id, genericVar || genericVar))) {
+                                    var genericVar = genericVar.indexOf(var_2960);
+                                    if (!(genericVar < 0)) {
+                                        if (genericVar && 0 === genericVar) {
+                                            genericVar.connect.then(function() {
                                                 return genericVar.sendSpectate;
-                                            }
-                                            );
+                                            });
                                         }
                                         else {
                                             genericVar.connect.then(function() {
                                                 return genericVar.sendSpectate;
-                                            }
-                                            ).then(function() {
+                                            }).then(function() {
                                                 return genericVar.sendFreeSpectate;
-                                            }
-                                            ).then(function() {
+                                            }).then(function() {
                                                 return genericVar.setTargetPosition(var_2954[genericVar].x, genericVar[genericVar].y);
-                                            }
-                                            );
+                                            });
                                         }
                                     }
                                 }
                             }
-                            function genericVar {
-                                return genericVar = genericVar(genericVar(.markfunction genericVar( {
-                                    return genericVar.wrapfunction (genericVar {
-                                        for ;
-                                        ;
-                                        {
-                                            switch genericVar.prev = genericVar.next {
+                            
+                            function genericVar() {
+                                return genericVar = genericVar(genericVar.mark(function genericVar() {
+                                    return genericVar.wrap(function(genericVar) {
+                                        for (;;) {
+                                            switch (genericVar.prev = genericVar.next) {
                                                 case 0:
-                                                genericVar.next = 2;
-                                                return Promise.all(var_2953.map(function (genericVar) {
-                                                    return genericVar.connect;
-                                                }
-                                                ));
+                                                    genericVar.next = 2;
+                                                    return Promise.all(var_2953.map(function(genericVar) {
+                                                        return genericVar.connect;
+                                                    }));
                                                 case 2:
-                                                genericVar.next = 4;
-                                                return Promise.all(var_2953.map(function (genericVar, genericVar) {
-                                                    return genericVar && 0 === genericVar ? genericVar.sendSpectate : genericVar.sendSpectate.then(function() {
-                                                        return genericVar.sendFreeSpectate;
-                                                    }
-                                                    );
-                                                }
-                                                ));
+                                                    genericVar.next = 4;
+                                                    return Promise.all(var_2953.map(function(genericVar, genericVar) {
+                                                        return genericVar && 0 === genericVar ? genericVar.sendSpectate : genericVar.sendSpectate.then(function() {
+                                                            return genericVar.sendFreeSpectate;
+                                                        });
+                                                    }));
                                                 case 4:
                                                 case "end":
-                                                return genericVar.stop;
+                                                    return genericVar.stop();
                                             }
                                         }
-                                    }
-                                    , genericVar);
-                                }
-                                ))).apply(this, arguments);
+                                    }, genericVar);
+                                })).apply(this, arguments);
                             }
-                            function genericVar {
-                                for (;
-                                0 !== genericVar.length;
-                                ) {
+                            
+                            function genericVar() {
+                                for (; 0 !== genericVar.length;) {
                                     var genericVar = genericVar.shift();
                                     if (genericVar) {
                                         genericVar.destroy();
                                     }
                                 }
                             }
-                            function genericVar {
-                                return genericVar = genericVar(genericVar(.markfunction genericVar( {
-                                    return genericVar.wrapfunction (genericVar {
-                                        for (;
-                                        ;
-                                        ) {
+                            
+                            function genericVar() {
+                                return genericVar = genericVar(genericVar.mark(function genericVar() {
+                                    return genericVar.wrap(function(genericVar) {
+                                        for (;;) {
                                             switch (genericVar.prev = genericVar.next) {
                                                 case 0:
-                                                genericVar;
-                                                if (!genericVar) {
-                                                    genericVar.next = 3;
-                                                    break;
-                                                }
-                                                return genericVar.abrupt("return");
+                                                    genericVar;
+                                                    if (!genericVar) {
+                                                        genericVar.next = 3;
+                                                        break;
+                                                    }
+                                                    return genericVar.abrupt("return");
                                                 case 3:
-                                                genericVar;
-                                                genericVar = true;
-                                                if (genericVar) {
-                                                    genericVar({
-                                                        loading: true,
-                                                        enabled: true
+                                                    genericVar;
+                                                    genericVar = true;
+                                                    if (genericVar) {
+                                                        genericVar({
+                                                            loading: true,
+                                                            enabled: true
+                                                        });
                                                     }
-                                                    );
-                                                }
-                                                genericVar.prev = 6;
-                                                genericVar.next = 9;
-                                                return genericVar.apply(this, arguments);
+                                                    genericVar.prev = 6;
+                                                    genericVar.next = 9;
+                                                    return genericVar.apply(this, arguments);
                                                 case 9:
-                                                if (genericVar) {
-                                                    genericVar({
-                                                        loading: false,
-                                                        enabled: true
+                                                    if (genericVar) {
+                                                        genericVar({
+                                                            loading: false,
+                                                            enabled: true
+                                                        });
                                                     }
-                                                    );
-                                                }
-                                                genericVar = setInterval(function() {
-                                                    genericVar = [{
-                                                        x: genericVar.master.protocol_viewX + 2800,
-                                                        y: genericVar.master.protocol_viewY
-                                                    }
-                                                    , {
-                                                        x: genericVar.master.protocol_viewX,
-                                                        y: genericVar.master.protocol_viewY + 2800
-                                                    }
-                                                    , {
-                                                        x: genericVar.master.protocol_viewX - 2800,
-                                                        y: genericVar.master.protocol_viewY
-                                                    }
-                                                    , {
-                                                        x: genericVar.master.protocol_viewX,
-                                                        y: genericVar.master.protocol_viewY - 2800
-                                                    }
-                                                    , {
-                                                        x: genericVar.master.protocol_viewX + 5600,
-                                                        y: genericVar.master.protocol_viewY + 5600
-                                                    }
-                                                    , {
-                                                        x: genericVar.master.protocol_viewX + 5600,
-                                                        y: genericVar.master.protocol_viewY - 5600
-                                                    }
-                                                    , {
-                                                        x: genericVar.master.protocol_viewX - 5600,
-                                                        y: genericVar.master.protocol_viewY + 5600
-                                                    }
-                                                    , {
-                                                        x: genericVar.master.protocol_viewX - 5600,
-                                                        y: genericVar.master.protocol_viewY - 5600
-                                                    }
-                                                    ];
-                                                    genericVar.slice(1).forEach(function(genericVar, genericVar) {
-                                                        return genericVar.setTargetPosition(var_2954[genericVar].x, genericVar[genericVar].y);
-                                                    }
-                                                    );
-                                                }
-                                                , 500);
-                                                genericVar.next = 17;
-                                                break;
+                                                    genericVar = setInterval(function() {
+                                                        genericVar = [{
+                                                            x: genericVar.master.protocol_viewX + 2800,
+                                                            y: genericVar.master.protocol_viewY
+                                                        }, {
+                                                            x: genericVar.master.protocol_viewX,
+                                                            y: genericVar.master.protocol_viewY + 2800
+                                                        }, {
+                                                            x: genericVar.master.protocol_viewX - 2800,
+                                                            y: genericVar.master.protocol_viewY
+                                                        }, {
+                                                            x: genericVar.master.protocol_viewX,
+                                                            y: genericVar.master.protocol_viewY - 2800
+                                                        }, {
+                                                            x: genericVar.master.protocol_viewX + 5600,
+                                                            y: genericVar.master.protocol_viewY + 5600
+                                                        }, {
+                                                            x: genericVar.master.protocol_viewX + 5600,
+                                                            y: genericVar.master.protocol_viewY - 5600
+                                                        }, {
+                                                            x: genericVar.master.protocol_viewX - 5600,
+                                                            y: genericVar.master.protocol_viewY + 5600
+                                                        }, {
+                                                            x: genericVar.master.protocol_viewX - 5600,
+                                                            y: genericVar.master.protocol_viewY - 5600
+                                                        }];
+                                                        genericVar.slice(1).forEach(function(genericVar, genericVar) {
+                                                            return genericVar.setTargetPosition(var_2954[genericVar].x, genericVar[genericVar].y);
+                                                        });
+                                                    }, 500);
+                                                    genericVar.next = 17;
+                                                    break;
                                                 case 13:
-                                                genericVar.prev = 13;
-                                                genericVar.t0 = genericVar["catch"](6);
-                                                console.log("ExtendedMap Error: " + genericVar.t0 + ", disabling");
-                                                genericVar();
+                                                    genericVar.prev = 13;
+                                                    genericVar.t0 = genericVar["catch"](6);
+                                                    console.log("ExtendedMap Error: " + genericVar.t0 + ", disabling");
+                                                    genericVar();
                                                 case 17:
                                                 case "end":
-                                                return genericVar.stop;
+                                                    return genericVar.stop();
                                             }
                                         }
-                                    }
-                                    ,genericVar, null, [[6, 13]]);
-                                }
-                                ))).apply(this, arguments);
+                                    }, genericVar, null, [[6, 13]]);
+                                })).apply(this, arguments);
                             }
+                            
                             function genericVar() {
                                 if (genericVar) {
                                     if (genericVar) {
@@ -11537,66 +11379,60 @@ function(genericVar, genericVar) {
                                         });
                                     }
                                 }
-                            };
+                            }
 
-                            function genericVar {
-                                return genericVar = genericVar(genericVar(.markfunction genericVar( {
-                                    return genericVar.wrapfunction (genericVar {
-                                        for (;
-                                        ;
-                                        ) {
+                            function genericVar() {
+                                return genericVar = genericVar(genericVar.mark(function genericVar() {
+                                    return genericVar.wrap(function(genericVar) {
+                                        for (;;) {
                                             switch (genericVar.prev = genericVar.next) {
                                                 case 0:
-                                                genericVar;
-                                                if (!genericVar) {
-                                                    genericVar.next = 3;
-                                                    break;
-                                                }
-                                                return genericVar.abrupt("return");
+                                                    genericVar;
+                                                    if (!genericVar) {
+                                                        genericVar.next = 3;
+                                                        break;
+                                                    }
+                                                    return genericVar.abrupt("return");
                                                 case 3:
-                                                var_2955var_2925.length;
-                                                genericVar = genericVar;
-                                                genericVar = true;
-                                                if (genericVar) {
-                                                    genericVar({
-                                                        loading: true,
-                                                        enabled: true
+                                                    var_2955var_2925.length;
+                                                    genericVar = genericVar;
+                                                    genericVar = true;
+                                                    if (genericVar) {
+                                                        genericVar({
+                                                            loading: true,
+                                                            enabled: true
+                                                        });
                                                     }
-                                                    );
-                                                }
-                                                genericVar.prev = 7;
-                                                genericVar.next = 10;
-                                                return genericVar.apply(this, arguments);
+                                                    genericVar.prev = 7;
+                                                    genericVar.next = 10;
+                                                    return genericVar.apply(this, arguments);
                                                 case 10:
-                                                if (genericVar) {
-                                                    genericVar({
-                                                        loading: false,
-                                                        enabled: true
+                                                    if (genericVar) {
+                                                        genericVar({
+                                                            loading: false,
+                                                            enabled: true
+                                                        });
                                                     }
-                                                    );
-                                                }
-                                                genericVar.forEach(function(genericVar, genericVar) {
-                                                    return genericVar.setTargetPosition(var_2954[genericVar].x, genericVar[genericVar].y);
-                                                }
-                                                );
-                                                genericVar.next = 18;
-                                                break;
+                                                    genericVar.forEach(function(genericVar, genericVar) {
+                                                        return genericVar.setTargetPosition(var_2954[genericVar].x, genericVar[genericVar].y);
+                                                    });
+                                                    genericVar.next = 18;
+                                                    break;
                                                 case 14:
-                                                genericVar.prev = 14;
-                                                genericVar.t0 = genericVar["catch"](7);
-                                                console.log("FullMap Error: " + genericVar.t0.code + ", " + genericVar.t0.message + ", disabling");
-                                                genericVar();
+                                                    genericVar.prev = 14;
+                                                    genericVar.t0 = genericVar["catch"](7);
+                                                    console.log("FullMap Error: " + genericVar.t0.code + ", " + genericVar.t0.message + ", disabling");
+                                                    genericVar();
                                                 case 18:
                                                 case "end":
-                                                return genericVar.stop;
+                                                    return genericVar.stop();
                                             }
                                         }
-                                    }
-                                    , genericVar, null, [[7, 14]]);
-                                }
-                                ))).apply(this, arguments);
+                                    }, genericVar, null, [[7, 14]]);
+                                })).apply(this, arguments);
                             }
-                            function genericVar {
+                            
+                            function genericVar() {
                                 if (genericVar) {
                                     genericVar();
                                     genericVar = false;
@@ -11604,45 +11440,38 @@ function(genericVar, genericVar) {
                                         genericVar({
                                             loading: false,
                                             enabled: false
-                                        }
-                                        );
+                                        });
                                     }
                                 }
                             }
+                            
                             return {
                                 enableExtendedMap: function() {
                                     return genericVar.apply(this, arguments);
-                                }
-                                ,
+                                },
                                 disableExtendedMap: genericVar,
                                 enableFullMap: function() {
                                     return genericVar.apply(this, arguments);
-                                }
-                                ,
+                                },
                                 disableFullMap: genericVar
-                            }
-                            ;
+                            };
+                        };
+                    }, {
+                        app: genericVar,
+                        onExtendedMapStateChanged: function(genericVar) {
+                            var genericVar = genericVar.loading;
+                            var genericVar = genericVar.enabled;
+                            var_2939var_2984;
+                            var_2933var_2985;
+                        },
+                        onFullMapStateChanged: function(genericVar) {
+                            var genericVar = genericVar.loading;
+                            var genericVar = genericVar.enabled;
+                            var_2942var_2987;
+                            var_2936var_2988;
                         }
-                        ({
-                            app: genericVar,
-                            onExtendedMapStateChanged: function(genericVar) {
-                                var genericVar = genericVar.loading;
-                                var genericVar = genericVar.enabled;
-                                var_2939var_2984;
-                                var_2933var_2985;
-                            }
-                            ,
-                            onFullMapStateChanged: function(genericVar) {
-                                var genericVar = genericVar.loading;
-                                var genericVar = genericVar.enabled;
-                                var_2942var_2987;
-                                var_2936var_2988;
-                            }
-                        }
-                        );
-                    }
-                    , []);
-                    0;
+                    });
+                    
                     var genericVar = genericVar.useRef(var_2930._server.ws);
                     genericVar = function() {
                         if (genericVar._server.ws !== genericVar.current) {
@@ -11650,32 +11479,24 @@ function(genericVar, genericVar) {
                             genericVar.disableFullMap();
                             genericVar.current = genericVar._server.ws;
                         }
-                    }
-                    ;
-                    0;
-                    0;
+                    };
+                    
                     genericVar = genericVar.useRef(var_2928);
                     var_2771(function() {
                         genericVar.current = genericVar;
-                    }
-                    , [genericVar]);
-                    0;
+                    }, [genericVar]);
+                    
                     genericVar.useEffect(function() {
                         if (0 || true) {
                             var genericVar = setInterval(function() {
                                 return genericVar.current();
-                            }
-                            , 0);
+                            }, 0);
                             return function() {
                                 return clearInterval(var_2990);
-                            }
-                            ;
+                            };
                         }
-                    }
-                    , [0]);
-                    0;
-                    0;
-                    0;
+                    }, [0]);
+                    
                     return genericVar.jsxs(genericVar.Fragment, {
                         children: [genericVar.jsx(genericVar, {
                             caption: "Ext. Map",
@@ -11685,79 +11506,57 @@ function(genericVar, genericVar) {
                                 toastr.info("" + genericVar ? "Enabled" : "Disabled" + " extended map");
                                 if (genericVar) {
                                     genericVar.enableExtendedMap();
-                                }
-                                else {
+                                } else {
                                     genericVar.disableExtendedMap();
                                 }
                             }
-                        }
-                        ), genericVar.jsx(genericVar, {
-                            caption: "Full Map",
+                        }), genericVar.jsx(genericVar, {
+                            caption: "Full Map", 
                             enabled: genericVar,
                             disabled: genericVar || genericVar,
                             onChange: function(genericVar) {
                                 toastr.info("" + genericVar ? "Enabled" : "Disabled" + " full map");
                                 if (genericVar) {
                                     genericVar.enableFullMap();
-                                }
-                                else {
+                                } else {
                                     genericVar.disableFullMap();
                                 }
                             }
-                        }
-                        )]
-                    }
-                    );
-                }
-                function renamedFunctionvar_2994, genericVar {
-                    var genericVar = Object.keysvar_2994;
-                    if Object.getOwnPropertySymbols {
-                        var genericVar = Object.getOwnPropertySymbolsvar_2994;
-                        if genericVar {
-                            genericVar = genericVar.filterfunction (genericVar {
-                                return Object.getOwnPropertyDescriptorvar_2994, genericVar.enumerable;
-                            }
-                            );
-                        }
-                        genericVar.push.applyvar_2996, genericVar;
-                    }
-                    return genericVar;
-                }
-                function renamedFunctionvar_3000 {
-                    for var genericVar = 1;
-                    genericVar < arguments.length;
-                    genericVar++ {
-                        var genericVar = null != arguments[genericVar] ? arguments[genericVar] : {
-                        }
-                        ;
-                        if genericVar % 2 {
-                            var_2993Object(genericVar, true).forEachfunction (genericVar {
-                                var_2726var_3000, genericVar, genericVar[genericVar];
-                            }
-                            );
-                        }
-                        else if Object.getOwnPropertyDescriptors {
-                            Object.definePropertiesvar_3000, Object.getOwnPropertyDescriptors(genericVar);
-                        }
-                        else {
-                            var_2993Object(genericVar).forEachfunction (genericVar {
-                                Object.definePropertyvar_3000, genericVar, Object.getOwnPropertyDescriptor(genericVar, genericVar);
-                            }
-                            );
-                        }
-                    }
-                    return genericVar;
-                }
-                else if (Object.getOwnPropertyDescriptors) {
-                    Object.defineProperties(var_3000, Object.getOwnPropertyDescriptors(genericVar));
-                } else {
-                    Object.keys(genericVar).forEach(function (key) {
-                        Object.defineProperty(var_3000, key, Object.getOwnPropertyDescriptor(genericVar, key));
+                        })]
                     });
                 }
                 
-                return genericVar;
+                function renamedFunctionvar_2994(genericVar) {
+                    var genericVar = Object.keys(var_2994);
+                    if (Object.getOwnPropertySymbols) {
+                        var genericVar = Object.getOwnPropertySymbols(var_2994);
+                        if (genericVar) {
+                            genericVar = genericVar.filter(function(genericVar) {
+                                return Object.getOwnPropertyDescriptor(var_2994, genericVar).enumerable;
+                            });
+                        }
+                        genericVar.push.apply(var_2996, genericVar);
+                    }
+                    return genericVar;
+                }
                 
+                function renamedFunctionvar_3000() {
+                    for (var genericVar = 1; genericVar < arguments.length; genericVar++) {
+                        var genericVar = null != arguments[genericVar] ? arguments[genericVar] : {};
+                        if (genericVar % 2) {
+                            var_2993Object(genericVar, true).forEach(function(genericVar) {
+                                var_2726var_3000(genericVar, genericVar[genericVar]);
+                            });
+                        } else if (Object.getOwnPropertyDescriptors) {
+                            Object.defineProperties(var_3000, Object.getOwnPropertyDescriptors(genericVar));
+                        } else {
+                            var_2993Object(genericVar).forEach(function(genericVar) {
+                                Object.defineProperty(var_3000, genericVar, Object.getOwnPropertyDescriptor(genericVar, genericVar));
+                            });
+                        }
+                    }
+                    return genericVar;
+                }
                 function renamedFunctionvar_3006() {
                     var genericVar = genericVar.deltaApp;
                     var genericVar = genericVar.deltaService;
@@ -11957,72 +11756,68 @@ function(genericVar, genericVar) {
                             })
                         })
                     });
-    const genericVar = setInterval( => {
-        if !window.ApiDelta || !window.app {
+    const genericVar = setInterval(() => {
+        if (!window.ApiDelta || !window.app) {
             return;
         }
-        clearIntervalvar_3090;
-        const genericVar = window.ApiDelta.getApi;
-        window.ApiDelta.getApi = function genericVar {
-            const genericVar = genericVar.callthis, genericVar;
-            if !window.sixTomoeMod {
-                window.sixTomoeMod = function genericVar, genericVar, genericVar {
-                    let genericVar = [genericVar];
-                    const genericVar = {
-                    }
-                    ;
-                    function renamedFunctionvar_3100 {
-                        if !genericVar.hasOwnProperty(genericVar) {
-                            genericVar[genericVar] = [];
+        clearInterval(genericVar);
+        const getApi = window.ApiDelta.getApi;
+        window.ApiDelta.getApi = function() {
+            const result = getApi.call(this, arguments);
+            if (!window.sixTomoeMod) {
+                window.sixTomoeMod = function(app, service, api) {
+                    let apis = [api];
+                    const listeners = {};
+                    
+                    function getListeners(event) {
+                        if (!listeners.hasOwnProperty(event)) {
+                            listeners[event] = [];
                         }
-                        return genericVar[genericVar];
+                        return listeners[event];
                     }
+
                     return {
-                        deltaApp: genericVar,
-                        deltaService: genericVar,
-                        get deltaApis {
-                            return [...genericVar];
-                        }
-                        ,
-                        addApivar_3101 {
-                            if genericVar.includes(genericVar) {
+                        deltaApp: app,
+                        deltaService: service,
+                        get deltaApis() {
+                            return [...apis];
+                        },
+                        addApi(api) {
+                            if (apis.includes(api)) {
                                 return;
                             }
-                            genericVar.pushvar_3101;
-                            genericVar"update".forEach(function genericVar genericVar({
-                                deltaApp: genericVar,
-                                deltaService: genericVar,
-                                deltaApis: genericVar
-                            }
-                            ));
-                        }
-                        ,
-                        onvar_3103, genericVar {
-                            var_3099var_3103.pushvar_3104;
-                        }
-                        ,
-                        offvar_3105, genericVar {
-                            const genericVar = var_3099var_3105.function findIndexvar_3108 genericVar === genericVar;
-                            if genericVar < 0 {
+                            apis.push(api);
+                            getListeners("update").forEach(function(listener) {
+                                listener({
+                                    deltaApp: app,
+                                    deltaService: service,
+                                    deltaApis: apis
+                                });
+                            });
+                        },
+                        on(event, listener) {
+                            getListeners(event).push(listener);
+                        },
+                        off(event, listener) {
+                            const index = getListeners(event).findIndex(l => l === listener);
+                            if (index < 0) {
                                 return;
                             }
-                            var_3099var_3105.splicevar_3107, 1;
+                            getListeners(event).splice(index, 1);
                         }
-                    }
-                    ;
-                }
-                window.sixTomoeMod(window.app, genericVar, genericVar);
-                const genericVar = document.createElement("script");
-                genericVar.appendChild(document.createTextNode("(" + initializeFunction + ")();"));
-                document.body.appendChild(genericVar);
+                    };
+                };
+                window.sixTomoeMod(window.app, service, api);
+                const script = document.createElement("script");
+                script.appendChild(document.createTextNode("(" + initializeFunction + ")();"));
+                document.body.appendChild(script);
             }
             else {
-                window.sixTomoeMod.addApi(genericVar);
+                window.sixTomoeMod.addApi(result);
             }
-            return genericVar;
+            return result;
         };
-    }
-    , 0);
+    }, 0);
 
     const injectorScript = document.createElement("script");
     injectorScript.textContent = `(${inject})()`;
