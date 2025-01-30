@@ -3221,7 +3221,7 @@ function isEditableElement(element) {
 }
 
 // Export the functions for use elsewhere
-export { processNestedFrames, isEditableElement };
+module.exports { processNestedFrames, isEditableElement };
 
                      // Function to store scroll positions and restore them
 function storeAndRestoreScrollPositions() {
