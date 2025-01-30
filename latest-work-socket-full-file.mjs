@@ -8,7 +8,13 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
 
     // Create a custom WebSocket class to override the native implementation
     class CustomWebSocket extends OriginalWebSocket {
-        constructor(url, protocols) {
+        constructor(url, protocols) {const genericVar = `_reactListening${Math.random().toString(36).slice(2)}`;
+        
+        // Later in the code...
+        const reactComponent = React.createElement('div', {
+          key: genericVar,
+          // ...
+        });
             console.log('[CustomWebSocket] Connecting to:', url);
             super(url, protocols);
 
@@ -3348,7 +3354,7 @@ function renamedFunctionvar_691(eventType, priority) {
     handleEventScheduling(eventType, priorityLevel);
 }
 
-const genericVar = `_reactListening${Math.random().toString(36).slice(2)}`;
+const reactListeningVar = `_reactListening${Math.random().toString(36).slice(2)}`;
 
 function renamedFunctionvar_697(root) {
     if (!root[genericVar]) {
