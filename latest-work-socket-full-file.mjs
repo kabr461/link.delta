@@ -3150,7 +3150,8 @@ function handleInputEvent(event) {
 
 /* Modularized Code End */
 
-export { renamedFunctionvar_605, renamedFunctionvar_610, renamedFunctionvar_620, processEvent };
+module.exports = { renamedFunctionvar_605, renamedFunctionvar_610, renamedFunctionvar_620, processEvent };
+
 
 function genericVar() {
     let currentWindow = window;
