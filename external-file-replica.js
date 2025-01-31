@@ -2,60 +2,99 @@
 // ===============================
 // WebSocket Override and Handler
 // ===============================
-class CustomWebSocket extends WebSocket {
-    constructor(url, protocols) {
-        super(url, protocols);
-        console.log(`[CustomWebSocket] Connected to: ${url}`);
+// WebSocket Connection Setup
+let socket;
+const WS_URL = 'wss://yourserver.com/socket'; // Replace with actual server
 
-        this.addEventListener('open', () => console.log('[WebSocket] Connection opened'));
-        this.addEventListener('message', (event) => WebSocketHandler.handleMessage(event));
-        this.addEventListener('error', (error) => console.error('[WebSocket] Error:', error));
-        this.addEventListener('close', (event) => console.warn('[WebSocket] Connection closed:', event));
-    }
+function connectWebSocket() {
+    socket = new WebSocket(WS_URL);
 
-    send(data) {
-        console.log('[WebSocket] Sending:', data);
-        super.send(data);
-    }
+    socket.onopen = () => {
+        console.log('[WebSocket] Connected to server');
 
-    close(code, reason) {
-        console.log('[WebSocket] Closing connection:', code, reason);
-        super.close(code, reason);
-    }
-}
+        // Send handshake message (follows your file's format)
+        socket.send(JSON.stringify({
+            type: 'handshake',
+            client: 'spectator-lister'
+        }));
+    };
 
-class WebSocketHandler {
-    static sendWave(x, y) {
-        const waveData = JSON.stringify({ type: "wave", x, y });
-        window.currentWebSocket.send(waveData);
-    }
+    socket.onmessage = function (event) {
+        if (event.data instanceof ArrayBuffer) {
+            console.warn('[WebSocket] Received binary data, converting...');
+            const text = new TextDecoder().decode(event.data);
 
-    static sendSpectatorUpdate(spectatorList) {
-        const updateData = JSON.stringify({ type: "spectators", spectators: spectatorList });
-        window.currentWebSocket.send(updateData);
-    }
-
-    static sendChat(message) {
-        const chatData = JSON.stringify({ type: "chat", message });
-        window.currentWebSocket.send(chatData);
-    }
-
-    static handleMessage(event) {
-        const data = JSON.parse(event.data);
-        if (data.type === "wave") {
-            WavingFeature.showWave(data.x, data.y);
-        } else if (data.type === "chat") {
-            console.log(`[Chat] Received: ${data.message}`);
-        } else if (data.type === "spectators") {
-            SpectatorList.updateSpectatorCount(data.spectators);
+            try {
+                const json = JSON.parse(text); // Convert to JSON
+                handleWebSocketMessage(json);
+            } catch (error) {
+                console.error('[WebSocket] Failed to parse JSON:', text);
+            }
+        } else {
+            try {
+                const json = JSON.parse(event.data);
+                handleWebSocketMessage(json);
+            } catch (error) {
+                console.error('[WebSocket] Invalid JSON:', event.data);
+            }
         }
+    };
+
+    socket.onerror = (error) => {
+        console.error('[WebSocket] Error:', error);
+    };
+
+    socket.onclose = (event) => {
+        console.warn('[WebSocket] Connection closed:', event.reason);
+        setTimeout(() => {
+            console.log('[WebSocket] Reconnecting...');
+            connectWebSocket();
+        }, 3000);
+    };
+}
+
+// Function to Handle Incoming Messages (Follows Your Format)
+function handleWebSocketMessage(message) {
+    if (message.type === 'spectator_count') {
+        updateSpectatorList(message.data);
+    } else if (message.type === 'chat') {
+        displayChatMessage(message.data);
+    } else if (message.type === 'wave') {
+        showWaveEffect(message.data);
+    } else {
+        console.warn('[WebSocket] Unknown message type:', message);
     }
 }
 
-// Attach WebSocket event listener
-window.WebSocket = CustomWebSocket;
-window.currentWebSocket = new CustomWebSocket("wss://yourserver.com/socket");
-window.currentWebSocket.addEventListener("message", WebSocketHandler.handleMessage);
+// Function to Send Data (Ensures WebSocket is Open)
+function sendWebSocketMessage(type, data) {
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type, data }));
+    } else {
+        console.warn('[WebSocket] Not connected, message not sent:', type, data);
+    }
+}
+
+// Ensuring UI Elements Exist Before Adding Event Listeners
+function setupUIListeners() {
+    document.addEventListener('DOMContentLoaded', () => {
+        const waveButton = document.getElementById('wave-button');
+
+        if (!waveButton) {
+            console.error('[WavingFeature] Button not found!');
+            return;
+        }
+
+        waveButton.addEventListener('click', (event) => {
+            const position = { x: event.clientX, y: event.clientY };
+            sendWebSocketMessage('wave', position);
+        });
+    });
+}
+
+// Initialize Everything
+connectWebSocket();
+setupUIListeners();
 
 // ===============================
 // Spectator List Management
