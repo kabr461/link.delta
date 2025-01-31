@@ -34,11 +34,12 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
                     event.data.arrayBuffer().then(buffer => {
                         let dataArray = new Uint8Array(buffer);
                         let opcode = dataArray[0];
+                        let payload = dataArray.slice(1);
 
-                        // Avoid duplicate logs
-                        if (!opcodeLogs.some(log => log.opcode === opcode)) {
-                            console.log("[OpcodeFinderWebSocket] Opcode:", opcode, "Data:", dataArray);
-                            opcodeLogs.push({ opcode, data: dataArray });
+                        console.log(`[OpcodeFinderWebSocket] Opcode: ${opcode}, Data:`, payload);
+
+                        if (!opcodeLogs.some(log => log.opcode === opcode && log.data.join() === payload.join())) {
+                            opcodeLogs.push({ opcode, data: payload });
                         }
                     });
                 } else {
