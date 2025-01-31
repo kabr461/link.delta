@@ -4,12 +4,26 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
     'use strict';
 
     const OriginalWebSocket = window.WebSocket;
-    let opcodeLogs = []; // Stores received opcodes and data
+    let opcodeLogs = [];
+    let gameWebSocket = null;
+    let parseWebSocket = null;
+    let readOnlyWebSocket = null;
 
     class OpcodeFinderWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
             super(url, protocols);
             console.log('[OpcodeFinderWebSocket] Connecting to:', url);
+
+            if (url.includes("parse")) {
+                parseWebSocket = this;
+                console.log("[WebSocket] Identified as **Parse Command WebSocket** (Handles chat & commands).");
+            } else if (url.includes("delta") || url.includes("protocol")) {
+                gameWebSocket = this;
+                console.log("[WebSocket] Identified as **Game Action WebSocket** (Handles waves, movement).");
+            } else {
+                readOnlyWebSocket = this;
+                console.log("[WebSocket] Identified as **Read-Only WebSocket** (Receives game updates).");
+            }
 
             this.addEventListener('open', () => {
                 console.log('[OpcodeFinderWebSocket] Connection opened:', url);
@@ -19,12 +33,13 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
                 if (event.data instanceof Blob) {
                     event.data.arrayBuffer().then(buffer => {
                         let dataArray = new Uint8Array(buffer);
-                        let opcode = dataArray[0]; // First byte is typically the opcode
+                        let opcode = dataArray[0];
 
-                        console.log("[OpcodeFinderWebSocket] Received Binary Data:", dataArray);
-                        console.log("[OpcodeFinderWebSocket] Opcode:", opcode);
-
-                        opcodeLogs.push({ opcode, data: dataArray });
+                        // Avoid duplicate logs
+                        if (!opcodeLogs.some(log => log.opcode === opcode)) {
+                            console.log("[OpcodeFinderWebSocket] Opcode:", opcode, "Data:", dataArray);
+                            opcodeLogs.push({ opcode, data: dataArray });
+                        }
                     });
                 } else {
                     try {
@@ -49,6 +64,20 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
                 }, 3000);
             });
         }
+
+        send(data) {
+            if (this.readyState === WebSocket.OPEN) {
+                console.log('[OpcodeFinderWebSocket] Sending:', data);
+                super.send(data);
+            } else {
+                console.warn('[OpcodeFinderWebSocket] Attempted to send data while WebSocket was not open:', data);
+            }
+        }
+
+        close(code, reason) {
+            console.log('[OpcodeFinderWebSocket] Closing connection:', code, reason);
+            super.close(code, reason);
+        }
     }
 
     setTimeout(() => {
@@ -56,7 +85,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
         console.log('[OpcodeFinderWebSocket] Opcode Finder Override Applied');
     }, 1000);
 
-    // Function to retrieve stored opcode logs
     window.getOpcodeLogs = function () {
         console.log("[OpcodeFinderWebSocket] Stored Opcodes:", opcodeLogs);
         return opcodeLogs;
