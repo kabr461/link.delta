@@ -67,10 +67,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
 
         send(data) {
             if (this.readyState === WebSocket.OPEN) {
-                console.log('[OpcodeFinderWebSocket] Sending:', data);
                 super.send(data);
-            } else {
-                console.warn('[OpcodeFinderWebSocket] Attempted to send data while WebSocket was not open:', data);
             }
         }
 
