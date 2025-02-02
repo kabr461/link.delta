@@ -69,7 +69,7 @@
                                 CUSTOM_RED_WAVE_OPCODE, 'Position:', posX, posY);
                     
                     // Send our custom message. You can choose to send the original message as well if needed.
-                    originalSend.call(ws, buf);
+    //                originalSend.call(ws, buf);
                     // Optionally, also forward the original message:
                     // originalSend.call(ws, data);
                     return;
