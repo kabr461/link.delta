@@ -15,8 +15,18 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
             });
 
             this.addEventListener('message', (event) => {
-                // Handle Blob data by converting it to an ArrayBuffer.
-                if (event.data instanceof Blob) {
+                // If the data is a string, assume it's JSON.
+                if (typeof event.data === 'string') {
+                    try {
+                        const jsonData = JSON.parse(event.data);
+                        console.log('[CustomWebSocket] Received JSON Data:', jsonData);
+                        // You can process the JSON data here if needed.
+                    } catch (e) {
+                        console.error('[CustomWebSocket] JSON parse error:', e);
+                    }
+                }
+                // If the data is a Blob, convert it to an ArrayBuffer first.
+                else if (event.data instanceof Blob) {
                     event.data.arrayBuffer().then(buffer => {
                         processBinaryData(buffer);
                     });
@@ -26,7 +36,7 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
                     processBinaryData(event.data);
                 }
                 else {
-                    console.warn("[CustomWebSocket] Received data in an unexpected format:", event.data);
+                    console.warn('[CustomWebSocket] Received data in an unexpected format:', event.data);
                 }
             });
 
@@ -36,7 +46,6 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
 
             this.addEventListener('close', (event) => {
                 console.warn('[CustomWebSocket] Connection closed:', event);
-                // Attempt to reconnect after 3 seconds
                 setTimeout(() => {
                     console.log('[CustomWebSocket] Attempting to reconnect...');
                     window.WebSocket = new CustomWebSocket(this.url, this.protocols);
@@ -59,14 +68,14 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
         }
     }
 
-    // Simple binary data processing function
+    // A simple function to process binary data.
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
         console.log("[CustomWebSocket] Received Binary Data:", dataArray);
-        // Further processing can be done here as needed.
+        // Further binary data processing can be added here.
     }
 
-    // Override the native WebSocket after a short delay
+    // Override the native WebSocket after a short delay.
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] Override Applied');
