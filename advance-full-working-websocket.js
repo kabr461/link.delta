@@ -88,3 +88,32 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
         return opcodeLogs;
     };
 })();
+
+(function() {
+    let originalWebSocket = window.WebSocket;
+
+    if (!originalWebSocket) {
+        console.log("WebSocket not found, retrying...");
+        setTimeout(arguments.callee, 3000);
+        return;
+    }
+
+    window.WebSocket = function(url, protocols) {
+        console.log("Intercepted WebSocket Connection:", url);
+        let ws = new originalWebSocket(url, protocols);
+
+        ws.addEventListener("message", function(event) {
+            if (!(event.data instanceof ArrayBuffer)) return;
+            
+            let data = new DataView(event.data);
+            let opcode = data.getUint8(0);  // First byte is opcode
+
+            console.log("Received Opcode:", opcode, "Raw Data:", new Uint8Array(event.data));
+        });
+
+        return ws;
+    };
+
+    console.log("WebSocket Hook Installed!");
+})();
+
