@@ -4,9 +4,6 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
     'use strict';
 
     const OriginalWebSocket = window.WebSocket;
-    let gameWebSocket = null;  // Handles in-game actions (waves, movement)
-    let parseWebSocket = null; // Handles chat, commands, spectator requests
-    let readOnlyWebSocket = null; // Receives game state updates (leaderboard, players)
 
     class CustomWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
@@ -18,38 +15,18 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
             });
 
             this.addEventListener('message', (event) => {
+                // Handle Blob data by converting it to an ArrayBuffer.
                 if (event.data instanceof Blob) {
                     event.data.arrayBuffer().then(buffer => {
-                        let dataArray = new Uint8Array(buffer);
-                        let opcode = dataArray[0]; // First byte is the opcode
-
-                        console.log("[CustomWebSocket] Received Binary Data:", dataArray);
-                        console.log("[CustomWebSocket] Opcode:", opcode);
-
-                        // Routing based on opcode (Modify as needed)
-                        if (opcode === 20) {
-                            console.log("Spectator List Data:", dataArray.slice(1));
-                            window.handleSpectatorList?.(dataArray.slice(1)); // Call JS function if defined
-                        } else if (opcode === 25) {
-                            console.log("Chat Message:", dataArray.slice(1));
-                            window.handleChatMessage?.(dataArray.slice(1)); // Call JS function if defined
-                        } else if (opcode === 30) {
-                            console.log("Leaderboard Update:", dataArray.slice(1));
-                            window.handleLeaderboard?.(dataArray.slice(1)); // Call JS function if defined
-                        } else {
-                            console.log("[CustomWebSocket] Unrecognized Opcode:", opcode);
-                        }
+                        processBinaryData(buffer);
                     });
-                } else {
-                    let jsonData = JSON.parse(event.data);
-                    console.log("[CustomWebSocket] Received JSON Data:", jsonData);
-
-                    // Handle JSON messages
-                    if (jsonData.op === "spectatorList") {
-                        window.handleSpectatorList?.(jsonData.data);
-                    } else if (jsonData.op === "chatMessage") {
-                        window.handleChatMessage?.(jsonData.message);
-                    }
+                }
+                // If it's already an ArrayBuffer, process it directly.
+                else if (event.data instanceof ArrayBuffer) {
+                    processBinaryData(event.data);
+                }
+                else {
+                    console.warn("[CustomWebSocket] Received data in an unexpected format:", event.data);
                 }
             });
 
@@ -59,6 +36,7 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
 
             this.addEventListener('close', (event) => {
                 console.warn('[CustomWebSocket] Connection closed:', event);
+                // Attempt to reconnect after 3 seconds
                 setTimeout(() => {
                     console.log('[CustomWebSocket] Attempting to reconnect...');
                     window.WebSocket = new CustomWebSocket(this.url, this.protocols);
@@ -71,7 +49,7 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
                 console.log('[CustomWebSocket] Sending:', data);
                 super.send(data);
             } else {
-                console.warn('[CustomWebSocket] Attempted to send data while WebSocket was not open:', data);
+                console.warn('[CustomWebSocket] Tried to send data while WebSocket was not open:', data);
             }
         }
 
@@ -81,64 +59,17 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
         }
     }
 
+    // Simple binary data processing function
+    function processBinaryData(buffer) {
+        const dataArray = new Uint8Array(buffer);
+        console.log("[CustomWebSocket] Received Binary Data:", dataArray);
+        // Further processing can be done here as needed.
+    }
+
+    // Override the native WebSocket after a short delay
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] Override Applied');
     }, 1000);
-
-    // 🔹 **Functions to Send Data from Your JavaScript Code** 🔹
-
-    // 🟢 Send commands via Parse WebSocket (chat, spectator list)
-    window.sendCommand = function (type, data) {
-        if (!parseWebSocket || parseWebSocket.readyState !== WebSocket.OPEN) {
-            console.error("[CustomWebSocket] Parse WebSocket is not connected.");
-            return;
-        }
-
-        let payload = {};
-
-        switch (type) {
-            case "chat":
-                payload = { op: "sendMessage", message: data, sessionToken: "r:e7de123f644091812f2c8e091a210171" };
-                break;
-            case "spectatorList":
-                payload = { op: "requestSpectatorList" };
-                break;
-            case "adminCommand":
-                payload = { op: "adminCommand", command: data };
-                break;
-            default:
-                console.error("[CustomWebSocket] Unknown command type:", type);
-                return;
-        }
-
-        parseWebSocket.send(JSON.stringify(payload));
-        console.log("[CustomWebSocket] Sent command:", type, payload);
-    };
-
-    // 🟢 Send game actions via Game WebSocket (wave animation, movement)
-    window.sendGameAction = function (actionType) {
-        if (!gameWebSocket || gameWebSocket.readyState !== WebSocket.OPEN) {
-            console.error("[CustomWebSocket] Game WebSocket is not connected.");
-            return;
-        }
-
-        let packet;
-
-        switch (actionType) {
-            case "wave":
-                packet = new Uint8Array([15, 1]); // 15 = Wave opcode, 1 = Activate wave
-                break;
-            case "moveLeft":
-                packet = new Uint8Array([10, 0]); // Example movement (will need correct opcode)
-                break;
-            default:
-                console.error("[CustomWebSocket] Unknown action type:", actionType);
-                return;
-        }
-
-        gameWebSocket.send(packet);
-        console.log("[CustomWebSocket] Sent game action:", actionType);
-    };
 
 })();
