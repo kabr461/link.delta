@@ -48,7 +48,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
                         console.log("[OpcodeFinderWebSocket] Received JSON Data:", jsonData);
                         opcodeLogs.push({ type: "JSON", data: jsonData });
                     } catch (e) {
-                        console.warn("[OpcodeFinderWebSocket] Received Unknown Data:", event.data);
+                     //   console.warn("[OpcodeFinderWebSocket] Received Unknown Data:", event.data);
                     }
                 }
             });
