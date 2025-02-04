@@ -4,7 +4,8 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
     'use strict';
 
     const OriginalWebSocket = window.WebSocket;
-    let opcodeLogs = [];
+    let opcodeLogs = new Set(); // Stores unique opcodes
+    let loggedOpcodes = new Map(); // Stores opcodes with sample payloads
     let gameWebSocket = null;
     let parseWebSocket = null;
     let readOnlyWebSocket = null;
@@ -14,6 +15,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
             super(url, protocols);
             console.log('[OpcodeFinderWebSocket] Connecting to:', url);
 
+            // Categorize WebSocket type
             if (url.includes("parse")) {
                 parseWebSocket = this;
                 console.log("[WebSocket] Identified as **Parse Command WebSocket** (Handles chat & commands).");
@@ -34,21 +36,20 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
                     event.data.arrayBuffer().then(buffer => {
                         let dataArray = new Uint8Array(buffer);
                         let opcode = dataArray[0];
-                        let payload = dataArray.slice(1, 10); // Print first 10 bytes of payload
+                        let payloadSample = dataArray.slice(1, 10); // First 10 bytes of payload
 
-                        console.log(`[OpcodeFinderWebSocket] Opcode: ${opcode}, Payload Sample:`, payload);
-
-                        if (!opcodeLogs.some(log => log.opcode === opcode && log.data.join() === payload.join())) {
-                            opcodeLogs.push({ opcode, data: payload });
+                        if (!opcodeLogs.has(opcode)) {
+                            opcodeLogs.add(opcode);
+                            loggedOpcodes.set(opcode, payloadSample);
+                            console.log(`[OpcodeFinderWebSocket] New Opcode Detected: ${opcode}, Sample Payload:`, payloadSample);
                         }
                     });
                 } else {
                     try {
                         let jsonData = JSON.parse(event.data);
                         console.log("[OpcodeFinderWebSocket] Received JSON Data:", jsonData);
-                        opcodeLogs.push({ type: "JSON", data: jsonData });
                     } catch (e) {
-                     //   console.warn("[OpcodeFinderWebSocket] Received Unknown Data:", event.data);
+                        // console.warn("[OpcodeFinderWebSocket] Received Unknown Data:", event.data);
                     }
                 }
             });
@@ -61,7 +62,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
                 console.warn('[OpcodeFinderWebSocket] Connection closed:', event);
                 setTimeout(() => {
                     console.log('[OpcodeFinderWebSocket] Attempting to reconnect...');
-                    window.WebSocket = new OpcodeFinderWebSocket(this.url, this.protocols);
+                    new OpcodeFinderWebSocket(this.url, this.protocols);
                 }, 3000);
             });
         }
@@ -83,12 +84,14 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
         console.log('[OpcodeFinderWebSocket] Opcode Finder Override Applied');
     }, 1000);
 
+    // Function to get stored opcodes
     window.getOpcodeLogs = function () {
-        console.log("[OpcodeFinderWebSocket] Stored Opcodes:", opcodeLogs);
-        return opcodeLogs;
+        console.log("[OpcodeFinderWebSocket] Stored Opcodes:", Array.from(opcodeLogs));
+        return loggedOpcodes;
     };
 })();
 
+// Secondary WebSocket Hook for Additional Debugging
 (function() {
     let originalWebSocket = window.WebSocket;
 
@@ -108,7 +111,10 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
             let data = new DataView(event.data);
             let opcode = data.getUint8(0);  // First byte is opcode
 
-            console.log("Received Opcode:", opcode, "Raw Data:", new Uint8Array(event.data));
+            if (!opcodeLogs.has(opcode)) {
+                opcodeLogs.add(opcode);
+                console.log("Received New Opcode:", opcode, "Raw Data:", new Uint8Array(event.data));
+            }
         });
 
         return ws;
@@ -116,4 +122,3 @@ console.log("[WebSocket Debug] Initializing WebSocket Opcode Finder...");
 
     console.log("WebSocket Hook Installed!");
 })();
-
