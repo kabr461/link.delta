@@ -62,7 +62,7 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
                 if (typeof event.data === 'string') {
                     try {
                         const jsonData = JSON.parse(event.data);
-                        console.log('[CustomWebSocket] Received JSON Data:', jsonData);
+                 //       console.log('[CustomWebSocket] Received JSON Data:', jsonData);
 
                         // Look for signal data in the JSON.
                         processSignal(jsonData);
@@ -101,7 +101,7 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
 
         send(data) {
             if (this.readyState === OriginalWebSocket.OPEN) {
-                console.log('[CustomWebSocket] Sending:', data);
+         //       console.log('[CustomWebSocket] Sending:', data);
                 super.send(data);
             } else {
                 console.warn('[CustomWebSocket] Tried to send data while WebSocket was not open:', data);
@@ -118,7 +118,7 @@ console.log("[WebSocket Debug] Initializing WebSocket override...");
     // Here, we assume the binary data's first byte is the opcode and the second byte is signal strength.
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
-        console.log("[CustomWebSocket] Received Binary Data:", dataArray);
+  //      console.log("[CustomWebSocket] Received Binary Data:", dataArray);
         
         if (dataArray.length >= 2) {
             const opcode = dataArray[0];
