@@ -124,7 +124,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         window.WebSocket = CustomWebSocket;
         console.log("[CustomWebSocket] WebSocket Override Applied");
         addTestButton();
-    }, 1000);
+    }, 10000);
 
     // Analyze collected opcode data
     window.analyzeOpcodes = function () {
