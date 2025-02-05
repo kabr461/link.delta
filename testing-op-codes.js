@@ -29,8 +29,10 @@ console.log("[WebSocket Debug] Initializing Lookup Table Capture...");
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
 
-        // Ensure message is long enough to be a lookup table
-        if (dataArray.length < 10) return;
+        // Log first 3 responses for debugging
+        if (responseCount <= 3) {
+            console.log(`[WebSocket Debug] Response #${responseCount} - Raw Data:`, dataArray);
+        }
 
         // Check if this message is the lookup table
         if (!isLookupTableReceived && isPossibleLookupTable(dataArray)) {
@@ -40,13 +42,14 @@ console.log("[WebSocket Debug] Initializing Lookup Table Capture...");
         }
     }
 
-    // Checks if a message could be a lookup table
+    // Loosen the conditions to detect lookup table
     function isPossibleLookupTable(data) {
-        return data.length > 10 && data[0] === 0; // Example: First byte as 0 might indicate lookup table
+        return data.length > 10; // Removed `data[0] === 0` condition to capture more cases
     }
 
     // Parses the lookup table and stores opcode mappings
     function parseLookupTable(data) {
+        console.log("[WebSocket Debug] Parsing lookup table...", data);
         for (let i = 1; i < data.length; i += 2) {
             let opcode = data[i];
             let typeID = data[i + 1]; // Assume second byte represents function type
