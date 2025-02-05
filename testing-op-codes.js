@@ -3,6 +3,26 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 (function () {
     'use strict';
 
+    // Add a button to the home page for testing
+    function addTestButton() {
+        const button = document.createElement('button');
+        button.innerText = 'Test WebSocket';
+        button.style.position = 'fixed';
+        button.style.top = '10px';
+        button.style.right = '10px';
+        button.style.zIndex = '9999';
+        button.onclick = () => {
+            const latestOpcode = Object.keys(opcodeRegistry).pop();
+            console.log(`[WebSocket Debug] Sending test opcode: ${latestOpcode}`);
+            if (window.wsInstance && latestOpcode) {
+                window.sendOpcode(window.wsInstance, parseInt(latestOpcode), [1, 2, 3]);
+            } else {
+                console.warn("[WebSocket Debug] No active WebSocket instance or detected opcode.");
+            }
+        };
+        document.body.appendChild(button);
+    }
+
     // Opcode registry for classification
     const opcodeRegistry = {};  // { opcode: { type: string, count: number, strongestSignal: number, messageSizes: [], function: string } }
     let opcodeSummary = {};  // Temporary summary to show per second
@@ -58,6 +78,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         constructor(url, protocols) {
             super(url, protocols);
             console.log('[CustomWebSocket] Connecting to:', url);
+            window.wsInstance = this;
 
             this.addEventListener('message', (event) => {
                 if (event.data instanceof ArrayBuffer) {
@@ -120,6 +141,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] WebSocket Override Applied');
+        addTestButton();
     }, 1000);
 
     window.analyzeOpcodes = function () {
