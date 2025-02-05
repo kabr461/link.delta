@@ -4,7 +4,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     'use strict';
 
     // Opcode registry for classification
-    const opcodeRegistry = {};  // { opcode: { count: number, strongestSignal: number, messageSizes: [] } }
+    const opcodeRegistry = {};  // { opcode: { count: number, strongestSignal: number, messageSizes: [], checked: boolean } }
     let opcodeSummary = {};  // Temporary summary to show per second
     let lastSummaryTime = Date.now();
 
@@ -15,21 +15,25 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
 
-        // Check if opcode matches predefined structure
-        let matchedStructure = false;
+        // Default name
         let opcodeName = `Opcode ${opcode}`;
+        let matchedStructure = false;
 
-        if (opcode === 22 && matchOpcodeStructure(data.rawBuffer)) {
-            matchedStructure = true;
-            opcodeName = "Matched Structure: Player Position Update";  // Assign a name for clarity
+        // Only check structure if it hasn't been checked before
+        if (opcode === 22 && !opcodeRegistry[opcode]?.checked) {
+            matchedStructure = matchOpcodeStructure(data.rawBuffer);
+            if (matchedStructure) {
+                opcodeName = "Matched Structure: Player Position Update";
+            }
         }
 
-        // Track opcode frequency & strength
+        // Update registry and prevent rechecking
         if (!opcodeRegistry[opcode]) {
             opcodeRegistry[opcode] = { 
                 count: 1, 
                 strongestSignal: signalStrength, 
-                messageSizes: [messageSize],
+                messageSizes: [messageSize], 
+                checked: matchedStructure, 
                 matchedStructure: matchedStructure
             };
         } else {
@@ -38,11 +42,16 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
                 opcodeRegistry[opcode].messageSizes.push(messageSize);
             }
-            opcodeRegistry[opcode].matchedStructure = matchedStructure;
+            if (!opcodeRegistry[opcode].checked) {
+                opcodeRegistry[opcode].checked = matchedStructure; // Mark as checked
+                opcodeRegistry[opcode].matchedStructure = matchedStructure;
+            }
         }
 
-        // Log real-time opcode analysis
-        console.log(`[CustomWebSocket] Received ${opcodeName} | Matched Structure: ${matchedStructure}`);
+        // Log only when first match is detected
+        if (!opcodeRegistry[opcode].checked || opcodeRegistry[opcode].count === 1) {
+            console.log(`[CustomWebSocket] Received ${opcodeName} | Matched Structure: ${matchedStructure}`);
+        }
 
         // Track per-second summary
         if (!opcodeSummary[opcode]) {
@@ -52,7 +61,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
 
         // Print summary once per second
-        if (Date.now() - lastSummaryTime > 20000) {
+        if (Date.now() - lastSummaryTime > 1000) {
             console.clear(); // Keep the console clean
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 1s)`);
             console.table(opcodeSummary);
