@@ -1,92 +1,102 @@
-(function() {
-    let originalSend = WebSocket.prototype.send;
-    let originalOnMessage = WebSocket.prototype.onmessage;
-    let packetLog = [];
+console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
-    function logPacket(type, data) {
-        let timestamp = performance.now();
-        let opcode = data[0];  // First byte (Opcode)
-        let length = data.length;
+(function () {
+    'use strict';
 
-        packetLog.push({ type, timestamp, opcode, length, data: Array.from(data) });
+    // Opcode registry for classification
+    const opcodeRegistry = {};  // { opcode: { name: string | null, strongestSignal: number, count: number, messageSizes: [] } }
 
-        if (packetLog.length > 5000) { 
-            packetLog = packetLog.slice(-5000); // Keep last 5000 packets
+    // Tracking common message patterns
+    const messagePatterns = {}; // { messageSize: [opcode1, opcode2, ...] }
+
+    // Allow manual opcode naming
+    window.setOpcodeName = function(opcode, name) {
+        if (opcodeRegistry.hasOwnProperty(opcode)) {
+            opcodeRegistry[opcode].name = name;
+            console.log(`[CustomWebSocket] Opcode ${opcode} renamed to: ${name}`);
+        } else {
+            opcodeRegistry[opcode] = { name: name, strongestSignal: -Infinity, count: 0, messageSizes: [] };
+            console.log(`[CustomWebSocket] Opcode ${opcode} registered with name: ${name}`);
+        }
+    };
+
+    function processSignal(data) {
+        if (!data || data.opcode === undefined) return;
+
+        const opcode = data.opcode;
+        const signalStrength = data.signalStrength || 0;
+        const messageSize = data.messageSize || 0;
+
+        if (!opcodeRegistry[opcode]) {
+            opcodeRegistry[opcode] = { name: null, strongestSignal: signalStrength, count: 1, messageSizes: [messageSize] };
+            console.log(`[CustomWebSocket] New opcode detected: ${opcode}, first seen with size ${messageSize}`);
+        } else {
+            opcodeRegistry[opcode].count += 1;
+            opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
+            if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
+                opcodeRegistry[opcode].messageSizes.push(messageSize);
+            }
+        }
+
+        // Track message patterns based on size
+        if (!messagePatterns[messageSize]) {
+            messagePatterns[messageSize] = [];
+        }
+        if (!messagePatterns[messageSize].includes(opcode)) {
+            messagePatterns[messageSize].push(opcode);
         }
     }
 
-    WebSocket.prototype.send = function(data) {
-        if (data instanceof ArrayBuffer) {
-            logPacket("outgoing", new Uint8Array(data));
+    const OriginalWebSocket = window.WebSocket;
+
+    class CustomWebSocket extends OriginalWebSocket {
+        constructor(url, protocols) {
+            super(url, protocols);
+            console.log('[CustomWebSocket] Connecting to:', url);
+
+            this.addEventListener('message', (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    processBinaryData(event.data);
+                } else if (event.data instanceof Blob) {
+                    event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+                }
+            });
+
+            this.addEventListener('close', (event) => {
+                console.warn('[CustomWebSocket] Connection closed:', event);
+                setTimeout(() => {
+                    console.log('[CustomWebSocket] Attempting to reconnect...');
+                    window.WebSocket = new CustomWebSocket(this.url, this.protocols);
+                }, 3000);
+            });
         }
-        return originalSend.apply(this, arguments); // Properly maintaining the execution context
-    };
+    }
 
-    let openHandler = function(event) {
-        console.log("[WebSocket] Connected:", event);
-    };
+    function processBinaryData(buffer) {
+        const dataArray = new Uint8Array(buffer);
+        if (dataArray.length >= 2) {
+            const opcode = dataArray[0];  // Assuming first byte is opcode
+            const signalStrength = dataArray[1]; // Assuming second byte is signal
+            const messageSize = dataArray.length;
+            processSignal({ opcode, signalStrength, messageSize });
 
-    let messageHandler = function(event) {
-        if (event.data instanceof ArrayBuffer) {
-            logPacket("incoming", new Uint8Array(event.data));
+            console.log(`[CustomWebSocket] Opcode ${opcode} | Size ${messageSize} | Data:`, dataArray);
         }
-    };
+    }
 
-    let closeHandler = function(event) {
-        console.log("[WebSocket] Closed:", event);
-    };
+    // Apply override
+    setTimeout(() => {
+        window.WebSocket = CustomWebSocket;
+        console.log('[CustomWebSocket] WebSocket Override Applied');
+    }, 1000);
 
-    let errorHandler = function(event) {
-        console.log("[WebSocket] Error:", event);
-    };
+    // Helper function to analyze collected data
+    window.analyzeOpcodes = function () {
+        console.log("[CustomWebSocket] Opcode Registry Analysis:");
+        console.table(opcodeRegistry);
 
-    let originalWebSocket = WebSocket;
-    WebSocket = function(url, protocols) {
-        let ws = new originalWebSocket(url, protocols);
-
-        ws.addEventListener("open", openHandler);
-        ws.addEventListener("message", messageHandler);
-        ws.addEventListener("close", closeHandler);
-        ws.addEventListener("error", errorHandler);
-
-        return ws;
-    };
-
-    WebSocket.prototype = originalWebSocket.prototype;
-    
-    // Save logs every 10 seconds
-    setInterval(() => {
-        if (packetLog.length > 0) {
-            localStorage.setItem("packetLog", JSON.stringify(packetLog.slice(0, 5000)));
-            console.log(`[LOG] Saved ${packetLog.length} packets`);
-        }
-    }, 10000);
-
-    window.getPacketLog = function() {
-        return JSON.parse(localStorage.getItem("packetLog")) || [];
-    };
-
-    window.analyzePackets = function() {
-        let log = getPacketLog();
-        let opcodeCounts = {};
-
-        log.forEach(packet => {
-            opcodeCounts[packet.opcode] = (opcodeCounts[packet.opcode] || 0) + 1;
-        });
-
-        console.log("Opcode Frequency:", opcodeCounts);
-    };
-
-    window.findClickPackets = function() {
-        let log = getPacketLog();
-        let clickPackets = log.filter(p => p.type === "outgoing" && p.length < 10);
-        console.log("Possible Spectator Click Packets:", clickPackets);
-    };
-
-    window.findMovementPackets = function() {
-        let log = getPacketLog();
-        let movementPackets = log.filter(p => p.type === "outgoing" && p.length === 13);
-        console.log("Possible Movement Packets:", movementPackets);
+        console.log("[CustomWebSocket] Message Pattern Analysis:");
+        console.table(messagePatterns);
     };
 
 })();
