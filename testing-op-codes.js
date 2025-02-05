@@ -4,21 +4,9 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     'use strict';
 
     // Opcode registry for classification
-    const opcodeRegistry = {};  // { opcode: { name: string | null, strongestSignal: number, count: number, messageSizes: [] } }
-
-    // Tracking common message patterns
-    const messagePatterns = {}; // { messageSize: [opcode1, opcode2, ...] }
-
-    // Allow manual opcode naming
-    window.setOpcodeName = function(opcode, name) {
-        if (opcodeRegistry.hasOwnProperty(opcode)) {
-            opcodeRegistry[opcode].name = name;
-            console.log(`[CustomWebSocket] Opcode ${opcode} renamed to: ${name}`);
-        } else {
-            opcodeRegistry[opcode] = { name: name, strongestSignal: -Infinity, count: 0, messageSizes: [] };
-            console.log(`[CustomWebSocket] Opcode ${opcode} registered with name: ${name}`);
-        }
-    };
+    const opcodeRegistry = {};  // { opcode: { count: number, strongestSignal: number, messageSizes: [] } }
+    let opcodeSummary = {};  // Temporary summary to show per second
+    let lastSummaryTime = Date.now();
 
     function processSignal(data) {
         if (!data || data.opcode === undefined) return;
@@ -27,9 +15,9 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
 
+        // Track opcode frequency & strength
         if (!opcodeRegistry[opcode]) {
-            opcodeRegistry[opcode] = { name: null, strongestSignal: signalStrength, count: 1, messageSizes: [messageSize] };
-            console.log(`[CustomWebSocket] New opcode detected: ${opcode}, first seen with size ${messageSize}`);
+            opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
         } else {
             opcodeRegistry[opcode].count += 1;
             opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
@@ -38,12 +26,22 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             }
         }
 
-        // Track message patterns based on size
-        if (!messagePatterns[messageSize]) {
-            messagePatterns[messageSize] = [];
+        // Track per-second summary
+        if (!opcodeSummary[opcode]) {
+            opcodeSummary[opcode] = 1;
+        } else {
+            opcodeSummary[opcode] += 1;
         }
-        if (!messagePatterns[messageSize].includes(opcode)) {
-            messagePatterns[messageSize].push(opcode);
+
+        // Print summary once per second
+        if (Date.now() - lastSummaryTime > 1000) {
+            console.clear(); // Keep the console clean
+            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 1s)`);
+            console.table(opcodeSummary);
+
+            // Reset counters for the next second
+            opcodeSummary = {};
+            lastSummaryTime = Date.now();
         }
     }
 
@@ -79,8 +77,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             const signalStrength = dataArray[1]; // Assuming second byte is signal
             const messageSize = dataArray.length;
             processSignal({ opcode, signalStrength, messageSize });
-
-            console.log(`[CustomWebSocket] Opcode ${opcode} | Size ${messageSize} | Data:`, dataArray);
         }
     }
 
@@ -94,9 +90,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     window.analyzeOpcodes = function () {
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
-
-        console.log("[CustomWebSocket] Message Pattern Analysis:");
-        console.table(messagePatterns);
     };
 
 })();
