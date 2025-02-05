@@ -15,21 +15,34 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
 
+        // Check if opcode matches predefined structure
+        let matchedStructure = false;
+        let opcodeName = `Opcode ${opcode}`;
+
+        if (opcode === 22 && matchOpcodeStructure(data.rawBuffer)) {
+            matchedStructure = true;
+            opcodeName = "Matched Structure: Player Position Update";  // Assign a name for clarity
+        }
+
         // Track opcode frequency & strength
         if (!opcodeRegistry[opcode]) {
-            opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
+            opcodeRegistry[opcode] = { 
+                count: 1, 
+                strongestSignal: signalStrength, 
+                messageSizes: [messageSize],
+                matchedStructure: matchedStructure
+            };
         } else {
             opcodeRegistry[opcode].count += 1;
             opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
             if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
                 opcodeRegistry[opcode].messageSizes.push(messageSize);
             }
+            opcodeRegistry[opcode].matchedStructure = matchedStructure;
         }
 
-        // Match predefined structure for opcode 22
-        if (opcode === 22 && matchOpcodeStructure(data.rawBuffer)) {
-            opcodeRegistry[opcode].name = "Special Opcode 22"; // Assign a meaningful name
-        }
+        // Log real-time opcode analysis
+        console.log(`[CustomWebSocket] Received ${opcodeName} | Matched Structure: ${matchedStructure}`);
 
         // Track per-second summary
         if (!opcodeSummary[opcode]) {
