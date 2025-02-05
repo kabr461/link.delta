@@ -104,7 +104,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             opcodeSummary[opcode] += 1;
         }
 
-        if (Date.now() - lastSummaryTime > 1000) {
+        if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 1s)`);
             console.table(opcodeSummary);
@@ -124,7 +124,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         window.WebSocket = CustomWebSocket;
         console.log("[CustomWebSocket] WebSocket Override Applied");
         addTestButton();
-    }, 10000);
+    }, 1000);
 
     // Analyze collected opcode data
     window.analyzeOpcodes = function () {
