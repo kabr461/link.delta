@@ -1,27 +1,31 @@
 // ==UserScript==
-// @name         Agar.io Ultimate Fix Package
+// @name         Agar.io Complete Fix Package
 // @namespace    http://secure-scripts.com
-// @version      10.0
-// @description  Complete error resolution with WebSocket & CSP fixes
+// @version      11.0
+// @description  Complete CSP, WebSocket, and dependency fixes
 // @author       Your Name
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
+// @require      https://code.jquery.com/jquery-3.7.1.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js
+// @require      https://unpkg.com/preact@10.11.3/dist/preact.umd.js
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    // 1. Enhanced Security Policy
+    // 1. Enhanced Content Security Policy
     const applySecurityPolicy = () => {
         const csp = document.createElement('meta');
         csp.httpEquiv = "Content-Security-Policy";
         csp.content = [
             "default-src 'self' agar.io *.agar.io",
-            "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://deltav4.gitlab.io https://www.gstatic.com",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://deltav4.gitlab.io https://www.gstatic.com https://cdnjs.cloudflare.com/ajax/libs/ https://unpkg.com/",
             "style-src 'self' 'unsafe-inline' https://deltav4.gitlab.io",
-            "connect-src 'self' ws: wss: *.agar.io *.miniclippt.com",
+            "connect-src 'self' ws: wss: *.agar.io *.miniclippt.com https://deltav4.gitlab.io",
             "img-src 'self' data: blob: https://*.gitlab.io i.imgur.com",
+            "media-src 'self' https://deltav4.gitlab.io",
             "manifest-src 'self' https://deltav4.gitlab.io",
             "worker-src 'self' blob:",
             "frame-src https://accounts.google.com",
@@ -30,7 +34,7 @@
         document.head.prepend(csp);
     };
 
-    // 2. Robust WebSocket Manager
+    // 2. WebSocket Manager with Fallback
     class WebSocketManager {
         constructor() {
             this.endpoints = [
@@ -38,85 +42,68 @@
                 'wss://mca.agar.io',
                 'wss://delta.agar.io'
             ];
-            this.socket = null;
-            this.retries = 0;
-            this.maxRetries = 3;
+            this.retryCount = 0;
+            this.maxRetries = 5;
             this.connect();
         }
 
         connect() {
-            const endpoint = this.endpoints.find(url => {
-                try { return new WebSocket(url); }
-                catch { return false; }
-            });
-
-            if (!endpoint) return;
-
+            const endpoint = this.endpoints[this.retryCount % this.endpoints.length];
             this.socket = new WebSocket(endpoint);
-            this.setupEventHandlers();
-        }
 
-        setupEventHandlers() {
             this.socket.onopen = () => {
-                this.retries = 0;
-                console.log('WS Connected:', this.socket.url);
+                console.log('Connected to:', endpoint);
+                this.retryCount = 0;
             };
 
-            this.socket.onerror = (e) => {
-                console.error('WS Error:', e);
-                this.reconnect();
+            this.socket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                this.handleReconnection();
             };
 
-            this.socket.onclose = (e) => {
-                if (e.code !== 1000) this.reconnect();
+            this.socket.onclose = (event) => {
+                if (event.code !== 1000) this.handleReconnection();
             };
         }
 
-        reconnect() {
-            if (this.retries < this.maxRetries) {
+        handleReconnection() {
+            if (this.retryCount < this.maxRetries) {
+                const delay = Math.pow(2, this.retryCount) * 1000;
                 setTimeout(() => {
-                    this.retries++;
+                    this.retryCount++;
                     this.connect();
-                }, Math.pow(2, this.retries) * 1000);
+                }, delay);
             }
         }
     }
 
-    // 3. Dependency Loader
+    // 3. Dependency Management
     const loadDependencies = () => {
-        const loadScript = (src, integrity) => {
-            const script = document.createElement('script');
-            script.src = src;
-            if (integrity) script.integrity = integrity;
-            script.crossOrigin = 'anonymous';
-            document.head.appendChild(script);
+        // Preact components fix
+        window.preact = window.preact || { h: window.h, Component: window.Component };
+        
+        // Toastr initialization
+        window.toastr = {
+            success: (msg) => console.log('Success:', msg),
+            error: (msg) => console.error('Error:', msg)
         };
 
-        const loadStyle = (href) => {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = href;
-            document.head.appendChild(link);
+        // SystemJS polyfill
+        window.System = {
+            import: (module) => import(module).catch(console.error)
         };
-
-        // Load required resources
-        loadScript('https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js');
-        loadScript('https://unpkg.com/preact@10.11.3/dist/preact.umd.js');
-        loadStyle('https://deltav4.gitlab.io/v7/main.css');
     };
 
-    // 4. Deprecated API Fixes
+    // 4. Deprecated API Handling
     const updateDeprecatedFeatures = () => {
         // Replace deprecated meta tag
-        const oldMeta = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
-        if (oldMeta) oldMeta.remove();
-        
-        const newMeta = document.createElement('meta');
-        newMeta.name = 'mobile-web-app-capable';
-        newMeta.content = 'yes';
-        document.head.appendChild(newMeta);
+        document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.remove();
+        const mobileMeta = document.createElement('meta');
+        mobileMeta.name = 'mobile-web-app-capable';
+        mobileMeta.content = 'yes';
+        document.head.appendChild(mobileMeta);
 
-        // Fix worker creation
+        // Worker creation fix
         const originalWorker = window.Worker;
         window.Worker = function(url, options) {
             if (url.startsWith('data:')) {
@@ -127,18 +114,32 @@
         };
     };
 
-    // 5. Main Initialization
+    // 5. Media Loader
+    const loadMediaAssets = () => {
+        const assets = [
+            'button-hover-1.wav',
+            'button-click-1.wav',
+            'button-change-1.wav'
+        ].map(file => `https://deltav4.gitlab.io/v7/assets/${file}`);
+
+        assets.forEach(url => {
+            new Audio(url).load(); // Preload media
+        });
+    };
+
+    // Main Initialization
     (function init() {
         applySecurityPolicy();
         updateDeprecatedFeatures();
         loadDependencies();
+        loadMediaAssets();
         new WebSocketManager();
 
-        // Safe DOM initialization
+        // Initialize jQuery after DOM ready
         window.addEventListener('DOMContentLoaded', () => {
-            // Initialize game components here
-            if (typeof System !== 'undefined') {
-                System.import('game-module').catch(console.error);
+            // Initialize components that depend on jQuery
+            if (window.$) {
+                // Your jQuery-dependent code here
             }
         });
     })();
