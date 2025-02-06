@@ -1,17 +1,27 @@
-// ----- Console Warning Filter -----
-// Override console.warn to hide warnings about the refused gstatic.com script.
+// ----- CSP Warning/Error Filter -----
+// Override console.warn and console.error to ignore messages that mention Content Security Policy or refused script loads.
 (function() {
-  const originalWarn = console.warn;
+  const origWarn = console.warn;
+  const origError = console.error;
   console.warn = function(...args) {
-    if (args[0] && typeof args[0] === 'string' &&
-        args[0].includes("Refused to load the script 'https://www.gstatic.com/_/mss/boq-identity")) {
+    if (args[0] && typeof args[0] === "string" &&
+        (args[0].includes("Content Security Policy") ||
+         args[0].includes("Refused to load the script"))) {
       return;
     }
-    originalWarn.apply(console, args);
+    origWarn.apply(console, args);
+  };
+  console.error = function(...args) {
+    if (args[0] && typeof args[0] === "string" &&
+        (args[0].includes("Content Security Policy") ||
+         args[0].includes("Refused to load the script"))) {
+      return;
+    }
+    origError.apply(console, args);
   };
 })();
 
-console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect (Smart Handling + Blob Conversion)...");
+console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect (Smart Handling + Blob Conversion + CSP Filtering)...");
 
 (function () {
     'use strict';
@@ -75,10 +85,10 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }
 
-    // registerOpCode: Records an outgoing message's opcode.
+    // registerOpCode: Records an outgoing message's opcode and bytes.
     function registerOpCode(opCode, data) {
         var view = getDataView(data);
-        if (!view) return;
+        if (!view) return; // Skip if data isn’t valid.
         try {
             var bytes = Array.from(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
             if (!opcodeRegistry[opCode]) {
@@ -130,13 +140,13 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     var OriginalWebSocket = window.WebSocket;
 
-    // InterceptedWebSocket: Wraps the native WebSocket.
+    // InterceptedWebSocket: Wraps the native WebSocket instance.
     function InterceptedWebSocket(url, protocols) {
         var ws = new OriginalWebSocket(url, protocols);
         this._ws = ws;
         console.log("[InterceptedWebSocket] Connected to: " + url);
 
-        // Forward "open" events.
+        // Forward the "open" event.
         ws.addEventListener("open", function (e) {
             console.log("[InterceptedWebSocket] ✅ WebSocket Connected!");
             if (typeof this.onopen === "function") {
@@ -144,9 +154,9 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             }
         }.bind(this));
 
-        // Forward "message" events.
+        // Forward the "message" event.
         ws.addEventListener("message", function (event) {
-            // If a Blob is received, convert it to an ArrayBuffer.
+            // If the data is a Blob, convert it to an ArrayBuffer.
             if (event.data instanceof Blob) {
                 event.data.arrayBuffer().then(function (buffer) {
                     processBinaryData(buffer);
@@ -166,7 +176,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             }
         }.bind(this));
 
-        // On "close", attempt a reconnect.
+        // On "close", attempt to reconnect.
         ws.addEventListener("close", function (event) {
             console.warn("[InterceptedWebSocket] ❌ Connection closed:", event);
             if (typeof this.onclose === "function") {
@@ -205,7 +215,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                         : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             var opCode = u8[0];
 
-            // If the message is exactly 8 bytes, it might be a click event.
+            // If the message is exactly 8 bytes, it may be a click event.
             if (((data instanceof ArrayBuffer && data.byteLength === 8) ||
                  (ArrayBuffer.isView(data) && data.byteLength === 8))) {
                 var view = getDataView(data);
@@ -266,7 +276,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     // ----- Extra Action: Team Wave Effect -----
 
-    // sendTeamWaveEffect: Sends an extra message in the protocol format that Agar.io accepts.
+    // sendTeamWaveEffect: Sends an extra message in the protocol format Agar.io expects.
     function sendTeamWaveEffect() {
         try {
             if (!window.websocket || window.websocket.readyState !== OriginalWebSocket.OPEN) {
@@ -294,7 +304,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     // ----- Document Click Interception -----
 
-    // interceptSpectatorClick: When the user clicks the document, trigger the extra wave effect.
+    // interceptSpectatorClick: Triggers the extra wave effect on document clicks.
     function interceptSpectatorClick() {
         document.addEventListener("click", function (event) {
             try {
@@ -312,7 +322,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     // ----- Initialization -----
 
-    // After a short delay, override the global WebSocket and start intercepting clicks.
+    // Override the global WebSocket after a short delay.
     setTimeout(function () {
         try {
             window.WebSocket = InterceptedWebSocket;
