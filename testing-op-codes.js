@@ -263,4 +263,8 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         console.log("[InterceptedWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
     };
+
+
+    
 })();
+
