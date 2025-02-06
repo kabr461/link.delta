@@ -1,5 +1,5 @@
-// ----- CSP Warning/Error Filter -----
-// Override console.warn and console.error to hide warnings about the refused gstatic.com script.
+// ----- Console Warning/Error Filter -----
+// Override console.warn and console.error to hide warnings about refused script loads.
 (function() {
   const origWarn = console.warn;
   const origError = console.error;
@@ -21,13 +21,18 @@
   };
 })();
 
-console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect (Smart Handling + Blob Conversion + CSP Filtering)...");
+console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect (Handshake Learning + Smart Handling)...");
 
 (function () {
     'use strict';
 
     // ----- Configuration & Global Variables -----
     var teamId = 1234; // Example team ID
+
+    // This object will hold handshake opcodes learned from the server.
+    var handshakeLookup = {};
+    // Flag to mark that the handshake has been processed.
+    var handshakeProcessed = false;
 
     // Stores detected opcodes and their data.
     var opcodeRegistry = {};
@@ -36,11 +41,12 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     var lastSummaryTime = Date.now();
 
     // Holds the dynamically detected click opcode.
+    // We will set this based on the handshake message and later test click messages against it.
     var dynamicClickOpcode = null;
 
     // ----- Helper Functions -----
 
-    // getDataView: Returns a DataView if the input is an ArrayBuffer or a typed array; otherwise returns null.
+    // getDataView: Returns a DataView if the input is an ArrayBuffer or typed array; otherwise returns null.
     function getDataView(data) {
         if (data instanceof ArrayBuffer) {
             return new DataView(data);
@@ -49,6 +55,25 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             return new DataView(data.buffer, data.byteOffset, data.byteLength);
         }
         return null;
+    }
+
+    // processHandshake: Called on incoming messages if handshake not yet processed.
+    // Here we assume the handshake message is longer than 10 bytes.
+    function processHandshake(data) {
+        var view = getDataView(data);
+        if (!view) return;
+        // Use a heuristic: handshake messages are longer than 10 bytes.
+        if (view.byteLength > 10 && !handshakeProcessed) {
+            // For example, use the first byte as the handshake opcode.
+            var handshakeOpcode = view.getUint8(0);
+            handshakeLookup[handshakeOpcode] = true;
+            // Set dynamicClickOpcode to this handshake opcode if not already set.
+            if (dynamicClickOpcode === null) {
+                dynamicClickOpcode = handshakeOpcode;
+                console.log("Handshake processed. Learned click opcode candidate:", dynamicClickOpcode);
+            }
+            handshakeProcessed = true;
+        }
     }
 
     // ----- Message Processing Functions -----
@@ -85,10 +110,10 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }
 
-    // registerOpCode: Records an outgoing message's opcode and bytes.
+    // registerOpCode: Records an outgoing message's opcode.
     function registerOpCode(opCode, data) {
         var view = getDataView(data);
-        if (!view) return; // Skip if data isn’t valid.
+        if (!view) return;
         try {
             var bytes = Array.from(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
             if (!opcodeRegistry[opCode]) {
@@ -140,18 +165,16 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     var OriginalWebSocket = window.WebSocket;
 
-    // InterceptedWebSocket: Wraps the native WebSocket instance.
+    // InterceptedWebSocket: A wrapper that holds the native WebSocket instance.
     function InterceptedWebSocket(url, protocols) {
         var ws = new OriginalWebSocket(url, protocols);
         this._ws = ws;
-        // Initialize reconnection attempts.
         this._reconnectionAttempts = 0;
         console.log("[InterceptedWebSocket] Connected to: " + url);
 
         // Forward the "open" event.
         ws.addEventListener("open", function (e) {
             console.log("[InterceptedWebSocket] ✅ WebSocket Connected!");
-            // Reset reconnection attempts on successful connection.
             this._reconnectionAttempts = 0;
             if (typeof this.onopen === "function") {
                 this.onopen(e);
@@ -160,11 +183,17 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
         // Forward the "message" event.
         ws.addEventListener("message", function (event) {
-            // If a Blob is received, convert it to an ArrayBuffer.
+            // First, if handshake is not processed, try processing handshake from the message.
+            if (!handshakeProcessed) {
+                var view = getDataView(event.data);
+                if (view && view.byteLength > 10) {
+                    processHandshake(event.data);
+                }
+            }
+            // For Blobs, convert them to ArrayBuffer.
             if (event.data instanceof Blob) {
                 event.data.arrayBuffer().then(function (buffer) {
                     processBinaryData(buffer);
-                    // Create a new event with data replaced by the ArrayBuffer.
                     var newEvent = Object.assign({}, event, { data: buffer });
                     if (typeof this.onmessage === "function") {
                         this.onmessage(newEvent);
@@ -186,14 +215,12 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             if (typeof this.onclose === "function") {
                 this.onclose(event);
             }
-            // Increase reconnection attempts and compute delay (max 30s).
             this._reconnectionAttempts++;
             var delay = Math.min(30000, 1000 * Math.pow(2, this._reconnectionAttempts));
             setTimeout(function () {
                 try {
                     console.log("[InterceptedWebSocket] 🔄 Attempting to reconnect... Delay:", delay, "ms");
                     var newSocket = new InterceptedWebSocket(url, protocols);
-                    // Adopt the new connection.
                     this._ws = newSocket._ws;
                     this._reconnectionAttempts = newSocket._reconnectionAttempts;
                 } catch (e) {
@@ -214,7 +241,6 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // Override the send method.
     InterceptedWebSocket.prototype.send = function (data) {
         try {
-            // Process only binary data.
             if (!(data instanceof ArrayBuffer || ArrayBuffer.isView(data))) {
                 this._ws.send(data);
                 return;
@@ -224,7 +250,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                         : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             var opCode = u8[0];
 
-            // If the message is exactly 8 bytes, it might be a click event.
+            // If the message is exactly 8 bytes, treat it as a click event.
             if (((data instanceof ArrayBuffer && data.byteLength === 8) ||
                  (ArrayBuffer.isView(data) && data.byteLength === 8))) {
                 var view = getDataView(data);
@@ -238,7 +264,6 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                         }
                         if (opCode === dynamicClickOpcode) {
                             console.log("Detected click event. Triggering team wave effect.");
-                            // Send an extra message in the official protocol format.
                             sendTeamWaveEffect();
                         }
                     }
@@ -285,7 +310,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     // ----- Extra Action: Team Wave Effect -----
 
-    // sendTeamWaveEffect: Sends an extra message in the protocol format Agar.io accepts.
+    // sendTeamWaveEffect: Sends an extra message (7 bytes) in the official protocol format.
     function sendTeamWaveEffect() {
         try {
             if (!window.websocket || window.websocket.readyState !== OriginalWebSocket.OPEN) {
