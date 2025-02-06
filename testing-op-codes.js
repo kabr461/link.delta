@@ -4,7 +4,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     'use strict';
 
     // Opcode registry for classification
-    const opcodeRegistry = {};  // { opcode: { count: number, strongestSignal: number, messageSizes: [], checked: boolean } }
+    const opcodeRegistry = {};  // { opcode: { count: number, strongestSignal: number, messageSizes: [] } }
     let opcodeSummary = {};  // Temporary summary to show per second
     let lastSummaryTime = Date.now();
 
@@ -15,42 +15,15 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
 
-        // Default name
-        let opcodeName = `Opcode ${opcode}`;
-        let matchedStructure = false;
-
-        // Only check structure if it hasn't been checked before
-        if (opcode === 22 && !opcodeRegistry[opcode]?.checked) {
-            matchedStructure = matchOpcodeStructure(data.rawBuffer);
-            if (matchedStructure) {
-                opcodeName = "Matched Structure: Player Position Update";
-            }
-        }
-
-        // Update registry and prevent rechecking
+        // Track opcode frequency & strength
         if (!opcodeRegistry[opcode]) {
-            opcodeRegistry[opcode] = { 
-                count: 1, 
-                strongestSignal: signalStrength, 
-                messageSizes: [messageSize], 
-                checked: matchedStructure, 
-                matchedStructure: matchedStructure
-            };
+            opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
         } else {
             opcodeRegistry[opcode].count += 1;
             opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
             if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
                 opcodeRegistry[opcode].messageSizes.push(messageSize);
             }
-            if (!opcodeRegistry[opcode].checked) {
-                opcodeRegistry[opcode].checked = matchedStructure; // Mark as checked
-                opcodeRegistry[opcode].matchedStructure = matchedStructure;
-            }
-        }
-
-        // Log only when first match is detected
-        if (!opcodeRegistry[opcode].checked || opcodeRegistry[opcode].count === 1) {
-            console.log(`[CustomWebSocket] Received ${opcodeName} | Matched Structure: ${matchedStructure}`);
         }
 
         // Track per-second summary
@@ -70,30 +43,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             opcodeSummary = {};
             lastSummaryTime = Date.now();
         }
-    }
-
-    function matchOpcodeStructure(buffer) {
-        if (!buffer || buffer.byteLength < 5) return false;
-
-        const dataView = new DataView(buffer);
-        let offset = 1; // Skipping opcode byte
-        let et = dataView.getInt8(offset);
-        offset += 1;
-
-        for (; et > 0; et--) {
-            if (offset + 7 > buffer.byteLength) return false;
-
-            dataView.getUint16(offset, true); // Read UInt16
-            offset += 2;
-            dataView.getInt16(offset, true); // Read Int16
-            offset += 2;
-            dataView.getInt16(offset, true); // Read Int16
-            offset += 2;
-            dataView.getUint16(offset, true); // Read UInt16
-            offset += 2;
-        }
-
-        return offset === buffer.byteLength; // Ensure entire buffer matches structure
     }
 
     const OriginalWebSocket = window.WebSocket;
@@ -127,7 +76,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             const opcode = dataArray[0];  // Assuming first byte is opcode
             const signalStrength = dataArray[1]; // Assuming second byte is signal
             const messageSize = dataArray.length;
-            processSignal({ opcode, signalStrength, messageSize, rawBuffer: buffer });
+            processSignal({ opcode, signalStrength, messageSize });
         }
     }
 
