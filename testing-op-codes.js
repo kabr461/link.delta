@@ -46,9 +46,9 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // Save the original WebSocket so we can wrap it.
     var OriginalWebSocket = window.WebSocket;
 
-    // Our wrapper for WebSocket.
+    // Our wrapper for WebSocket using composition.
     function InterceptedWebSocket(url, protocols) {
-        // Ensure we call the constructor using 'new'
+        // Create a new native WebSocket instance.
         var ws = new OriginalWebSocket(url, protocols);
         this._ws = ws;
 
@@ -86,15 +86,16 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             if (typeof this.onclose === "function") {
                 this.onclose(event);
             }
+            // Use setTimeout to attempt a reconnect after 1 second.
             setTimeout(function () {
                 try {
                     console.log("[InterceptedWebSocket] 🔄 Attempting to reconnect...");
-                    // Reinitialize the socket and update our instance.
                     var newSocket = new InterceptedWebSocket(url, protocols);
-                    // Update our internal ws reference.
                     this._ws = newSocket._ws;
-                }.bind(this), 1000);
-            }.bind(this), 0);
+                } catch (e) {
+                    console.error("Error during reconnect:", e);
+                }
+            }.bind(this), 1000);
         }.bind(this));
 
         ws.addEventListener("error", function (event) {
@@ -105,7 +106,8 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }.bind(this));
     }
 
-    // Forward common methods and properties.
+    // Override the send method. When an 8-byte message (likely a click) is sent,
+    // trigger the additional wave effect while still sending the original delta message.
     InterceptedWebSocket.prototype.send = function (data) {
         try {
             var u8 = new Uint8Array(data);
@@ -125,7 +127,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                     if (opCode === dynamicClickOpcode) {
                         console.log("Detected click event. Triggering wave effect (additional energy).");
                         sendTeamWaveEffect();
-                        // Do not block the original message; let it pass.
+                        // The original delta message is still sent.
                     }
                 }
             }
@@ -136,7 +138,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     };
 
-    // Forward event listener methods.
+    // Forward addEventListener and removeEventListener methods.
     InterceptedWebSocket.prototype.addEventListener = function () {
         this._ws.addEventListener.apply(this._ws, arguments);
     };
@@ -144,14 +146,13 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         this._ws.removeEventListener.apply(this._ws, arguments);
     };
 
-    // Expose readyState and other properties.
+    // Expose some properties (readyState, bufferedAmount) from the underlying WebSocket.
     Object.defineProperty(InterceptedWebSocket.prototype, "readyState", {
         get: function () { return this._ws.readyState; }
     });
     Object.defineProperty(InterceptedWebSocket.prototype, "bufferedAmount", {
         get: function () { return this._ws.bufferedAmount; }
     });
-    // You can add more properties as needed.
 
     // Register the outgoing opcode and store its message for tracking.
     function registerOpCode(opCode, data) {
@@ -201,7 +202,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }
 
-    // Send a team wave effect message (additional energy) without altering the original delta.
+    // Send a team wave effect message (additional energy) without interfering with the delta message.
     function sendTeamWaveEffect() {
         try {
             if (!window.websocket || window.websocket.readyState !== OriginalWebSocket.OPEN) {
@@ -240,7 +241,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }
 
-    // Intercept document clicks to also trigger wave energy.
+    // Intercept document click events and trigger the wave effect.
     function interceptSpectatorClick() {
         document.addEventListener("click", function (event) {
             try {
@@ -267,7 +268,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }, 1000);
 
-    // Expose a diagnostic method.
+    // Expose a diagnostic method to analyze the opcode registry.
     window.analyzeOpcodes = function () {
         console.log("[InterceptedWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
@@ -279,4 +280,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             return window.WebSocket ? window.WebSocket.prototype._ws : null;
         }
     });
+
+
+    
 })();
