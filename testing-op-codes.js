@@ -14,6 +14,17 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // Variable to hold the dynamically detected click opcode.
     var dynamicClickOpcode = null;
 
+    // Helper: create a DataView from data that might be an ArrayBuffer or a typed array.
+    function getDataView(data) {
+        if (data instanceof ArrayBuffer) {
+            return new DataView(data);
+        } else if (ArrayBuffer.isView(data)) {
+            return new DataView(data.buffer, data.byteOffset, data.byteLength);
+        } else {
+            throw new Error("Data is not an ArrayBuffer or ArrayBuffer view.");
+        }
+    }
+
     // Process each decoded signal from incoming binary data.
     function processSignal(data) {
         if (!data || typeof data.opcode === 'undefined') return;
@@ -110,12 +121,14 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // trigger the additional wave effect while still sending the original delta message.
     InterceptedWebSocket.prototype.send = function (data) {
         try {
-            var u8 = new Uint8Array(data);
+            // Create a Uint8Array view of the data.
+            var u8 = data instanceof ArrayBuffer ? new Uint8Array(data) : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             var opCode = u8[0];
 
             // Heuristic: if data is 8 bytes long, it may be a click event.
-            if (data.byteLength === 8) {
-                var view = new DataView(data);
+            if ( (data instanceof ArrayBuffer && data.byteLength === 8) ||
+                 (ArrayBuffer.isView(data) && data.byteLength === 8) ) {
+                var view = getDataView(data);
                 var x = view.getUint16(1, true);
                 var y = view.getUint16(3, true);
                 if (x >= 0 && x <= window.innerWidth &&
@@ -176,8 +189,8 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // Classify the opcode based on the payload.
     function classifyOpCode(opCode, data) {
         try {
-            var view = new DataView(data);
-            if (data.byteLength === 8) {
+            var view = getDataView(data);
+            if (data.byteLength === 8 || (ArrayBuffer.isView(data) && data.byteLength === 8)) {
                 var x = view.getUint16(1, true);
                 var y = view.getUint16(3, true);
                 if (x >= 0 && x <= window.innerWidth &&
@@ -189,10 +202,10 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                     return "Spectator Click (Dynamic)";
                 }
             }
-            if (data.byteLength > 10) {
+            if (data.byteLength > 10 || (ArrayBuffer.isView(data) && data.byteLength > 10)) {
                 return "Movement / Interaction";
             }
-            if (data.byteLength === 2) {
+            if (data.byteLength === 2 || (ArrayBuffer.isView(data) && data.byteLength === 2)) {
                 return "Ping / Network Sync";
             }
             return "Unknown Action";
@@ -280,7 +293,4 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             return window.WebSocket ? window.WebSocket.prototype._ws : null;
         }
     });
-
-
-    
 })();
