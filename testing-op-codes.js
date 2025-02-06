@@ -1,11 +1,11 @@
-console.log("[Delta UI Mod] Injecting Network-Synced Wave Effect...");
+console.log("[Delta UI Mod] Injecting Dynamic OpCode Detection and Wave Effect...");
 
 (function () {
     'use strict';
 
-    // Store wave effect positions
     let waveEffects = [];
-    let websocket = null; // Global WebSocket reference
+    let websocket = null;
+    let detectedSpectatorClickOpCode = null;  // Stores detected OpCode dynamically
 
     function createWaveEffect(x, y) {
         waveEffects.push({ x, y, alpha: 1.0, radius: 5 });
@@ -22,11 +22,9 @@ console.log("[Delta UI Mod] Injecting Network-Synced Wave Effect...");
             ctx.stroke();
             ctx.closePath();
 
-            // Animate wave
             wave.radius += 2;
             wave.alpha -= 0.05;
 
-            // Remove faded waves
             if (wave.alpha <= 0) {
                 waveEffects.splice(i, 1);
             }
@@ -35,7 +33,6 @@ console.log("[Delta UI Mod] Injecting Network-Synced Wave Effect...");
 
     function modifyDeltaCanvas() {
         let originalRender = window.requestAnimationFrame;
-        
         window.requestAnimationFrame = function(callback) {
             return originalRender.call(window, function(time) {
                 let canvas = document.querySelector("canvas");
@@ -50,18 +47,23 @@ console.log("[Delta UI Mod] Injecting Network-Synced Wave Effect...");
 
     function sendWaveEffect(x, y) {
         if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-            console.warn("⚠ WebSocket is not connected! Cannot send wave effect.");
+            console.warn("⚠ WebSocket not connected! Cannot send wave effect.");
+            return;
+        }
+
+        if (!detectedSpectatorClickOpCode) {
+            console.warn("⚠ No detected OpCode for spectator clicks! Cannot send wave.");
             return;
         }
 
         let buffer = new ArrayBuffer(5);
         let view = new DataView(buffer);
-        view.setUint8(0, 250);  // Custom OpCode for Wave Sync (Choose a free OpCode)
+        view.setUint8(0, detectedSpectatorClickOpCode);  // Use dynamically detected OpCode
         view.setUint16(1, x, true);
         view.setUint16(3, y, true);
 
         websocket.send(buffer);
-        console.log("🌊 Sent Wave Effect to All Players!");
+        console.log(`🌊 Sent Wave Effect using OpCode ${detectedSpectatorClickOpCode}`);
     }
 
     function interceptSpectatorClicks() {
@@ -89,14 +91,24 @@ console.log("[Delta UI Mod] Injecting Network-Synced Wave Effect...");
                     }
                 });
             }
+
+            send(data) {
+                const opCode = new Uint8Array(data)[0];  // First byte is OpCode
+
+                if (!detectedSpectatorClickOpCode && data.byteLength >= 6) {
+                    detectedSpectatorClickOpCode = opCode;
+                    console.log(`🔍 Auto-Detected Spectator Click OpCode: ${opCode}`);
+                }
+
+                super.send(data);
+            }
         }
 
         function processBinaryData(buffer) {
             let dataArray = new Uint8Array(buffer);
             let opCode = dataArray[0];
 
-            // If we receive a wave effect message, trigger it
-            if (opCode === 250) { // Make sure to use the same OpCode as sendWaveEffect()
+            if (opCode === detectedSpectatorClickOpCode) {
                 let x = (dataArray[1] << 8) | dataArray[2];
                 let y = (dataArray[3] << 8) | dataArray[4];
                 console.log(`🌊 Received Wave Effect at (${x}, ${y})`);
@@ -114,7 +126,7 @@ console.log("[Delta UI Mod] Injecting Network-Synced Wave Effect...");
         modifyDeltaCanvas();
         interceptSpectatorClicks();
         interceptWebSocket();
-        console.log("[Delta UI Mod] ✅ Wave Effect with Network Sync Injected!");
+        console.log("[Delta UI Mod] ✅ Wave Effect with Dynamic OpCode Detection Injected!");
     }, 1000);
 
 })();
