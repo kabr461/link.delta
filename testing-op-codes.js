@@ -1,41 +1,47 @@
-console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect (Advanced Wrapped Version)...");
+console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect (Smart Handling)...");
 
 (function () {
     'use strict';
 
-    // Define your team identifier (set dynamically in a real scenario)
+    // ----- Configuration & Global Variables -----
     var teamId = 1234; // Example team ID
 
-    // Opcode registry for dynamic classification and tracking
-    var opcodeRegistry = {};  // Stores detected opcodes and their data
-    var opcodeSummary = {};   // Tracks opcode frequency over a session
+    // Stores detected opcodes and their data.
+    var opcodeRegistry = {};
+    // Tracks opcode frequency over a session.
+    var opcodeSummary = {};
     var lastSummaryTime = Date.now();
 
-    // Variable to hold the dynamically detected click opcode.
+    // Holds the dynamically detected click opcode.
     var dynamicClickOpcode = null;
 
-    // Helper: create a DataView from data that might be an ArrayBuffer or a typed array.
+    // ----- Helper Functions -----
+
+    // getDataView: Ensures that we always create a DataView from an ArrayBuffer.
     function getDataView(data) {
+        // If it's already an ArrayBuffer, use it.
         if (data instanceof ArrayBuffer) {
             return new DataView(data);
-        } else if (ArrayBuffer.isView(data)) {
-            return new DataView(data.buffer, data.byteOffset, data.byteLength);
-        } else {
-            throw new Error("Data is not an ArrayBuffer or ArrayBuffer view.");
         }
+        // If it's a typed array view, use its underlying buffer with proper offset and length.
+        if (ArrayBuffer.isView(data)) {
+            return new DataView(data.buffer, data.byteOffset, data.byteLength);
+        }
+        // Otherwise, return null to signal that data isn't processable.
+        return null;
     }
 
-    // Process each decoded signal from incoming binary data.
+    // ----- Message Processing Functions -----
+
+    // processSignal: Called with an object { opcode, rawData, messageSize }
     function processSignal(data) {
-        // Ensure data.rawData is valid.
-        if (!data || typeof data.opcode === 'undefined' || 
-            !(data.rawData instanceof ArrayBuffer || ArrayBuffer.isView(data.rawData))) {
-            return;
-        }
+        // Verify that rawData is valid for processing.
+        var view = getDataView(data.rawData);
+        if (!data || typeof data.opcode === 'undefined' || !view) return;
         var opcode = data.opcode;
         try {
-            // Save a copy of the message bytes.
-            var bytes = Array.from(new Uint8Array(getDataView(data.rawData).buffer));
+            // Create a copy of the bytes.
+            var bytes = Array.from(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
             if (!opcodeRegistry[opcode]) {
                 opcodeRegistry[opcode] = {
                     count: 1,
@@ -46,7 +52,6 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                 opcodeRegistry[opcode].count += 1;
                 opcodeRegistry[opcode].messages.push(bytes);
             }
-
             opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
             if (Date.now() - lastSummaryTime > 20000) {
                 console.clear();
@@ -60,18 +65,69 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }
 
-    // Save the original WebSocket so we can wrap it.
+    // registerOpCode: Logs outgoing messages (their opcode and bytes).
+    function registerOpCode(opCode, data) {
+        var view = getDataView(data);
+        if (!view) return; // Skip non-binary data.
+        try {
+            var bytes = Array.from(new Uint8Array(view.buffer, view.byteOffset, view.byteLength));
+            if (!opcodeRegistry[opCode]) {
+                opcodeRegistry[opCode] = {
+                    count: 1,
+                    messages: [bytes],
+                    functionType: classifyOpCode(opCode, data)
+                };
+            } else {
+                opcodeRegistry[opCode].count += 1;
+                opcodeRegistry[opCode].messages.push(bytes);
+            }
+            console.log("🔎 Captured OpCode: " + opCode + " - Stored in Lookup Table");
+        } catch (e) {
+            console.error("Error registering opcode:", e);
+        }
+    }
+
+    // classifyOpCode: Determines the type of action based on payload length and content.
+    function classifyOpCode(opCode, data) {
+        var view = getDataView(data);
+        if (!view) return "Unknown Action";
+        try {
+            if (view.byteLength === 8) {
+                var x = view.getUint16(1, true);
+                var y = view.getUint16(3, true);
+                if (x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight) {
+                    if (dynamicClickOpcode === null) {
+                        dynamicClickOpcode = opCode;
+                        console.log("Dynamically detected click opcode (via classification):", dynamicClickOpcode);
+                    }
+                    return "Spectator Click (Dynamic)";
+                }
+            }
+            if (view.byteLength > 10) {
+                return "Movement / Interaction";
+            }
+            if (view.byteLength === 2) {
+                return "Ping / Network Sync";
+            }
+            return "Unknown Action";
+        } catch (e) {
+            console.error("Error classifying opcode:", e);
+            return "Error in Classification";
+        }
+    }
+
+    // ----- WebSocket Wrapper -----
+
+    // Save the original WebSocket.
     var OriginalWebSocket = window.WebSocket;
 
-    // Our wrapper for WebSocket using composition.
+    // InterceptedWebSocket: A wrapper that holds the native WebSocket instance.
     function InterceptedWebSocket(url, protocols) {
-        // Create a new native WebSocket instance.
         var ws = new OriginalWebSocket(url, protocols);
         this._ws = ws;
-
         console.log("[InterceptedWebSocket] Connected to: " + url);
 
-        // Forward native events from the underlying socket.
+        // Forward the "open" event.
         ws.addEventListener("open", function (e) {
             console.log("[InterceptedWebSocket] ✅ WebSocket Connected!");
             if (typeof this.onopen === "function") {
@@ -79,6 +135,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             }
         }.bind(this));
 
+        // Forward the "message" event, processing binary data.
         ws.addEventListener("message", function (event) {
             try {
                 if (event.data instanceof ArrayBuffer) {
@@ -98,12 +155,12 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             }
         }.bind(this));
 
+        // On "close", attempt to reconnect.
         ws.addEventListener("close", function (event) {
             console.warn("[InterceptedWebSocket] ❌ Connection closed:", event);
             if (typeof this.onclose === "function") {
                 this.onclose(event);
             }
-            // Use setTimeout to attempt a reconnect after 1 second.
             setTimeout(function () {
                 try {
                     console.log("[InterceptedWebSocket] 🔄 Attempting to reconnect...");
@@ -115,6 +172,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             }.bind(this), 1000);
         }.bind(this));
 
+        // Forward "error" events.
         ws.addEventListener("error", function (event) {
             console.error("[InterceptedWebSocket] Error:", event);
             if (typeof this.onerror === "function") {
@@ -123,37 +181,36 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }.bind(this));
     }
 
-    // Override the send method. When an 8-byte message (likely a click) is sent,
-    // trigger the additional wave effect while still sending the original delta message.
+    // Override the send method.
     InterceptedWebSocket.prototype.send = function (data) {
         try {
-            // Ensure data is an ArrayBuffer or a view.
+            // Only process binary data.
             if (!(data instanceof ArrayBuffer || ArrayBuffer.isView(data))) {
-                console.warn("Data is not binary; skipping extra processing.");
                 this._ws.send(data);
                 return;
             }
-            var u8 = data instanceof ArrayBuffer 
-                        ? new Uint8Array(data) 
+            var u8 = data instanceof ArrayBuffer
+                        ? new Uint8Array(data)
                         : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             var opCode = u8[0];
 
-            // Check if the binary message has exactly 8 bytes.
+            // If the message is exactly 8 bytes, it might be a click event.
             if (((data instanceof ArrayBuffer && data.byteLength === 8) ||
                  (ArrayBuffer.isView(data) && data.byteLength === 8))) {
                 var view = getDataView(data);
-                var x = view.getUint16(1, true);
-                var y = view.getUint16(3, true);
-                if (x >= 0 && x <= window.innerWidth &&
-                    y >= 0 && y <= window.innerHeight) {
-                    if (dynamicClickOpcode === null) {
-                        dynamicClickOpcode = opCode;
-                        console.log("Dynamically detected click opcode:", dynamicClickOpcode);
-                    }
-                    if (opCode === dynamicClickOpcode) {
-                        console.log("Detected click event. Triggering wave effect (additional energy).");
-                        sendTeamWaveEffect();
-                        // Let the original delta message pass through.
+                if (view) {
+                    var x = view.getUint16(1, true);
+                    var y = view.getUint16(3, true);
+                    if (x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight) {
+                        if (dynamicClickOpcode === null) {
+                            dynamicClickOpcode = opCode;
+                            console.log("Dynamically detected click opcode:", dynamicClickOpcode);
+                        }
+                        if (opCode === dynamicClickOpcode) {
+                            console.log("Detected click event. Triggering wave effect (additional energy).");
+                            sendTeamWaveEffect();
+                            // Let the original message pass through.
+                        }
                     }
                 }
             }
@@ -164,7 +221,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     };
 
-    // Forward addEventListener and removeEventListener methods.
+    // Forward event listener methods.
     InterceptedWebSocket.prototype.addEventListener = function () {
         this._ws.addEventListener.apply(this._ws, arguments);
     };
@@ -172,7 +229,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         this._ws.removeEventListener.apply(this._ws, arguments);
     };
 
-    // Expose some properties (readyState, bufferedAmount) from the underlying WebSocket.
+    // Expose some properties.
     Object.defineProperty(InterceptedWebSocket.prototype, "readyState", {
         get: function () { return this._ws.readyState; }
     });
@@ -180,64 +237,26 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         get: function () { return this._ws.bufferedAmount; }
     });
 
-    // Register the outgoing opcode and store its message for tracking.
-    function registerOpCode(opCode, data) {
+    // ----- Incoming Data Processing -----
+
+    // processBinaryData: Called when binary data is received.
+    function processBinaryData(buffer) {
+        // Ensure buffer is an ArrayBuffer.
+        if (!(buffer instanceof ArrayBuffer)) return;
         try {
-            // Only process binary data.
-            if (!(data instanceof ArrayBuffer || ArrayBuffer.isView(data))) {
-                return;
+            var dataArray = new Uint8Array(buffer);
+            if (dataArray.length >= 2) {
+                var opcode = dataArray[0];
+                processSignal({ opcode: opcode, messageSize: dataArray.length, rawData: buffer });
             }
-            var bytes = Array.from(new Uint8Array(getDataView(data).buffer));
-            if (!opcodeRegistry[opCode]) {
-                opcodeRegistry[opCode] = {
-                    count: 1,
-                    messages: [bytes],
-                    functionType: classifyOpCode(opCode, data)
-                };
-            } else {
-                opcodeRegistry[opCode].count += 1;
-                opcodeRegistry[opCode].messages.push(bytes);
-            }
-            console.log("🔎 Captured OpCode: " + opCode + " - Stored in Lookup Table");
         } catch (e) {
-            console.error("Error registering opcode:", e);
+            console.error("Error processing binary data:", e);
         }
     }
 
-    // Classify the opcode based on the binary payload.
-    function classifyOpCode(opCode, data) {
-        try {
-            // Only process if data is binary.
-            if (!(data instanceof ArrayBuffer || ArrayBuffer.isView(data))) {
-                return "Unknown Action";
-            }
-            var view = getDataView(data);
-            if (data.byteLength === 8 || (ArrayBuffer.isView(data) && data.byteLength === 8)) {
-                var x = view.getUint16(1, true);
-                var y = view.getUint16(3, true);
-                if (x >= 0 && x <= window.innerWidth &&
-                    y >= 0 && y <= window.innerHeight) {
-                    if (dynamicClickOpcode === null) {
-                        dynamicClickOpcode = opCode;
-                        console.log("Dynamically detected click opcode (via classification):", dynamicClickOpcode);
-                    }
-                    return "Spectator Click (Dynamic)";
-                }
-            }
-            if (data.byteLength > 10 || (ArrayBuffer.isView(data) && data.byteLength > 10)) {
-                return "Movement / Interaction";
-            }
-            if (data.byteLength === 2 || (ArrayBuffer.isView(data) && data.byteLength === 2)) {
-                return "Ping / Network Sync";
-            }
-            return "Unknown Action";
-        } catch (e) {
-            console.error("Error classifying opcode:", e);
-            return "Error in Classification";
-        }
-    }
+    // ----- Extra Action (Wave Effect) -----
 
-    // Send a team wave effect message (additional energy) without interfering with the delta message.
+    // sendTeamWaveEffect: Sends an extra message that triggers a "wave effect".
     function sendTeamWaveEffect() {
         try {
             if (!window.websocket || window.websocket.readyState !== OriginalWebSocket.OPEN) {
@@ -251,7 +270,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                     view.setUint8(0, 229);   // Hypothetical opcode for Wave Effect.
                     view.setUint8(1, 1);     // Enable flag.
                     view.setUint8(2, 1);     // Wave type.
-                    view.setUint32(3, teamId, true);  // Team ID in little-endian.
+                    view.setUint32(3, teamId, true); // Team ID in little-endian.
                     window.websocket.send(buffer);
                     console.log("🌊 Sent Team Wave Effect Trigger for Team ID: " + teamId);
                 } catch (e) {
@@ -263,22 +282,9 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }
 
-    // Process incoming binary data to extract opcode details.
-    function processBinaryData(buffer) {
-        try {
-            // Ensure buffer is an ArrayBuffer.
-            if (!(buffer instanceof ArrayBuffer)) return;
-            var dataArray = new Uint8Array(buffer);
-            if (dataArray.length >= 2) {
-                var opcode = dataArray[0];
-                processSignal({ opcode: opcode, messageSize: dataArray.length, rawData: buffer });
-            }
-        } catch (e) {
-            console.error("Error processing binary data:", e);
-        }
-    }
+    // ----- Document Click Interception -----
 
-    // Intercept document click events and trigger the wave effect.
+    // interceptSpectatorClick: Triggers the wave effect when the user clicks on the document.
     function interceptSpectatorClick() {
         document.addEventListener("click", function (event) {
             try {
@@ -294,6 +300,8 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         });
     }
 
+    // ----- Initialization -----
+
     // Override the global WebSocket after a short delay.
     setTimeout(function () {
         try {
@@ -305,7 +313,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }, 1000);
 
-    // Expose a diagnostic method to analyze the opcode registry.
+    // Expose a diagnostic method.
     window.analyzeOpcodes = function () {
         console.log("[InterceptedWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
