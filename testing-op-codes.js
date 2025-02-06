@@ -1,11 +1,14 @@
-console.log("[Delta UI Mod] Injecting Dynamic OpCode Detection and Wave Effect...");
+console.log("[Delta UI Mod] Injecting Full Dynamic OpCode Detection...");
 
 (function () {
     'use strict';
 
     let waveEffects = [];
     let websocket = null;
-    let detectedSpectatorClickOpCode = null;  // Stores detected OpCode dynamically
+    let opcodeRegistry = {};  // Stores all dynamically detected OpCodes
+    let detectedSpectatorClickOpCode = null;
+    let lastClickTime = 0;  // Timestamp for detecting click-based messages
+    let clickOpCodes = new Set();  // Stores potential OpCodes for clicks
 
     function createWaveEffect(x, y) {
         waveEffects.push({ x, y, alpha: 1.0, radius: 5 });
@@ -52,7 +55,7 @@ console.log("[Delta UI Mod] Injecting Dynamic OpCode Detection and Wave Effect..
         }
 
         if (!detectedSpectatorClickOpCode) {
-            console.warn("⚠ No detected OpCode for spectator clicks! Cannot send wave.");
+            console.warn("⚠ No confirmed OpCode for spectator clicks! Cannot send wave.");
             return;
         }
 
@@ -66,9 +69,10 @@ console.log("[Delta UI Mod] Injecting Dynamic OpCode Detection and Wave Effect..
         console.log(`🌊 Sent Wave Effect using OpCode ${detectedSpectatorClickOpCode}`);
     }
 
-    function interceptSpectatorClicks() {
+    function interceptUserClicks() {
         document.addEventListener("click", (event) => {
-            console.log(`🖱 Spectator Click at (${event.clientX}, ${event.clientY})`);
+            console.log(`🖱 Click Detected at (${event.clientX}, ${event.clientY})`);
+            lastClickTime = Date.now(); // Store timestamp of click
             createWaveEffect(event.clientX, event.clientY);
             sendWaveEffect(event.clientX, event.clientY);
         });
@@ -85,34 +89,67 @@ console.log("[Delta UI Mod] Injecting Dynamic OpCode Detection and Wave Effect..
 
                 this.addEventListener('message', (event) => {
                     if (event.data instanceof ArrayBuffer) {
-                        processBinaryData(event.data);
+                        processBinaryData(event.data, false);
                     } else if (event.data instanceof Blob) {
-                        event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+                        event.data.arrayBuffer().then(buffer => processBinaryData(buffer, false));
                     }
                 });
             }
 
             send(data) {
                 const opCode = new Uint8Array(data)[0];  // First byte is OpCode
+                const messageSize = data.byteLength;
+                const currentTime = Date.now();
 
-                if (!detectedSpectatorClickOpCode && data.byteLength >= 6) {
+                if (!opcodeRegistry[opCode]) {
+                    opcodeRegistry[opCode] = { count: 0, messages: [], functionType: "Unknown" };
+                }
+
+                opcodeRegistry[opCode].count += 1;
+                opcodeRegistry[opCode].messages.push(Array.from(new Uint8Array(data)));
+
+                if (currentTime - lastClickTime < 300) {
+                    // If the message is sent within 300ms of clicking, it's a click-related OpCode
+                    clickOpCodes.add(opCode);
+                    console.log(`🔍 Detected Click OpCode: ${opCode}`);
                     detectedSpectatorClickOpCode = opCode;
-                    console.log(`🔍 Auto-Detected Spectator Click OpCode: ${opCode}`);
+                }
+
+                if (messageSize >= 6 && !clickOpCodes.has(opCode)) {
+                    // Attempt to classify the OpCode
+                    if (messageSize > 10) {
+                        opcodeRegistry[opCode].functionType = "Movement / Interaction";
+                    } else if (messageSize === 2) {
+                        opcodeRegistry[opCode].functionType = "Ping / Network Sync";
+                    }
                 }
 
                 super.send(data);
             }
         }
 
-        function processBinaryData(buffer) {
+        function processBinaryData(buffer, incoming = true) {
             let dataArray = new Uint8Array(buffer);
             let opCode = dataArray[0];
 
-            if (opCode === detectedSpectatorClickOpCode) {
+            if (!opcodeRegistry[opCode]) {
+                opcodeRegistry[opCode] = { count: 0, messages: [], functionType: "Unknown" };
+            }
+
+            opcodeRegistry[opCode].count += 1;
+            opcodeRegistry[opCode].messages.push(Array.from(dataArray));
+
+            if (clickOpCodes.has(opCode)) {
                 let x = (dataArray[1] << 8) | dataArray[2];
                 let y = (dataArray[3] << 8) | dataArray[4];
                 console.log(`🌊 Received Wave Effect at (${x}, ${y})`);
                 createWaveEffect(x, y);
+            }
+
+            if (incoming) {
+                console.log(`📩 Received OpCode: ${opCode} | Size: ${dataArray.length}`);
+            } else {
+                console.log(`📤 Sent OpCode: ${opCode} | Size: ${dataArray.length}`);
             }
         }
 
@@ -124,9 +161,14 @@ console.log("[Delta UI Mod] Injecting Dynamic OpCode Detection and Wave Effect..
 
     setTimeout(() => {
         modifyDeltaCanvas();
-        interceptSpectatorClicks();
+        interceptUserClicks();
         interceptWebSocket();
-        console.log("[Delta UI Mod] ✅ Wave Effect with Dynamic OpCode Detection Injected!");
+        console.log("[Delta UI Mod] ✅ Full Dynamic OpCode Detection & Wave Effect Injected!");
     }, 1000);
+
+    window.analyzeOpcodes = function () {
+        console.log("[InterceptedWebSocket] Opcode Registry Analysis:");
+        console.table(opcodeRegistry);
+    };
 
 })();
