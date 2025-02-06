@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Secure Agar.io WebSocket Inspector
+// @name         Agar.io WebSocket Inspector v4.0
 // @namespace    http://secure-scripts.com
-// @version      3.1
-// @description  CSP-compliant WebSocket monitoring
+// @version      4.0
+// @description  CSP-compliant WebSocket monitoring with error resolution
 // @author       Your Name
 // @match        *://agar.io/*
 // @grant        none
@@ -13,154 +13,149 @@
 (function() {
     'use strict';
 
-    console.log("[🔒] Initializing Security-Compliant Inspector...");
+    console.log("[🔐] Initializing Advanced Inspector...");
 
-    const safeInject = () => {
-        const interceptScript = document.createElement('script');
-        interceptScript.textContent = `
+    const applySecurityPolicy = () => {
+        // Remove existing conflicting CSP headers
+        document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
+
+        // Set comprehensive CSP
+        const csp = document.createElement('meta');
+        csp.httpEquiv = "Content-Security-Policy";
+        csp.content = [
+            "default-src 'self' agar.io *.agar.io",
+            "connect-src 'self' ws: wss: *.agar.io wss://delta.agar.io",
+            "img-src 'self' data: blob: https://*.gitlab.io https://i.imgur.com",
+            "script-src 'self' 'unsafe-inline' https://deltav4.gitlab.io https://kabr461.github.io",
+            "style-src 'self' 'unsafe-inline' https://deltav4.gitlab.io",
+            "manifest-src 'self' https://deltav4.gitlab.io",
+            "frame-src https://accounts.google.com"
+        ].join('; ');
+        document.head.prepend(csp);
+    };
+
+    const installWebSocketHandler = () => {
+        const script = document.createElement('script');
+        script.textContent = `
             (function() {
-                const originalWS = window.WebSocket;
-                const allowedEndpoints = [
+                const OriginalWebSocket = window.WebSocket;
+                const monitoredEndpoints = [
                     'wss://live.agar.io/',
                     'wss://mca.agar.io/',
                     'wss://delta.agar.io/'
                 ];
 
-                const hexConverter = arr => Array.from(arr, 
+                const bufferToHex = buffer => Array.from(new Uint8Array(buffer), 
                     byte => byte.toString(16).padStart(2, '0').toUpperCase()
                 ).join(' ');
 
-                class MessageParser {
-                    static analyze(data) {
-                        if (data.length < 1) return;
-                        const msgId = data[0];
-                        console.log(\`[📨] Message ID: 0x\${msgId.toString(16).padStart(2, '0')}\`);
-                        // Add protocol-specific parsing here
-                    }
-                }
-
-                class WSHandler {
-                    constructor(url, protocols) {
-                        this.socket = new originalWS(url, protocols);
+                class WSMonitor {
+                    constructor(url) {
+                        this.ws = new OriginalWebSocket(url);
                         this.url = url;
-                        this.retries = 0;
-                        this.setupHandlers();
+                        this.retryCount = 0;
+                        this.bindEvents();
                     }
 
-                    setupHandlers() {
-                        this.socket.addEventListener('message', this.handleMessage.bind(this));
-                        this.socket.addEventListener('open', this.handleOpen.bind(this));
-                        this.socket.addEventListener('close', this.handleClose.bind(this));
-                        this.socket.addEventListener('error', this.handleError.bind(this));
+                    bindEvents() {
+                        this.ws.addEventListener('open', () => this.onOpen());
+                        this.ws.addEventListener('message', e => this.onMessage(e));
+                        this.ws.addEventListener('close', e => this.onClose(e));
+                        this.ws.addEventListener('error', e => this.onError(e));
                         
-                        const originalSend = this.socket.send.bind(this.socket);
-                        this.socket.send = data => {
-                            this.logSend(data);
+                        const originalSend = this.ws.send.bind(this.ws);
+                        this.ws.send = data => {
+                            this.logData('📤 Outgoing', data);
                             originalSend(data);
                         };
                     }
 
-                    logSend(data) {
+                    logData(direction, data) {
                         try {
                             if (data instanceof Blob) {
                                 data.arrayBuffer().then(buf => {
-                                    const arr = new Uint8Array(buf);
-                                    console.log(\`[📤] Outgoing (Blob): \${hexConverter(arr)}\`);
-                                    MessageParser.analyze(arr);
+                                    console.log(\`\${direction} Blob:\`, bufferToHex(buf));
+                                    this.parseProtocol(buf);
                                 });
                             } else if (data instanceof ArrayBuffer) {
-                                const arr = new Uint8Array(data);
-                                console.log(\`[📤] Outgoing (Buffer): \${hexConverter(arr)}\`);
-                                MessageParser.analyze(arr);
+                                console.log(\`\${direction} Buffer:\`, bufferToHex(data));
+                                this.parseProtocol(data);
                             } else {
-                                console.log(\`[📤] Outgoing: \${typeof data}:\`, data);
+                                console.log(\`\${direction} Text:\`, data);
                             }
-                        } catch (e) {
-                            console.error('[⚠️] Send Log Error:', e);
+                        } catch (error) {
+                            console.error('[⚠️] Logging Error:', error);
                         }
                     }
 
-                    handleMessage(event) {
-                        const data = event.data;
-                        if (typeof data === 'string') {
-                            console.log(\`[📩] Incoming String: \${data}\`);
-                        } else {
-                            data.arrayBuffer().then(buf => {
-                                const arr = new Uint8Array(buf);
-                                console.log(\`[📩] Incoming Binary: \${hexConverter(arr)}\`);
-                                MessageParser.analyze(arr);
-                            }).catch(console.error);
-                        }
+                    parseProtocol(buffer) {
+                        const view = new DataView(buffer);
+                        if (view.byteLength < 2) return;
+                        
+                        const messageId = view.getUint8(0);
+                        const protocolVersion = view.getUint8(1);
+                        console.log(\`[🔍] Message ID: 0x\${messageId.toString(16)} Version: \${protocolVersion}\`);
                     }
 
-                    handleOpen() {
+                    onOpen() {
                         console.log(\`[✅] Connected to \${this.url}\`);
-                        this.retries = 0;
+                        this.retryCount = 0;
                     }
 
-                    handleClose(event) {
-                        console.warn(\`[❌] Closed: \${event.code} \${event.reason}\`);
-                        if (event.code !== 1000 && this.retries < 3) {
-                            setTimeout(() => new WSHandler(this.url), 2000);
-                            this.retries++;
+                    onMessage(event) {
+                        this.logData('📩 Incoming', event.data);
+                    }
+
+                    onClose(event) {
+                        console.warn(\`[❌] Connection closed (\${event.code}): \${event.reason}\`);
+                        if (event.code !== 1000 && this.retryCount < 3) {
+                            setTimeout(() => new WSMonitor(this.url), 2000 * (this.retryCount + 1));
+                            this.retryCount++;
                         }
                     }
 
-                    handleError(error) {
+                    onError(error) {
                         console.error('[⚠️] WebSocket Error:', error);
                     }
                 }
 
-                window.WebSocket = function(url, protocols) {
-                    if (!allowedEndpoints.some(e => url.startsWith(e))) {
-                        return new originalWS(url, protocols);
+                window.WebSocket = function(url) {
+                    if (!monitoredEndpoints.some(e => url.startsWith(e))) {
+                        return new OriginalWebSocket(url);
                     }
-                    console.log(\`[🔗] Monitoring \${url}\`);
-                    return new WSHandler(url, protocols).socket;
+                    console.log(\`[🔗] Monitoring WebSocket: \${url}\`);
+                    return new WSMonitor(url).ws;
                 };
-
-                console.log('[🛡️] WebSocket Inspector Active!');
             })();
         `;
-        document.documentElement.appendChild(interceptScript);
+        document.documentElement.appendChild(script);
     };
 
-    // Safe injection with CSP compliance
-    if (document.readyState === 'loading') {
+    // Fix deprecated meta tags
+    const updateMetaTags = () => {
+        const newMeta = document.createElement('meta');
+        newMeta.name = 'mobile-web-app-capable';
+        newMeta.content = 'yes';
+        document.head.appendChild(newMeta);
+    };
+
+    // Initialize with proper sequencing
+    (function init() {
+        applySecurityPolicy();
+        updateMetaTags();
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', installWebSocketHandler);
+        } else {
+            installWebSocketHandler();
+        }
+
+        // Handle external resources
         document.addEventListener('DOMContentLoaded', () => {
-            safeInject();
-            enhanceSecurity();
-        });
-    } else {
-        safeInject();
-        enhanceSecurity();
-    }
-
-    function enhanceSecurity() {
-        // Remove conflicting CSP headers
-        const metaTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
-        metaTags.forEach(tag => tag.remove());
-
-        // Add permissive CSP for extension resources (adjust as needed)
-        const cspMeta = document.createElement('meta');
-        cspMeta.httpEquiv = "Content-Security-Policy";
-        cspMeta.content = [
-            "default-src 'self' agar.io *.agar.io",
-            "connect-src 'self' ws: wss: *.agar.io",
-            "img-src 'self' data: blob: *.gitlab.io i.imgur.com",
-            "script-src 'self' 'unsafe-inline'",
-            "style-src 'self' 'unsafe-inline'",
-            "manifest-src 'self'"
-        ].join('; ');
-        document.head.appendChild(cspMeta);
-    }
-
-    // Fix external resource loading
-    document.addEventListener('DOMContentLoaded', () => {
-        document.querySelectorAll('img').forEach(img => {
-            if (!img.hasAttribute('crossOrigin')) {
+            document.querySelectorAll('img').forEach(img => {
                 img.crossOrigin = 'anonymous';
-            }
+                img.referrerPolicy = 'no-referrer';
+            });
         });
-    });
+    })();
 })();
