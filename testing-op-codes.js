@@ -46,6 +46,13 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             super(url, protocols);
             console.log('[CustomWebSocket] Connecting to:', url);
 
+            // Store global WebSocket reference
+            window.websocket = this;
+
+            this.addEventListener('open', () => {
+                console.log("[CustomWebSocket] ✅ WebSocket Connected!");
+            });
+
             this.addEventListener('message', (event) => {
                 if (event.data instanceof ArrayBuffer) {
                     processBinaryData(event.data);
@@ -55,9 +62,9 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             });
 
             this.addEventListener('close', (event) => {
-                console.warn('[CustomWebSocket] Connection closed:', event);
+                console.warn('[CustomWebSocket] ❌ Connection closed:', event);
                 setTimeout(() => {
-                    console.log('[CustomWebSocket] Attempting to reconnect...');
+                    console.log('[CustomWebSocket] 🔄 Attempting to reconnect...');
                     window.WebSocket = new CustomWebSocket(this.url, this.protocols);
                 }, 1000);
             });
@@ -76,6 +83,11 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     // Function to send a test ping request
     function sendPing() {
+        if (!window.websocket || window.websocket.readyState !== WebSocket.OPEN) {
+            console.warn("⚠ WebSocket is not connected! Waiting...");
+            setTimeout(sendPing, 1000);
+            return;
+        }
         let buffer = new ArrayBuffer(5);
         let view = new DataView(buffer);
         view.setUint8(0, 226);  // OpCode for Ping
@@ -86,12 +98,18 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     // Function to test all opcodes (0-255)
     function testAllOpcodes() {
+        if (!window.websocket || window.websocket.readyState !== WebSocket.OPEN) {
+            console.warn("⚠ WebSocket is not connected! Waiting...");
+            setTimeout(testAllOpcodes, 1000);
+            return;
+        }
+        console.log("📡 Sending test requests for all op codes...");
         for (let i = 0; i < 256; i++) {
             let buffer = new ArrayBuffer(1);
             let view = new DataView(buffer);
             view.setUint8(0, i);
             window.websocket.send(buffer);
-            console.log(`📡 Sent test request for OpCode: ${i}`);
+            console.log(`✅ Sent test request for OpCode: ${i}`);
         }
     }
 
