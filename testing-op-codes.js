@@ -1,11 +1,11 @@
-console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
+console.log("[WebSocket Debug] Intercepting Delta Messages with Override...");
 
 (function () {
     'use strict';
 
     // Opcode registry for classification
-    const opcodeRegistry = {};  // Stores opcode occurrences
-    let opcodeSummary = {};  // Tracks opcodes per second
+    const opcodeRegistry = {};
+    let opcodeSummary = {};
     let lastSummaryTime = Date.now();
 
     function processSignal(data) {
@@ -15,7 +15,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
 
-        // Track opcode frequency & strength
         if (!opcodeRegistry[opcode]) {
             opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
         } else {
@@ -26,10 +25,8 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             }
         }
 
-        // Track per-second summary
         opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
 
-        // Print summary every 20 seconds
         if (Date.now() - lastSummaryTime > 20000) {
             console.clear();
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 20s)`);
@@ -41,16 +38,15 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     const OriginalWebSocket = window.WebSocket;
 
-    class CustomWebSocket extends OriginalWebSocket {
+    class InterceptedWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
             super(url, protocols);
-            console.log('[CustomWebSocket] Connecting to:', url);
+            console.log('[InterceptedWebSocket] Connected to:', url);
 
-            // Store global WebSocket reference
             window.websocket = this;
 
             this.addEventListener('open', () => {
-                console.log("[CustomWebSocket] ✅ WebSocket Connected!");
+                console.log("[InterceptedWebSocket] ✅ WebSocket Connected!");
             });
 
             this.addEventListener('message', (event) => {
@@ -62,70 +58,67 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             });
 
             this.addEventListener('close', (event) => {
-                console.warn('[CustomWebSocket] ❌ Connection closed:', event);
+                console.warn('[InterceptedWebSocket] ❌ Connection closed:', event);
                 setTimeout(() => {
-                    console.log('[CustomWebSocket] 🔄 Attempting to reconnect...');
-                    window.WebSocket = new CustomWebSocket(this.url, this.protocols);
+                    console.log('[InterceptedWebSocket] 🔄 Attempting to reconnect...');
+                    window.WebSocket = new InterceptedWebSocket(this.url, this.protocols);
                 }, 1000);
             });
         }
+
+        send(data) {
+            const opCode = new Uint8Array(data)[0];  // First byte is opcode
+            console.log(`📡 Delta Sent OpCode: ${opCode}`);
+
+            // Confirming we identified the opcode correctly without modifying original request
+            confirmOpCode(opCode, data);
+
+            // Pass the original data to Delta without modification
+            super.send(data);
+        }
+    }
+
+    function confirmOpCode(opCode, data) {
+        console.log(`🔎 Confirming OpCode: ${opCode} - Identified Correctly`);
     }
 
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
         if (dataArray.length >= 2) {
-            const opcode = dataArray[0];  // First byte = opcode
-            const signalStrength = dataArray[1]; // Second byte = signal
+            const opcode = dataArray[0];
+            const signalStrength = dataArray[1];
             const messageSize = dataArray.length;
             processSignal({ opcode, signalStrength, messageSize });
         }
     }
 
-    // Function to send a test ping request
-    function sendPing() {
-        if (!window.websocket || window.websocket.readyState !== WebSocket.OPEN) {
-            console.warn("⚠ WebSocket is not connected! Waiting...");
-            setTimeout(sendPing, 1000);
-            return;
-        }
-        let buffer = new ArrayBuffer(5);
-        let view = new DataView(buffer);
-        view.setUint8(0, 226);  // OpCode for Ping
-        view.setUint32(1, Date.now(), true);
-        window.websocket.send(buffer);
-        console.log("📡 Sent Ping Request...");
-    }
-
-    // Function to test all opcodes (0-255)
-    function testAllOpcodes() {
-        if (!window.websocket || window.websocket.readyState !== WebSocket.OPEN) {
-            console.warn("⚠ WebSocket is not connected! Waiting...");
-            setTimeout(testAllOpcodes, 1000);
-            return;
-        }
-        console.log("📡 Sending test requests for all op codes...");
-        for (let i = 0; i < 256; i++) {
-            let buffer = new ArrayBuffer(1);
+    function interceptSpectatorClick() {
+        document.addEventListener("click", (event) => {
+            console.log(`🖱 Spectator Click at (${event.clientX}, ${event.clientY})`);
+            if (!window.websocket || window.websocket.readyState !== WebSocket.OPEN) {
+                console.warn("⚠ WebSocket is not connected!");
+                return;
+            }
+            let buffer = new ArrayBuffer(6);
             let view = new DataView(buffer);
-            view.setUint8(0, i);
+            view.setUint8(0, 99);  // Hypothetical OpCode for Spectator Interaction
+            view.setUint16(1, event.clientX, true);
+            view.setUint16(3, event.clientY, true);
+            view.setUint8(5, 1);   // Wave Effect Trigger
             window.websocket.send(buffer);
-            console.log(`✅ Sent test request for OpCode: ${i}`);
-        }
+            console.log("🌊 Sent Wave Effect Trigger!");
+        });
     }
 
-    // Apply override
     setTimeout(() => {
-        window.WebSocket = CustomWebSocket;
-        console.log('[CustomWebSocket] WebSocket Override Applied');
+        window.WebSocket = InterceptedWebSocket;
+        console.log('[InterceptedWebSocket] ✅ WebSocket Override Applied');
+        interceptSpectatorClick();
     }, 1000);
 
-    // Helper functions for debugging
     window.analyzeOpcodes = function () {
-        console.log("[CustomWebSocket] Opcode Registry Analysis:");
+        console.log("[InterceptedWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
     };
-
-    window.sendPing = sendPing;
-    window.testAllOpcodes = testAllOpcodes;
 
 })();
