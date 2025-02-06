@@ -1,168 +1,120 @@
-console.log("[WebSocket Debug] Intercepting Delta Messages with OpCode Classification and Spectator Wave Effect...");
+console.log("[Delta UI Mod] Injecting Network-Synced Wave Effect...");
 
 (function () {
     'use strict';
 
-    // Opcode registry for dynamic classification
-    let opcodeRegistry = {};  // Stores all detected op codes dynamically
-    let opcodeSummary = {};   // Tracks opcode frequency in the session
-    let lastSummaryTime = Date.now();
+    // Store wave effect positions
+    let waveEffects = [];
+    let websocket = null; // Global WebSocket reference
 
-    function processSignal(data) {
-        if (!data || data.opcode === undefined) return;
-
-        const opcode = data.opcode;
-        const messageSize = data.messageSize || 0;
-
-        if (!opcodeRegistry[opcode]) {
-            opcodeRegistry[opcode] = {
-                count: 1,
-                messages: [Array.from(new Uint8Array(data.rawData))],
-                functionType: classifyOpCode(opcode, data.rawData)
-            };
-        } else {
-            opcodeRegistry[opcode].count += 1;
-            opcodeRegistry[opcode].messages.push(Array.from(new Uint8Array(data.rawData)));
-        }
-
-        opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
-
-        if (Date.now() - lastSummaryTime > 20000) {
-            console.clear();
-            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 20s)`);
-            console.table(opcodeSummary);
-            opcodeSummary = {};
-            lastSummaryTime = Date.now();
-        }
+    function createWaveEffect(x, y) {
+        waveEffects.push({ x, y, alpha: 1.0, radius: 5 });
     }
 
-    const OriginalWebSocket = window.WebSocket;
+    function renderWaveEffects(ctx) {
+        for (let i = waveEffects.length - 1; i >= 0; i--) {
+            let wave = waveEffects[i];
 
-    class InterceptedWebSocket extends OriginalWebSocket {
-        constructor(url, protocols) {
-            super(url, protocols);
-            console.log('[InterceptedWebSocket] Connected to:', url);
+            ctx.beginPath();
+            ctx.arc(wave.x, wave.y, wave.radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = `rgba(0, 255, 255, ${wave.alpha})`;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.closePath();
 
-            window.websocket = this;
+            // Animate wave
+            wave.radius += 2;
+            wave.alpha -= 0.05;
 
-            this.addEventListener('open', () => {
-                console.log("[InterceptedWebSocket] ✅ WebSocket Connected!");
-            });
-
-            this.addEventListener('message', (event) => {
-                if (event.data instanceof ArrayBuffer) {
-                    processBinaryData(event.data);
-                } else if (event.data instanceof Blob) {
-                    event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
-                }
-            });
-
-            this.addEventListener('close', (event) => {
-                console.warn('[InterceptedWebSocket] ❌ Connection closed:', event);
-                setTimeout(() => {
-                    console.log('[InterceptedWebSocket] 🔄 Attempting to reconnect...');
-                    window.WebSocket = new InterceptedWebSocket(this.url, this.protocols);
-                }, 1000);
-            });
-        }
-
-        send(data) {
-            const opCode = new Uint8Array(data)[0];  // First byte is opcode
-            registerOpCode(opCode, data);
-
-            // Modify spectator clicks to add a wave effect without breaking the game
-            if (opCode === detectedSpectatorClickOpCode()) {
-                console.log("🌊 Adding Wave Effect to Spectator Click!");
-                data = modifyForWaveEffect(data);
+            // Remove faded waves
+            if (wave.alpha <= 0) {
+                waveEffects.splice(i, 1);
             }
-
-            super.send(data);
         }
     }
 
-    function registerOpCode(opCode, data) {
-        if (!opcodeRegistry[opCode]) {
-            opcodeRegistry[opCode] = {
-                count: 1,
-                messages: [Array.from(new Uint8Array(data))],
-                functionType: classifyOpCode(opCode, data)
-            };
-        } else {
-            opcodeRegistry[opCode].count += 1;
-            opcodeRegistry[opCode].messages.push(Array.from(new Uint8Array(data)));
-        }
-        console.log(`🔎 Captured OpCode: ${opCode} - Now stored in Lookup Table`);
+    function modifyDeltaCanvas() {
+        let originalRender = window.requestAnimationFrame;
+        
+        window.requestAnimationFrame = function(callback) {
+            return originalRender.call(window, function(time) {
+                let canvas = document.querySelector("canvas");
+                if (canvas) {
+                    let ctx = canvas.getContext("2d");
+                    renderWaveEffects(ctx);
+                }
+                callback(time);
+            });
+        };
     }
 
-    function classifyOpCode(opCode, data) {
-        if (data.length === 6 && opCode === detectedSpectatorClickOpCode()) {
-            return "Spectator Click (Possible Wave)";
+    function sendWaveEffect(x, y) {
+        if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+            console.warn("⚠ WebSocket is not connected! Cannot send wave effect.");
+            return;
         }
-        if (data.length > 10) {
-            return "Movement / Interaction";
-        }
-        if (data.length === 2) {
-            return "Ping / Network Sync";
-        }
-        return "Unknown Action";
-    }
 
-    function detectedSpectatorClickOpCode() {
-        return 99; // Hypothetical OpCode - Needs confirmation
-    }
-
-    function modifyForWaveEffect(data) {
-        let buffer = new ArrayBuffer(data.byteLength + 2);
+        let buffer = new ArrayBuffer(5);
         let view = new DataView(buffer);
-        let originalData = new Uint8Array(data);
+        view.setUint8(0, 250);  // Custom OpCode for Wave Sync (Choose a free OpCode)
+        view.setUint16(1, x, true);
+        view.setUint16(3, y, true);
 
-        for (let i = 0; i < originalData.length; i++) {
-            view.setUint8(i, originalData[i]);
-        }
-
-        view.setUint8(originalData.length, 200); // Custom wave effect trigger
-        view.setUint8(originalData.length + 1, 1); // Enable
-
-        return buffer;
+        websocket.send(buffer);
+        console.log("🌊 Sent Wave Effect to All Players!");
     }
 
-    function processBinaryData(buffer) {
-        const dataArray = new Uint8Array(buffer);
-        if (dataArray.length >= 2) {
-            const opcode = dataArray[0];
-            processSignal({ opcode, messageSize: dataArray.length, rawData: buffer });
-        }
-    }
-
-    function interceptSpectatorClick() {
+    function interceptSpectatorClicks() {
         document.addEventListener("click", (event) => {
             console.log(`🖱 Spectator Click at (${event.clientX}, ${event.clientY})`);
-            if (!window.websocket || window.websocket.readyState !== WebSocket.OPEN) {
-                console.warn("⚠ WebSocket is not connected!");
-                return;
-            }
-
-            let buffer = new ArrayBuffer(6);
-            let view = new DataView(buffer);
-            view.setUint8(0, detectedSpectatorClickOpCode());  // Use detected spectator click op code
-            view.setUint16(1, event.clientX, true);
-            view.setUint16(3, event.clientY, true);
-            view.setUint8(5, 1);   // Custom wave effect trigger
-
-            window.websocket.send(buffer);
-            console.log("🌊 Sent Wave Effect Trigger!");
+            createWaveEffect(event.clientX, event.clientY);
+            sendWaveEffect(event.clientX, event.clientY);
         });
     }
 
-    setTimeout(() => {
-        window.WebSocket = InterceptedWebSocket;
-        console.log('[InterceptedWebSocket] ✅ WebSocket Override Applied');
-        interceptSpectatorClick();
-    }, 1000);
+    function interceptWebSocket() {
+        const OriginalWebSocket = window.WebSocket;
 
-    window.analyzeOpcodes = function () {
-        console.log("[InterceptedWebSocket] Opcode Registry Analysis:");
-        console.table(opcodeRegistry);
-    };
+        class InterceptedWebSocket extends OriginalWebSocket {
+            constructor(url, protocols) {
+                super(url, protocols);
+                console.log('[InterceptedWebSocket] Connected to:', url);
+                websocket = this;
+
+                this.addEventListener('message', (event) => {
+                    if (event.data instanceof ArrayBuffer) {
+                        processBinaryData(event.data);
+                    } else if (event.data instanceof Blob) {
+                        event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+                    }
+                });
+            }
+        }
+
+        function processBinaryData(buffer) {
+            let dataArray = new Uint8Array(buffer);
+            let opCode = dataArray[0];
+
+            // If we receive a wave effect message, trigger it
+            if (opCode === 250) { // Make sure to use the same OpCode as sendWaveEffect()
+                let x = (dataArray[1] << 8) | dataArray[2];
+                let y = (dataArray[3] << 8) | dataArray[4];
+                console.log(`🌊 Received Wave Effect at (${x}, ${y})`);
+                createWaveEffect(x, y);
+            }
+        }
+
+        setTimeout(() => {
+            window.WebSocket = InterceptedWebSocket;
+            console.log('[InterceptedWebSocket] ✅ WebSocket Override Applied');
+        }, 1000);
+    }
+
+    setTimeout(() => {
+        modifyDeltaCanvas();
+        interceptSpectatorClicks();
+        interceptWebSocket();
+        console.log("[Delta UI Mod] ✅ Wave Effect with Network Sync Injected!");
+    }, 1000);
 
 })();
