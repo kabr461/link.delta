@@ -1,21 +1,20 @@
 // ==UserScript==
-// @name         Agar.io Enhanced with Waves & WebSocket Monitor
+// @name         Agar.io Ultimate Fix & Enhancement
 // @namespace    http://secure-scripts.com
-// @version      6.0
-// @description  Combined WebSocket monitoring and visual wave effects
+// @version      8.0
+// @description  Fixes all errors, adds WebSocket monitoring, and click wave effects
 // @author       Your Name
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
-// @noframes
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
-    // Configuration
+    // ================= Configuration =================
     const CONFIG = {
-        // WebSocket Config
+        // WebSocket Settings
         DEBUG_MODE: true,
         MAX_RETRIES: 3,
         BACKOFF_BASE: 2000,
@@ -23,10 +22,11 @@
             'wss://live.agar.io',
             'wss://mca.agar.io',
             'wss://delta.agar.io',
-            'https://deltav4.gitlab.io'
+            'https://deltav4.gitlab.io',
+            'https://www.gstatic.com'
         ],
 
-        // Wave Effect Config
+        // Wave Effect Settings
         WAVE: {
             MAX_RADIUS: 150,
             WAVE_SPEED: 6,
@@ -36,9 +36,12 @@
         }
     };
 
-    /* ================= WebSocket Interceptor ================= */
+    // ================= Security & CSP =================
     const applySecurityPolicy = () => {
+        // Remove existing CSP headers
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
+
+        // Set comprehensive CSP
         const csp = document.createElement('meta');
         csp.httpEquiv = "Content-Security-Policy";
         csp.content = [
@@ -53,6 +56,7 @@
         document.head.prepend(csp);
     };
 
+    // ================= WebSocket Interceptor =================
     const installWebSocketHandler = () => {
         const script = document.createElement('script');
         script.textContent = `
@@ -100,11 +104,81 @@
                         }
                     }
 
-                    // ... (rest of WebSocket interceptor code from previous version)
+                    processBlob(direction, blob) {
+                        blob.arrayBuffer().then(buf => {
+                            this.logBinary(direction, buf);
+                            this.analyzeProtocol(buf);
+                        }).catch(e => this.logError('Blob Processing', e));
+                    }
+
+                    processBuffer(direction, buffer) {
+                        this.logBinary(direction, buffer);
+                        this.analyzeProtocol(buffer);
+                    }
+
+                    processText(direction, text) {
+                        CONFIG.DEBUG_MODE && console.log(\`[\${direction}] Text:\`, text);
+                    }
+
+                    logBinary(direction, buffer) {
+                        const hexString = Array.from(new Uint8Array(buffer), 
+                            byte => byte.toString(16).padStart(2, '0').toUpperCase()
+                        ).join(' ');
+                        
+                        CONFIG.DEBUG_MODE && console.log(
+                            \`[\${direction}] Binary:\${hexString.slice(0, 60)}\${hexString.length > 60 ? '...' : ''}\`
+                        );
+                    }
+
+                    analyzeProtocol(buffer) {
+                        const view = new DataView(buffer);
+                        if (view.byteLength < 2) return;
+                        
+                        this.messageId = view.getUint8(0);
+                        this.protocolVersion = view.getUint8(1);
+                        
+                        CONFIG.DEBUG_MODE && console.log(
+                            \`[PROTOCOL] ID: 0x\${this.messageId.toString(16).padStart(2, '0')} ` +
+                            \`v\${this.protocolVersion}\`
+                        );
+                    }
+
+                    handleOpen() {
+                        this.retryCount = 0;
+                        CONFIG.DEBUG_MODE && console.log(\`[CONNECTED] \${this.url}\`);
+                    }
+
+                    handleMessage(event) {
+                        this.logData('INCOMING', event.data);
+                    }
+
+                    handleClose(event) {
+                        CONFIG.DEBUG_MODE && console.warn(
+                            \`[CLOSED] \${event.code} - \${event.reason || 'No reason provided'}\`
+                        );
+                        
+                        if (event.code !== 1000 && this.retryCount < MAX_RETRIES) {
+                            const delay = BACKOFF_BASE * Math.pow(2, this.retryCount);
+                            setTimeout(() => this.initSocket(), delay);
+                            this.retryCount++;
+                        }
+                    }
+
+                    handleError(error) {
+                        this.logError('WebSocket', error);
+                    }
+
+                    logError(context, error) {
+                        console.error(\`[ERROR] \${context}:\`, {
+                            name: error.name,
+                            message: error.message,
+                            stack: error.stack
+                        });
+                    }
                 }
 
                 window.WebSocket = function(url) {
-                    return CONFIG.ALLOWED_DOMAINS.some(d => url.startsWith(d)) ?
+                    return ${JSON.stringify(CONFIG.ALLOWED_DOMAINS)}.some(d => url.startsWith(d)) ?
                         (CONFIG.DEBUG_MODE && console.log(\`[INTERCEPTING] \${url}\`),
                         new WSInterceptor(url).ws) :
                         new OriginalWebSocket(url);
@@ -114,22 +188,32 @@
         document.documentElement.appendChild(script);
     };
 
-    /* ================= Wave Effect System ================= */
+    // ================= Wave Effect System =================
+    const initWaveSystem = () => {
+        const canvasObserver = new MutationObserver((mutations) => {
+            const canvas = document.querySelector('canvas');
+            if (canvas) {
+                canvasObserver.disconnect();
+                new WaveEffect(canvas);
+            }
+        });
+
+        canvasObserver.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    };
+
     class WaveEffect {
         constructor(canvas) {
             this.canvas = canvas;
             this.ctx = canvas.getContext('2d');
             this.waves = [];
-            this.originalDraw = this.ctx.draw;
             this.init();
         }
 
         init() {
             this.canvas.addEventListener('click', (e) => this.createWave(e));
-            this.ctx.draw = (...args) => {
-                this.originalDraw.apply(this.ctx, args);
-                this.drawWaves();
-            };
             this.animate();
         }
 
@@ -159,15 +243,11 @@
                     2 * Math.PI
                 );
                 this.ctx.lineWidth = CONFIG.WAVE.LINE_WIDTH;
-                this.ctx.strokeStyle = this.getWaveColor(wave.opacity);
+                this.ctx.strokeStyle = `rgba(${CONFIG.WAVE.STROKE_STYLE.slice(5, -1)}, ${wave.opacity})`;
                 this.ctx.stroke();
 
                 return wave.radius < CONFIG.WAVE.MAX_RADIUS && wave.opacity > 0;
             });
-        }
-
-        getWaveColor(opacity) {
-            return \`rgba(\${CONFIG.WAVE.STROKE_STYLE.slice(5, -1)}, \${opacity})\`;
         }
 
         animate() {
@@ -179,43 +259,15 @@
         }
     }
 
-    /* ================= Main Initialization ================= */
-    const initWaveSystem = () => {
-        const canvasObserver = new MutationObserver((mutations) => {
-            const canvas = document.querySelector('canvas');
-            if (canvas) {
-                canvasObserver.disconnect();
-                new WaveEffect(canvas);
-            }
-        });
-
-        canvasObserver.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    };
-
-    const updateMetaTags = () => {
-        document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.remove();
-        const mobileMeta = document.createElement('meta');
-        mobileMeta.name = 'mobile-web-app-capable';
-        mobileMeta.content = 'yes';
-        document.head.appendChild(mobileMeta);
-    };
-
+    // ================= Main Initialization =================
     (function main() {
         applySecurityPolicy();
-        updateMetaTags();
+        initWaveSystem();
         
-        // Initialize WebSocket interceptor
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                installWebSocketHandler();
-                initWaveSystem();
-            });
+            document.addEventListener('DOMContentLoaded', installWebSocketHandler);
         } else {
             installWebSocketHandler();
-            initWaveSystem();
         }
     })();
 })();
