@@ -1,5 +1,5 @@
 // ----- CSP Warning/Error Filter -----
-// Override console.warn and console.error to ignore messages that mention Content Security Policy or refused script loads.
+// Override console.warn and console.error to hide warnings about the refused gstatic.com script.
 (function() {
   const origWarn = console.warn;
   const origError = console.error;
@@ -144,11 +144,15 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     function InterceptedWebSocket(url, protocols) {
         var ws = new OriginalWebSocket(url, protocols);
         this._ws = ws;
+        // Initialize reconnection attempts.
+        this._reconnectionAttempts = 0;
         console.log("[InterceptedWebSocket] Connected to: " + url);
 
         // Forward the "open" event.
         ws.addEventListener("open", function (e) {
             console.log("[InterceptedWebSocket] ✅ WebSocket Connected!");
+            // Reset reconnection attempts on successful connection.
+            this._reconnectionAttempts = 0;
             if (typeof this.onopen === "function") {
                 this.onopen(e);
             }
@@ -156,7 +160,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
         // Forward the "message" event.
         ws.addEventListener("message", function (event) {
-            // If the data is a Blob, convert it to an ArrayBuffer.
+            // If a Blob is received, convert it to an ArrayBuffer.
             if (event.data instanceof Blob) {
                 event.data.arrayBuffer().then(function (buffer) {
                     processBinaryData(buffer);
@@ -176,21 +180,26 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             }
         }.bind(this));
 
-        // On "close", attempt to reconnect.
+        // On "close", attempt to reconnect with exponential backoff.
         ws.addEventListener("close", function (event) {
             console.warn("[InterceptedWebSocket] ❌ Connection closed:", event);
             if (typeof this.onclose === "function") {
                 this.onclose(event);
             }
+            // Increase reconnection attempts and compute delay (max 30s).
+            this._reconnectionAttempts++;
+            var delay = Math.min(30000, 1000 * Math.pow(2, this._reconnectionAttempts));
             setTimeout(function () {
                 try {
-                    console.log("[InterceptedWebSocket] 🔄 Attempting to reconnect...");
+                    console.log("[InterceptedWebSocket] 🔄 Attempting to reconnect... Delay:", delay, "ms");
                     var newSocket = new InterceptedWebSocket(url, protocols);
+                    // Adopt the new connection.
                     this._ws = newSocket._ws;
+                    this._reconnectionAttempts = newSocket._reconnectionAttempts;
                 } catch (e) {
                     console.error("Error during reconnect:", e);
                 }
-            }.bind(this), 1000);
+            }.bind(this), delay);
         }.bind(this));
 
         // Forward "error" events.
@@ -215,7 +224,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                         : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             var opCode = u8[0];
 
-            // If the message is exactly 8 bytes, it may be a click event.
+            // If the message is exactly 8 bytes, it might be a click event.
             if (((data instanceof ArrayBuffer && data.byteLength === 8) ||
                  (ArrayBuffer.isView(data) && data.byteLength === 8))) {
                 var view = getDataView(data);
@@ -276,7 +285,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     // ----- Extra Action: Team Wave Effect -----
 
-    // sendTeamWaveEffect: Sends an extra message in the protocol format Agar.io expects.
+    // sendTeamWaveEffect: Sends an extra message in the protocol format Agar.io accepts.
     function sendTeamWaveEffect() {
         try {
             if (!window.websocket || window.websocket.readyState !== OriginalWebSocket.OPEN) {
@@ -304,7 +313,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     // ----- Document Click Interception -----
 
-    // interceptSpectatorClick: Triggers the extra wave effect on document clicks.
+    // interceptSpectatorClick: When the user clicks the document, trigger the extra wave effect.
     function interceptSpectatorClick() {
         document.addEventListener("click", function (event) {
             try {
