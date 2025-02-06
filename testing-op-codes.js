@@ -34,7 +34,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         // Every 20 seconds, clear the console and show a summary
         if (Date.now() - lastSummaryTime > 20000) {
             console.clear();
-            console.log([CustomWebSocket] Opcode Frequency Summary (Last 20s));
+            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 20s)`);
             console.table(opcodeSummary);
             opcodeSummary = {};
             lastSummaryTime = Date.now();
@@ -99,7 +99,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             opcodeRegistry[opCode].count += 1;
             opcodeRegistry[opCode].messages.push(Array.from(new Uint8Array(data)));
         }
-        console.log(🔎 Captured OpCode: ${opCode} - Now stored in Lookup Table);
+        console.log(`🔎 Captured OpCode: ${opCode} - Now stored in Lookup Table`);
     }
 
     // Classify the opcode based on the length of its data payload and its value
@@ -142,7 +142,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             view.setUint32(3, teamId, true);  // Team ID in little-endian
 
             window.websocket.send(buffer);
-            console.log(🌊 Sent Team Wave Effect Trigger for Team ID: ${teamId});
+            console.log(`🌊 Sent Team Wave Effect Trigger for Team ID: ${teamId}`);
         }, 500);
     }
 
@@ -158,7 +158,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // Intercept spectator click events and send a message including team ID
     function interceptSpectatorClick() {
         document.addEventListener("click", (event) => {
-            console.log(🖱 Spectator Click at (${event.clientX}, ${event.clientY}));
+            console.log(`🖱 Spectator Click at (${event.clientX}, ${event.clientY})`);
             if (!window.websocket || window.websocket.readyState !== WebSocket.OPEN) {
                 console.warn("⚠ WebSocket is not connected!");
                 return;
@@ -179,7 +179,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
             view.setUint16(6, teamId, true); // Attach team ID
 
             window.websocket.send(buffer);
-            console.log(🖱 Sent Spectator Click Event with Team ID: ${teamId});
+            console.log(`🖱 Sent Spectator Click Event with Team ID: ${teamId}`);
         });
     }
 
