@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Agar.io Ultimate Fix with Waves
+// @name         Agar.io Ultimate Fix Package
 // @namespace    http://secure-scripts.com
 // @version      10.0
-// @description  Complete error resolution with wave effects and WebSocket fixes
+// @description  Complete error resolution with WebSocket & CSP fixes
 // @author       Your Name
 // @match        *://agar.io/*
 // @grant        none
@@ -12,155 +12,102 @@
 (function() {
     'use strict';
 
-    // 1. Enhanced CSP Configuration
+    // 1. Enhanced Security Policy
     const applySecurityPolicy = () => {
         const csp = document.createElement('meta');
         csp.httpEquiv = "Content-Security-Policy";
         csp.content = [
             "default-src 'self' agar.io *.agar.io",
+            "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://deltav4.gitlab.io https://www.gstatic.com",
             "style-src 'self' 'unsafe-inline' https://deltav4.gitlab.io",
-            "script-src 'self' 'unsafe-inline' https://deltav4.gitlab.io https://www.gstatic.com",
             "connect-src 'self' ws: wss: *.agar.io *.miniclippt.com",
             "img-src 'self' data: blob: https://*.gitlab.io i.imgur.com",
             "manifest-src 'self' https://deltav4.gitlab.io",
+            "worker-src 'self' blob:",
             "frame-src https://accounts.google.com",
-            "worker-src 'self' blob:"
+            "font-src 'self' data:"
         ].join('; ');
         document.head.prepend(csp);
     };
 
-    // 2. WebSocket Manager with Fallback
+    // 2. Robust WebSocket Manager
     class WebSocketManager {
         constructor() {
-            this.socket = null;
-            this.retries = 0;
             this.endpoints = [
                 'wss://live.agar.io',
                 'wss://mca.agar.io',
                 'wss://delta.agar.io'
             ];
+            this.socket = null;
+            this.retries = 0;
+            this.maxRetries = 3;
             this.connect();
         }
 
         connect() {
-            const endpoint = this.endpoints[this.retries % this.endpoints.length];
-            try {
-                this.socket = new WebSocket(endpoint);
-                this.setupEventHandlers();
-            } catch (error) {
-                this.handleError(error);
-            }
+            const endpoint = this.endpoints.find(url => {
+                try { return new WebSocket(url); }
+                catch { return false; }
+            });
+
+            if (!endpoint) return;
+
+            this.socket = new WebSocket(endpoint);
+            this.setupEventHandlers();
         }
 
         setupEventHandlers() {
             this.socket.onopen = () => {
-                console.log('[WS] Connected to', this.socket.url);
                 this.retries = 0;
+                console.log('WS Connected:', this.socket.url);
             };
 
-            this.socket.onerror = (error) => {
-                console.error('[WS] Error:', error);
+            this.socket.onerror = (e) => {
+                console.error('WS Error:', e);
                 this.reconnect();
             };
 
-            this.socket.onclose = (event) => {
-                if (event.code !== 1000) this.reconnect();
+            this.socket.onclose = (e) => {
+                if (e.code !== 1000) this.reconnect();
             };
         }
 
         reconnect() {
-            if (this.retries < 3) {
+            if (this.retries < this.maxRetries) {
                 setTimeout(() => {
                     this.retries++;
                     this.connect();
-                }, 2000 * this.retries);
+                }, Math.pow(2, this.retries) * 1000);
             }
         }
-
-        handleError(error) {
-            console.error('[WS] Connection error:', error);
-            this.reconnect();
-        }
     }
 
-    // 3. Wave Effect System
-    class WaveEffect {
-        constructor() {
-            this.canvas = null;
-            this.ctx = null;
-            this.waves = [];
-            this.observeCanvas();
-        }
+    // 3. Dependency Loader
+    const loadDependencies = () => {
+        const loadScript = (src, integrity) => {
+            const script = document.createElement('script');
+            script.src = src;
+            if (integrity) script.integrity = integrity;
+            script.crossOrigin = 'anonymous';
+            document.head.appendChild(script);
+        };
 
-        observeCanvas() {
-            const observer = new MutationObserver(() => {
-                const canvas = document.querySelector('canvas');
-                if (canvas && !this.canvas) {
-                    this.initializeCanvas(canvas);
-                    observer.disconnect();
-                }
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-        }
+        const loadStyle = (href) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            document.head.appendChild(link);
+        };
 
-        initializeCanvas(canvas) {
-            this.canvas = canvas;
-            this.ctx = canvas.getContext('2d');
-            this.setupEventListeners();
-            this.animationLoop();
-        }
+        // Load required resources
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js');
+        loadScript('https://unpkg.com/preact@10.11.3/dist/preact.umd.js');
+        loadStyle('https://deltav4.gitlab.io/v7/main.css');
+    };
 
-        setupEventListeners() {
-            this.canvas.addEventListener('click', (e) => {
-                const rect = this.canvas.getBoundingClientRect();
-                this.createWave(
-                    e.clientX - rect.left,
-                    e.clientY - rect.top
-                );
-            });
-        }
-
-        createWave(x, y) {
-            this.waves.push({
-                x,
-                y,
-                radius: 0,
-                opacity: 1,
-                color: [0, 191, 255, 0.3] // Blue wave
-            });
-        }
-
-        animationLoop() {
-            const animate = () => {
-                this.drawWaves();
-                requestAnimationFrame(animate);
-            };
-            animate();
-        }
-
-        drawWaves() {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.waves = this.waves.filter(wave => {
-                wave.radius += 4;
-                wave.opacity -= 0.02;
-                
-                this.ctx.beginPath();
-                this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
-                this.ctx.strokeStyle = `rgba(${wave.color.join(',')})`;
-                this.ctx.lineWidth = 2;
-                this.ctx.stroke();
-                
-                return wave.radius < 150 && wave.opacity > 0;
-            });
-        }
-    }
-
-    // 4. Main Initialization
-    (function main() {
-        // Apply security policy first
-        applySecurityPolicy();
-
-        // Update deprecated meta tags
+    // 4. Deprecated API Fixes
+    const updateDeprecatedFeatures = () => {
+        // Replace deprecated meta tag
         const oldMeta = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
         if (oldMeta) oldMeta.remove();
         
@@ -169,27 +116,30 @@
         newMeta.content = 'yes';
         document.head.appendChild(newMeta);
 
-        // Initialize systems
-        new WebSocketManager();
-        new WaveEffect();
-
-        // Safe external resource loading
-        const loadResources = () => {
-            const manifest = document.createElement('link');
-            manifest.rel = 'manifest';
-            manifest.href = 'https://deltav4.gitlab.io/v7/manifest.webmanifest';
-            document.head.appendChild(manifest);
-
-            const gstaticScript = document.createElement('script');
-            gstaticScript.src = 'https://www.gstatic.com/_/mss/boq-identity/_/js/k=boq-identity.IdpIFrameHttp.en_US.VL4JSFaL1zk.es5.O/am=DAY/d=1/rs=AOaEmlG4sNaE1qrZLhoZw7_RR3UL0-ecBw/m=base';
-            document.head.appendChild(gstaticScript);
+        // Fix worker creation
+        const originalWorker = window.Worker;
+        window.Worker = function(url, options) {
+            if (url.startsWith('data:')) {
+                const blob = new Blob([url.split(',')[1]], {type: 'application/javascript'});
+                url = URL.createObjectURL(blob);
+            }
+            return new originalWorker(url, options);
         };
+    };
 
-        // Load resources after DOM ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadResources);
-        } else {
-            loadResources();
-        }
+    // 5. Main Initialization
+    (function init() {
+        applySecurityPolicy();
+        updateDeprecatedFeatures();
+        loadDependencies();
+        new WebSocketManager();
+
+        // Safe DOM initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize game components here
+            if (typeof System !== 'undefined') {
+                System.import('game-module').catch(console.error);
+            }
+        });
     })();
 })();
