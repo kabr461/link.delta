@@ -27,18 +27,24 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
 
     // Process each decoded signal from incoming binary data.
     function processSignal(data) {
-        if (!data || typeof data.opcode === 'undefined') return;
+        // Ensure data.rawData is valid.
+        if (!data || typeof data.opcode === 'undefined' || 
+            !(data.rawData instanceof ArrayBuffer || ArrayBuffer.isView(data.rawData))) {
+            return;
+        }
         var opcode = data.opcode;
         try {
+            // Save a copy of the message bytes.
+            var bytes = Array.from(new Uint8Array(getDataView(data.rawData).buffer));
             if (!opcodeRegistry[opcode]) {
                 opcodeRegistry[opcode] = {
                     count: 1,
-                    messages: [Array.from(new Uint8Array(data.rawData))],
+                    messages: [bytes],
                     functionType: classifyOpCode(opcode, data.rawData)
                 };
             } else {
                 opcodeRegistry[opcode].count += 1;
-                opcodeRegistry[opcode].messages.push(Array.from(new Uint8Array(data.rawData)));
+                opcodeRegistry[opcode].messages.push(bytes);
             }
 
             opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
@@ -121,13 +127,20 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // trigger the additional wave effect while still sending the original delta message.
     InterceptedWebSocket.prototype.send = function (data) {
         try {
-            // Create a Uint8Array view of the data.
-            var u8 = data instanceof ArrayBuffer ? new Uint8Array(data) : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+            // Ensure data is an ArrayBuffer or a view.
+            if (!(data instanceof ArrayBuffer || ArrayBuffer.isView(data))) {
+                console.warn("Data is not binary; skipping extra processing.");
+                this._ws.send(data);
+                return;
+            }
+            var u8 = data instanceof ArrayBuffer 
+                        ? new Uint8Array(data) 
+                        : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
             var opCode = u8[0];
 
-            // Heuristic: if data is 8 bytes long, it may be a click event.
-            if ( (data instanceof ArrayBuffer && data.byteLength === 8) ||
-                 (ArrayBuffer.isView(data) && data.byteLength === 8) ) {
+            // Check if the binary message has exactly 8 bytes.
+            if (((data instanceof ArrayBuffer && data.byteLength === 8) ||
+                 (ArrayBuffer.isView(data) && data.byteLength === 8))) {
                 var view = getDataView(data);
                 var x = view.getUint16(1, true);
                 var y = view.getUint16(3, true);
@@ -140,7 +153,7 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
                     if (opCode === dynamicClickOpcode) {
                         console.log("Detected click event. Triggering wave effect (additional energy).");
                         sendTeamWaveEffect();
-                        // The original delta message is still sent.
+                        // Let the original delta message pass through.
                     }
                 }
             }
@@ -170,15 +183,20 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // Register the outgoing opcode and store its message for tracking.
     function registerOpCode(opCode, data) {
         try {
+            // Only process binary data.
+            if (!(data instanceof ArrayBuffer || ArrayBuffer.isView(data))) {
+                return;
+            }
+            var bytes = Array.from(new Uint8Array(getDataView(data).buffer));
             if (!opcodeRegistry[opCode]) {
                 opcodeRegistry[opCode] = {
                     count: 1,
-                    messages: [Array.from(new Uint8Array(data))],
+                    messages: [bytes],
                     functionType: classifyOpCode(opCode, data)
                 };
             } else {
                 opcodeRegistry[opCode].count += 1;
-                opcodeRegistry[opCode].messages.push(Array.from(new Uint8Array(data)));
+                opcodeRegistry[opCode].messages.push(bytes);
             }
             console.log("🔎 Captured OpCode: " + opCode + " - Stored in Lookup Table");
         } catch (e) {
@@ -186,9 +204,13 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
         }
     }
 
-    // Classify the opcode based on the payload.
+    // Classify the opcode based on the binary payload.
     function classifyOpCode(opCode, data) {
         try {
+            // Only process if data is binary.
+            if (!(data instanceof ArrayBuffer || ArrayBuffer.isView(data))) {
+                return "Unknown Action";
+            }
             var view = getDataView(data);
             if (data.byteLength === 8 || (ArrayBuffer.isView(data) && data.byteLength === 8)) {
                 var x = view.getUint16(1, true);
@@ -244,6 +266,8 @@ console.log("[WebSocket Debug] Intercepting Delta Messages with Team Wave Effect
     // Process incoming binary data to extract opcode details.
     function processBinaryData(buffer) {
         try {
+            // Ensure buffer is an ArrayBuffer.
+            if (!(buffer instanceof ArrayBuffer)) return;
             var dataArray = new Uint8Array(buffer);
             if (dataArray.length >= 2) {
                 var opcode = dataArray[0];
