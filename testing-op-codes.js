@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Agar.io Ultimate Fix
+// @name         Agar.io Ultimate Fix Package
 // @namespace    http://secure-scripts.com
-// @version      7.0
-// @description  Combined fixes for all reported errors
+// @version      10.0
+// @description  Complete error resolution with WebSocket & CSP fixes
 // @author       Your Name
 // @match        *://agar.io/*
 // @grant        none
@@ -12,102 +12,134 @@
 (function() {
     'use strict';
 
-    // 1. Fix CSP Policy
+    // 1. Enhanced Security Policy
     const applySecurityPolicy = () => {
         const csp = document.createElement('meta');
         csp.httpEquiv = "Content-Security-Policy";
         csp.content = [
             "default-src 'self' agar.io *.agar.io",
+            "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://deltav4.gitlab.io https://www.gstatic.com",
+            "style-src 'self' 'unsafe-inline' https://deltav4.gitlab.io",
             "connect-src 'self' ws: wss: *.agar.io *.miniclippt.com",
-            "script-src 'self' 'unsafe-inline' https://www.gstatic.com",
             "img-src 'self' data: blob: https://*.gitlab.io i.imgur.com",
-            "manifest-src 'self'",
-            "frame-src https://accounts.google.com"
+            "manifest-src 'self' https://deltav4.gitlab.io",
+            "worker-src 'self' blob:",
+            "frame-src https://accounts.google.com",
+            "font-src 'self' data:"
         ].join('; ');
         document.head.prepend(csp);
     };
 
-    // 2. WebSocket Connection Fix
-    const fixWebSockets = () => {
-        const originalWebSocket = window.WebSocket;
-        
-        window.WebSocket = function(url, protocols) {
-            const validEndpoints = [
+    // 2. Robust WebSocket Manager
+    class WebSocketManager {
+        constructor() {
+            this.endpoints = [
                 'wss://live.agar.io',
                 'wss://mca.agar.io',
-                'wss://web-arenas-live-'
+                'wss://delta.agar.io'
             ];
+            this.socket = null;
+            this.retries = 0;
+            this.maxRetries = 3;
+            this.connect();
+        }
 
-            if (!validEndpoints.some(e => url.includes(e))) {
-                return new originalWebSocket(url, protocols);
-            }
-
-            console.log(`Connecting to secure WebSocket: ${url}`);
-            const socket = new originalWebSocket(url, protocols);
-
-            // Add retry logic
-            let retries = 0;
-            socket.addEventListener('close', (event) => {
-                if (retries < 3 && event.code !== 1000) {
-                    setTimeout(() => {
-                        console.log(`Reconnecting attempt ${retries + 1}`);
-                        window.WebSocket(url, protocols);
-                        retries++;
-                    }, 2000 * (retries + 1));
-                }
+        connect() {
+            const endpoint = this.endpoints.find(url => {
+                try { return new WebSocket(url); }
+                catch { return false; }
             });
 
-            return socket;
+            if (!endpoint) return;
+
+            this.socket = new WebSocket(endpoint);
+            this.setupEventHandlers();
+        }
+
+        setupEventHandlers() {
+            this.socket.onopen = () => {
+                this.retries = 0;
+                console.log('WS Connected:', this.socket.url);
+            };
+
+            this.socket.onerror = (e) => {
+                console.error('WS Error:', e);
+                this.reconnect();
+            };
+
+            this.socket.onclose = (e) => {
+                if (e.code !== 1000) this.reconnect();
+            };
+        }
+
+        reconnect() {
+            if (this.retries < this.maxRetries) {
+                setTimeout(() => {
+                    this.retries++;
+                    this.connect();
+                }, Math.pow(2, this.retries) * 1000);
+            }
+        }
+    }
+
+    // 3. Dependency Loader
+    const loadDependencies = () => {
+        const loadScript = (src, integrity) => {
+            const script = document.createElement('script');
+            script.src = src;
+            if (integrity) script.integrity = integrity;
+            script.crossOrigin = 'anonymous';
+            document.head.appendChild(script);
         };
+
+        const loadStyle = (href) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            document.head.appendChild(link);
+        };
+
+        // Load required resources
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js');
+        loadScript('https://unpkg.com/preact@10.11.3/dist/preact.umd.js');
+        loadStyle('https://deltav4.gitlab.io/v7/main.css');
     };
 
-    // 3. Fix Deprecated APIs
-    const updateMetaTags = () => {
-        // Remove old meta tag
+    // 4. Deprecated API Fixes
+    const updateDeprecatedFeatures = () => {
+        // Replace deprecated meta tag
         const oldMeta = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
         if (oldMeta) oldMeta.remove();
-
-        // Add new meta tag
+        
         const newMeta = document.createElement('meta');
         newMeta.name = 'mobile-web-app-capable';
         newMeta.content = 'yes';
         document.head.appendChild(newMeta);
-    };
 
-    // 4. Safe Script Loading
-    const loadScripts = () => {
-        const scriptsToLoad = [
-            'https://www.gstatic.com/_/mss/boq-identity/_/js/k=boq-identity.IdpIFrameHttp.en_US.VL4JSFaL1zk.es5.O/am=DAY/d=1/rs=AOaEmlG4sNaE1qrZLhoZw7_RR3UL0-ecBw/m=base'
-        ];
-
-        scriptsToLoad.forEach(src => {
-            const script = document.createElement('script');
-            script.src = src;
-            script.async = true;
-            document.head.appendChild(script);
-        });
+        // Fix worker creation
+        const originalWorker = window.Worker;
+        window.Worker = function(url, options) {
+            if (url.startsWith('data:')) {
+                const blob = new Blob([url.split(',')[1]], {type: 'application/javascript'});
+                url = URL.createObjectURL(blob);
+            }
+            return new originalWorker(url, options);
+        };
     };
 
     // 5. Main Initialization
     (function init() {
         applySecurityPolicy();
-        updateMetaTags();
-        fixWebSockets();
-        loadScripts();
+        updateDeprecatedFeatures();
+        loadDependencies();
+        new WebSocketManager();
 
-        // Add error handling for XMLHttpRequest
-        const originalSend = XMLHttpRequest.prototype.send;
-        XMLHttpRequest.prototype.send = function(body) {
-            this.addEventListener('error', handleXHRError);
-            return originalSend.call(this, body);
-        };
-
-        function handleXHRError(event) {
-            console.error('XHR Error:', {
-                status: this.status,
-                responseURL: this.responseURL,
-                responseText: this.responseText
-            });
-        }
+        // Safe DOM initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize game components here
+            if (typeof System !== 'undefined') {
+                System.import('game-module').catch(console.error);
+            }
+        });
     })();
 })();
