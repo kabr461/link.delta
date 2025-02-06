@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Agar.io Ultimate Fix with Waves
 // @namespace    http://secure-scripts.com
-// @version      9.0
-// @description  Complete error resolution with team wave effects
+// @version      10.0
+// @description  Complete error resolution with wave effects and WebSocket fixes
 // @author       Your Name
 // @match        *://agar.io/*
 // @grant        none
@@ -12,7 +12,7 @@
 (function() {
     'use strict';
 
-    // 1. Security Policy Configuration
+    // 1. Enhanced CSP Configuration
     const applySecurityPolicy = () => {
         const csp = document.createElement('meta');
         csp.httpEquiv = "Content-Security-Policy";
@@ -23,22 +23,29 @@
             "connect-src 'self' ws: wss: *.agar.io *.miniclippt.com",
             "img-src 'self' data: blob: https://*.gitlab.io i.imgur.com",
             "manifest-src 'self' https://deltav4.gitlab.io",
-            "frame-src https://accounts.google.com"
+            "frame-src https://accounts.google.com",
+            "worker-src 'self' blob:"
         ].join('; ');
         document.head.prepend(csp);
     };
 
-    // 2. WebSocket Manager with Error Handling
-    class SecureWebSocket {
+    // 2. WebSocket Manager with Fallback
+    class WebSocketManager {
         constructor() {
             this.socket = null;
             this.retries = 0;
-            this.init();
+            this.endpoints = [
+                'wss://live.agar.io',
+                'wss://mca.agar.io',
+                'wss://delta.agar.io'
+            ];
+            this.connect();
         }
 
-        init() {
+        connect() {
+            const endpoint = this.endpoints[this.retries % this.endpoints.length];
             try {
-                this.socket = new WebSocket('wss://live.agar.io');
+                this.socket = new WebSocket(endpoint);
                 this.setupEventHandlers();
             } catch (error) {
                 this.handleError(error);
@@ -47,12 +54,12 @@
 
         setupEventHandlers() {
             this.socket.onopen = () => {
-                console.log('WebSocket connection established');
+                console.log('[WS] Connected to', this.socket.url);
                 this.retries = 0;
             };
 
             this.socket.onerror = (error) => {
-                console.error('WebSocket error:', error);
+                console.error('[WS] Error:', error);
                 this.reconnect();
             };
 
@@ -65,19 +72,19 @@
             if (this.retries < 3) {
                 setTimeout(() => {
                     this.retries++;
-                    this.init();
+                    this.connect();
                 }, 2000 * this.retries);
             }
         }
 
         handleError(error) {
-            console.error('Connection error:', error);
+            console.error('[WS] Connection error:', error);
             this.reconnect();
         }
     }
 
     // 3. Wave Effect System
-    class WaveGenerator {
+    class WaveEffect {
         constructor() {
             this.canvas = null;
             this.ctx = null;
@@ -119,7 +126,7 @@
                 y,
                 radius: 0,
                 opacity: 1,
-                color: [0, 191, 255, 0.3]
+                color: [0, 191, 255, 0.3] // Blue wave
             });
         }
 
@@ -163,8 +170,8 @@
         document.head.appendChild(newMeta);
 
         // Initialize systems
-        new SecureWebSocket();
-        new WaveGenerator();
+        new WebSocketManager();
+        new WaveEffect();
 
         // Safe external resource loading
         const loadResources = () => {
