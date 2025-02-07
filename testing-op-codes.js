@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Agar.io Ultimate Fix Package v12
+// @name         Agar.io Ultimate Fix Package v13
 // @namespace    http://secure-scripts.com
-// @version      12.0
+// @version      13.0
 // @description  Complete CSP, WebSocket, and dependency fixes
 // @author       Your Name
 // @match        *://agar.io/*
@@ -21,15 +21,42 @@
         const csp = document.createElement('meta');
         csp.httpEquiv = "Content-Security-Policy";
         csp.content = [
+            // Base directives
             "default-src 'self' agar.io *.agar.io",
+            
+            // Script sources
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'",
-            "   https://deltav4.gitlab.io https://www.gstatic.com https://cdnjs.cloudflare.com/ajax/libs/",
-            "   https://unpkg.com/ https://cdn.jsdelivr.net/",
-            "style-src 'self' 'unsafe-inline' https://deltav4.gitlab.io",
-            "connect-src 'self' ws: wss: *://*.agar.io *://*.miniclippt.com https://deltav4.gitlab.io",
-            "img-src 'self' data: blob: https://*.gitlab.io i.imgur.com https://db.onlinewebfonts.com",
-            "font-src 'self' data: https://db.onlinewebfonts.com",
-            "media-src 'self' https://deltav4.gitlab.io https://freesound.org",
+            "   https://deltav4.gitlab.io",
+            "   https://www.gstatic.com",
+            "   https://cdnjs.cloudflare.com",
+            "   https://unpkg.com",
+            "   https://cdn.jsdelivr.net",
+            
+            // Style sources
+            "style-src 'self' 'unsafe-inline'",
+            "   https://deltav4.gitlab.io",
+            
+            // Connection sources
+            "connect-src 'self'",
+            "   ws://*.agar.io wss://*.agar.io",
+            "   ws://*.miniclippt.com wss://*.miniclippt.com",
+            "   https://deltav4.gitlab.io",
+            
+            // Media sources
+            "media-src 'self'",
+            "   https://deltav4.gitlab.io",
+            "   https://freesound.org",
+            
+            // Font sources
+            "font-src 'self' data:",
+            "   https://db.onlinewebfonts.com",
+            
+            // Image sources
+            "img-src 'self' data: blob:",
+            "   https://*.gitlab.io",
+            "   https://i.imgur.com",
+            
+            // Other directives
             "manifest-src 'self' https://deltav4.gitlab.io",
             "worker-src 'self' blob:",
             "frame-src https://accounts.google.com"
@@ -86,6 +113,8 @@
                     console.log(`Reconnection attempt ${this.retryCount}`);
                     this.connect();
                 }, delay);
+            } else {
+                console.error('Max reconnection attempts reached');
             }
         }
 
@@ -131,6 +160,12 @@
         ['button-hover-1.wav', 'button-click-1.wav'].forEach(file => {
             new Audio(`https://deltav4.gitlab.io/v7/assets/${file}`).load();
         });
+
+        // Image preloading
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = "https://i.imgur.com/7cugADY.png";
+        img.referrerPolicy = "no-referrer";
     };
 
     // 5. Main Initialization
