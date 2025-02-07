@@ -101,15 +101,14 @@
     
     // TODO: Replace these placeholders with your real Firebase config
     const firebaseConfig = {
-  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-  authDomain: "agario-bb5ea.firebaseapp.com",
-  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-  projectId: "agario-bb5ea",
-  storageBucket: "agario-bb5ea.firebasestorage.app",
-  messagingSenderId: "306389211380",
-  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-  measurementId: "G-5NTSETJHM9"
-};
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
     
     function initializeFirebase() {
         if (!firebase.apps.length) {
@@ -360,21 +359,23 @@
     
     const { listContainer: spectatorListContainer } = createSpectatorUI();
     
-    // 8.2. Example function that returns "real" links for the two known spectators.
-    // In a real scenario, you'd dynamically read from Delta's actual data structures.
+    // 8.2. Use Delta-specific spectator data
     function getDeltaSpectators() {
-        // Replace with real logic that fetches from window.delta, or websockets, etc.
-        // Here, we use 2 valid Imgur URLs for demonstration.
+        // If your Delta system exposes spectator data via a global variable (e.g. window.delta.spectators),
+        // then use it. Otherwise, fall back to Delta-themed placeholder data.
+        if (window.delta && window.delta.spectators) {
+            return window.delta.spectators;
+        }
         return [
             {
-                name: "naze",
-                skinUrl: "https://i.imgur.com/2HvuJiY.png", // Real Imgur link
-                waveCount: 4
+                name: "DeltaAce",
+                skinUrl: "https://i.imgur.com/YourDeltaSkin1.png", // Replace with your Delta skin image URL
+                waveCount: 5
             },
             {
-                name: "Hook",
-                skinUrl: "https://i.imgur.com/L4WMSiH.png", // Real Imgur link
-                waveCount: 1
+                name: "DeltaChamp",
+                skinUrl: "https://i.imgur.com/YourDeltaSkin2.png", // Replace with your Delta skin image URL
+                waveCount: 3
             }
         ];
     }
