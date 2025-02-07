@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Agar.io Enhanced with Click Debugging & Wave Effects
 // @namespace    http://secure-scripts.com
-// @version      6.4
+// @version      6.6
 // @description  Click Debugging, Wave Effects, WebSocket Monitoring for Agar.io
 // @author       Your Name
 // @match        *://agar.io/*
@@ -13,19 +13,82 @@
 (function () {
     'use strict';
 
-    /** 🔄 Wave Configuration **/
+    console.log("🚀 [Agar.io Enhanced] Script loaded successfully.");
+
+    /** ✅ WebSocket Monitoring & Auto-Reconnect **/
+    function installWebSocketHandler() {
+        console.log("🔍 [WebSocket Monitor] Initializing...");
+        
+        const script = document.createElement('script');
+        script.textContent = `(${(() => {
+            const OriginalWebSocket = window.WebSocket;
+            
+            class WSInterceptor {
+                constructor(url) {
+                    this.url = url;
+                    this.retryCount = 0;
+                    console.log("🔗 [WS] Attempting connection to:", url);
+                    this.initSocket();
+                }
+
+                initSocket() {
+                    this.ws = new OriginalWebSocket(this.url);
+                    this.bindEvents();
+                }
+
+                bindEvents() {
+                    this.ws.addEventListener('open', () => {
+                        console.log("✅ [WS] Connected to:", this.url);
+                        this.retryCount = 0;
+                    });
+
+                    this.ws.addEventListener('message', event => {
+                        console.log("📩 [WS] Message received:", event.data);
+                    });
+
+                    this.ws.addEventListener('close', () => {
+                        console.log("❌ [WS] Connection closed. Retrying...");
+                        this.handleClose();
+                    });
+                }
+
+                handleClose() {
+                    if (this.retryCount < 5) {
+                        setTimeout(() => {
+                            this.retryCount++;
+                            console.log(`♻️ [WS] Reconnecting... Attempt ${this.retryCount}/5`);
+                            this.initSocket();
+                        }, 2000 * this.retryCount);
+                    } else {
+                        console.error("🚫 [WS] Max reconnection attempts reached.");
+                    }
+                }
+            }
+
+            window.WebSocket = function (url) {
+                return new WSInterceptor(url).ws;
+            };
+        }).toString()})();`;
+
+        document.documentElement.appendChild(script);
+        console.log("✅ [WebSocket Monitor] Installed successfully.");
+    }
+
+    /** 🎨 Wave Configuration **/
     const WAVE_CONFIG = {
-        MAX_RADIUS: 120,
-        WAVE_SPEED: 3,
-        LINE_WIDTH: 2,
-        STROKE_STYLE: 'rgba(0, 200, 255, 0.5)',
-        FADE_RATE: 0.02
+        MAX_RADIUS: 150,
+        WAVE_SPEED: 4,
+        LINE_WIDTH: 3,
+        STROKE_STYLE: 'rgba(0, 200, 255, 0.6)',
+        FADE_RATE: 0.015
     };
 
     let overlayCanvas, ctx, waves = [];
 
     /** ✅ Ensures Click Detection is Working **/
     function setupWaveEffect() {
+        console.log("🔍 [Wave System] Checking for overlay...");
+
         if (document.getElementById('wave-overlay')) {
             console.log("✅ [Wave System] Overlay canvas already exists.");
             return;
@@ -117,4 +180,9 @@
 
     observer.observe(document.body, { childList: true, subtree: true });
 
+    /** ✅ Main Execution **/
+    (function main() {
+        console.log("🚀 [Agar.io Enhanced] Starting...");
+        installWebSocketHandler();
+    })();
 })();
