@@ -16,8 +16,13 @@
      ***************************************************************/
     const removeCSPMetaTags = () => {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
-            if (tag.parentNode) {
-                tag.parentNode.removeChild(tag);
+            try {
+                // Only remove if the tag is still attached to its parent.
+                if (tag.parentNode && tag.parentNode.contains(tag)) {
+                    tag.parentNode.removeChild(tag);
+                }
+            } catch (e) {
+                console.error("Error removing CSP meta tag:", e);
             }
         });
     };
@@ -27,10 +32,17 @@
     const cspObserver = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
-                if (node.tagName === 'META' &&
-                    node.getAttribute('http-equiv') === 'Content-Security-Policy' &&
-                    node.parentNode) {
-                    node.parentNode.removeChild(node);
+                // Ensure the node is an element and has the correct tagName.
+                if (node.nodeType === Node.ELEMENT_NODE &&
+                    node.tagName === 'META' &&
+                    node.getAttribute('http-equiv') === 'Content-Security-Policy') {
+                    try {
+                        if (node.parentNode && node.parentNode.contains(node)) {
+                            node.parentNode.removeChild(node);
+                        }
+                    } catch (e) {
+                        console.error("Error in MutationObserver removing CSP meta tag:", e);
+                    }
                 }
             });
         });
