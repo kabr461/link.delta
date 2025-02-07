@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Spectator Window (Creative Version) for Agar.io
+// @name         Delta Spectator Window (Creative Cinematic Version) for Agar.io
 // @namespace    http://your-namespace-here.com
 // @version      1.0
-// @description  Shows a live-updating spectator window with names, avatars, wave counts, and a CMD Chat toggle. Click a name to copy it or an image to copy its URL.
+// @description  Displays a live spectator window with names, avatars, wave counts, and a CMD Chat toggle. Clicking a name or image copies details to the clipboard. (Dummy data is used for simulation.)
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-end
@@ -11,9 +11,9 @@
 (function() {
     'use strict';
 
-    /********************* Optional: Relax CSP ************************
-     * (Note: Userscripts cannot override server-sent CSP headers.)
-     *******************************************************************/
+    /***************** Optional: Relax CSP (Local Only) *****************
+     * Note: Userscripts cannot override server-sent CSP headers.
+     *********************************************************************/
     function removeCSPMetaTags() {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
             tag.remove();
@@ -21,10 +21,10 @@
     }
     removeCSPMetaTags();
 
-    /********************* Create the Spectator Panel CSS *********************/
+    /***************** Create Spectator Panel CSS *****************/
     const style = document.createElement('style');
     style.textContent = `
-    /* Container style for the spectator window */
+    /* Container for the spectator window */
     #delta-spectator-panel {
         position: fixed;
         top: 10px;
@@ -83,7 +83,7 @@
     `;
     document.head.appendChild(style);
 
-    /********************* Create the Spectator Panel *********************/
+    /***************** Create the Spectator Panel *****************/
     const panel = document.createElement('div');
     panel.id = 'delta-spectator-panel';
     panel.innerHTML = `
@@ -101,18 +101,13 @@
     const spectatorList = document.getElementById('spectator-list');
     const cmdChatCheckbox = document.getElementById('cmd-chat-checkbox');
 
-    // When the CMD Chat toggle changes, log its state.
+    // Log CMD Chat toggle state changes.
     cmdChatCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            console.log("CMD Chat enabled");
-        } else {
-            console.log("CMD Chat disabled");
-        }
+        console.log("CMD Chat " + (this.checked ? "enabled" : "disabled"));
     });
 
-    /********************* Utility: Copy Text to Clipboard *********************/
+    /***************** Utility: Copy Text to Clipboard *****************/
     function copyToClipboard(text) {
-        // Use the Clipboard API if available
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(text).then(() => {
                 console.log(`Copied to clipboard: ${text}`);
@@ -120,10 +115,9 @@
                 console.error('Clipboard write failed: ', err);
             });
         } else {
-            // Fallback for older browsers
             const textArea = document.createElement("textarea");
             textArea.value = text;
-            textArea.style.position = "fixed"; // Avoid scrolling to bottom
+            textArea.style.position = "fixed";
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
@@ -137,68 +131,72 @@
         }
     }
 
-    /********************* Simulate Spectator Data *************************
-     * In a real implementation, you'd fetch this data from Delta.
-     *********************************************************************/
+    /***************** Simulated Spectator Data *****************
+     * In a real implementation, fetch live data from Delta.
+     ***********************************************************/
     function getSpectatorData() {
-        // Dummy data simulating Delta players
+        // Using dummyimage.com instead of via.placeholder.com to avoid DNS errors.
         const dummySpectators = [
-            { name: "PlayerOne", skin: "https://via.placeholder.com/40/FF0000/FFFFFF?text=P1", waves: Math.floor(Math.random() * 10) },
-            { name: "PlayerTwo", skin: "https://via.placeholder.com/40/00FF00/FFFFFF?text=P2", waves: Math.floor(Math.random() * 10) },
-            { name: "PlayerThree", skin: "https://via.placeholder.com/40/0000FF/FFFFFF?text=P3", waves: Math.floor(Math.random() * 10) },
-            { name: "PlayerFour", skin: "https://via.placeholder.com/40/FFFF00/FFFFFF?text=P4", waves: Math.floor(Math.random() * 10) }
+            { name: "PlayerOne", skin: "https://dummyimage.com/40x40/FF0000/FFFFFF.png&text=P1", waves: Math.floor(Math.random() * 10) },
+            { name: "PlayerTwo", skin: "https://dummyimage.com/40x40/00FF00/FFFFFF.png&text=P2", waves: Math.floor(Math.random() * 10) },
+            { name: "PlayerThree", skin: "https://dummyimage.com/40x40/0000FF/FFFFFF.png&text=P3", waves: Math.floor(Math.random() * 10) },
+            { name: "PlayerFour", skin: "https://dummyimage.com/40x40/FFFF00/FFFFFF.png&text=P4", waves: Math.floor(Math.random() * 10) }
         ];
-        // Occasionally simulate a new player joining
+        // Occasionally simulate a new player joining with a random color.
         if (Math.random() < 0.3) {
+            const randomColor = Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0').toUpperCase();
             dummySpectators.push({
                 name: "Player" + Math.floor(Math.random() * 100),
-                skin: "https://via.placeholder.com/40/" + Math.floor(Math.random() * 16777215).toString(16) + "/FFFFFF?text=New",
+                skin: `https://dummyimage.com/40x40/${randomColor}/FFFFFF.png&text=New`,
                 waves: Math.floor(Math.random() * 10)
             });
         }
         return dummySpectators;
     }
 
-    /********************* Update Spectator List UI ************************/
+    /***************** Update Spectator List UI *****************/
     function updateSpectatorList() {
         const spectators = getSpectatorData();
-        spectatorList.innerHTML = ""; // Clear current list
+        spectatorList.innerHTML = "";
         spectators.forEach(spectator => {
             const item = document.createElement('div');
             item.className = 'spectator-item';
-            // Create avatar image element
+            // Create avatar image element.
             const img = document.createElement('img');
             img.src = spectator.skin;
-            // Clicking on the avatar copies the skin URL
             img.addEventListener('click', (e) => {
                 e.stopPropagation();
                 copyToClipboard(spectator.skin);
             });
-            // Create name element
+            // Create name element.
             const nameDiv = document.createElement('div');
             nameDiv.className = 'spectator-name';
             nameDiv.textContent = spectator.name;
-            // Clicking on the name copies the player's name
             nameDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
                 copyToClipboard(spectator.name);
             });
-            // Create wave count element
+            // Create wave count element.
             const waveCount = document.createElement('div');
             waveCount.className = 'spectator-wave';
             waveCount.textContent = spectator.waves;
-            // Append all parts to the spectator item
+            // Append parts to the spectator item.
             item.appendChild(img);
             item.appendChild(nameDiv);
             item.appendChild(waveCount);
             spectatorList.appendChild(item);
         });
     }
-
-    // Refresh the spectator list every 5 seconds
     setInterval(updateSpectatorList, 5000);
-    updateSpectatorList(); // Initial population
+    updateSpectatorList();
 
     console.log("Delta spectator window initialized.");
 
+    /***************** (Optional) Firebase Integration for Team Features *****************
+     * In this example, we simulate team features; you would replace this
+     * section with live Firebase integration.
+     * For this demonstration, we'll omit Firebase to focus on the spectator window.
+     *****************************************************************************************/
+
+    /***************** End of Spectator Window Code *****************/
 })();
