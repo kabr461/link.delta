@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Team Help & Wave Broadcast Mod for Agar.io (with Logging)
+// @name         Delta Team Help & Wave Broadcast Mod for Agar.io (Firebase)
 // @namespace    http://your-namespace-here.com
-// @version      1.1
-// @description  Opens local restrictions, adds a team-shared wave effect on canvas, and lets team members broadcast help requests (press "H"). Logs messages in the console when waves are triggered. (Experimental & insecure!)
+// @version      1.0
+// @description  Relaxes local restrictions, attaches a team-shared wave effect and help request feature via Firebase Realtime Database so every team member sees when someone clicks or asks for help. (Experimental & insecure!)
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -23,8 +23,8 @@
     // Remove current CSP meta tags immediately.
     removeCSPMetaTags();
 
-    // Use a MutationObserver to remove any new CSP tags.
-    const cspObserver = new MutationObserver((mutations) => {
+    // Use a MutationObserver to remove any new CSP meta tags.
+    const cspObserver = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
                 if (node.tagName === 'META' && node.getAttribute('http-equiv') === 'Content-Security-Policy') {
@@ -35,7 +35,7 @@
     });
     cspObserver.observe(document.documentElement, { childList: true, subtree: true });
 
-    // Insert an extremely permissive CSP meta tag into the <head> when available.
+    // Insert an extremely permissive CSP meta tag when <head> is available.
     const insertPermissiveCSP = () => {
         if (document.head) {
             removeCSPMetaTags();
@@ -83,7 +83,76 @@
     }
 
     /***************************************************************
-     * 3. Set Up the Click-Triggered Wave Effect with Broadcast & Logging
+     * 3. Load Firebase SDK (v8) Dynamically and Initialize
+     ***************************************************************/
+    // Utility: Load external scripts.
+    function loadScript(src, onload) {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = onload;
+        document.head.appendChild(script);
+    }
+
+    // Load Firebase App and Firebase Database scripts sequentially.
+    loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js", () => {
+        loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
+    });
+
+    // Replace with your Firebase project configuration.
+    const firebaseConfig = {
+    apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
+    authDomain: "agario-bb5ea.firebaseapp.com",
+    databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
+    projectId: "agario-bb5ea",
+    storageBucket: "agario-bb5ea.firebasestorage.app",
+    messagingSenderId: "306389211380",
+    appId: "1:306389211380:web:3c1eb559078b05734be6a1",
+    measurementId: "G-5NTSETJHM9"
+  };
+
+    function initializeFirebase() {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        console.log("Firebase initialized.");
+        // Listen for team messages.
+        listenForTeamMessages();
+    }
+
+    /***************************************************************
+     * 4. Firebase Realtime Database Integration for Team Broadcast
+     ***************************************************************/
+    // All team messages will be stored under this node.
+    let teamMessagesRef = null;
+    function listenForTeamMessages() {
+        teamMessagesRef = firebase.database().ref('team_messages');
+        // Listen for new messages.
+        teamMessagesRef.on('child_added', snapshot => {
+            const data = snapshot.val();
+            // Process wave messages.
+            if (data.type === 'wave') {
+                console.log("Received wave broadcast from teammate:", data);
+                if (window.waveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
+                    window.waveRenderer.createWave(data.x, data.y);
+                }
+            }
+            // Process help messages.
+            else if (data.type === 'help') {
+                console.log("Received help request:", data.message);
+                showHelpMessage(data.message || "A team member is asking for help!");
+            }
+        });
+    }
+
+    // Broadcast a team message by pushing to Firebase.
+    function broadcastTeamMessage(messageObj) {
+        if (teamMessagesRef) {
+            teamMessagesRef.push(messageObj);
+        }
+    }
+
+    /***************************************************************
+     * 5. Set Up the Click-Triggered Wave Effect with Broadcast & Console Logging
      ***************************************************************/
     const CONFIG = {
         WAVE: {
@@ -92,12 +161,10 @@
             WIDTH: 3,          // Stroke width of the wave circle.
             COLOR: 'rgba(100, 200, 255, 0.4)',  // Base color; the "0.4" will be replaced with dynamic opacity.
             FADE: 0.02         // How fast the wave fades.
-        },
-        // Replace with your working WebSocket server URL.
-        WS_SERVER: 'wss://your-wave-server.example.com'
+        }
     };
 
-    // WaveRenderer: draws and animates waves on the canvas.
+    // WaveRenderer draws and animates waves on the canvas.
     class WaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -116,7 +183,7 @@
                 };
                 console.log("Local wave triggered at:", waveData);
                 this.createWave(waveData.x, waveData.y);
-                broadcastWave(waveData);  // Send to teammates.
+                broadcastTeamMessage({ type: 'wave', x: waveData.x, y: waveData.y });
             });
             this.startAnimation();
         }
@@ -152,56 +219,8 @@
         }
     }
 
-    // --- WebSocket Broadcast Integration for Waves and Help ---
-    let waveSocket;
-    const initWaveSocket = () => {
-        try {
-            waveSocket = new WebSocket(CONFIG.WS_SERVER);
-            waveSocket.onopen = () => {
-                console.log("Wave broadcast socket connected.");
-            };
-            waveSocket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    // Handle wave events.
-                    if (data.type === 'wave') {
-                        console.log("Received wave broadcast from teammate:", data);
-                        if (window.waveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
-                            window.waveRenderer.createWave(data.x, data.y);
-                        }
-                    }
-                    // Handle help events.
-                    else if (data.type === 'help') {
-                        console.log("Received help request:", data.message);
-                        showHelpMessage(data.message || "A team member is asking for help!");
-                    }
-                } catch (e) {
-                    console.error("Error parsing broadcast message:", e);
-                }
-            };
-            waveSocket.onerror = (err) => {
-                console.error("Wave socket error:", err);
-            };
-            waveSocket.onclose = () => {
-                console.warn("Wave socket closed. Reconnecting in 5 seconds...");
-                setTimeout(initWaveSocket, 5000);
-            };
-        } catch (e) {
-            console.error("Failed to initialize wave WebSocket:", e);
-        }
-    };
-    initWaveSocket();
-
-    // Function to broadcast a wave event.
-    const broadcastWave = (data) => {
-        if (waveSocket && waveSocket.readyState === WebSocket.OPEN) {
-            const message = { type: 'wave', x: data.x, y: data.y };
-            waveSocket.send(JSON.stringify(message));
-        }
-    };
-
     /***************************************************************
-     * 4. Team Help Broadcast Functionality
+     * 6. Team Help Broadcast Functionality
      ***************************************************************/
     // Create an overlay element for displaying help messages.
     const createHelpOverlay = () => {
@@ -221,7 +240,7 @@
     };
     const helpOverlay = createHelpOverlay();
 
-    // Function to display a help message on-screen.
+    // Display a help message on-screen.
     const showHelpMessage = (msg) => {
         helpOverlay.innerText = msg;
         helpOverlay.style.display = 'block';
@@ -230,24 +249,22 @@
         }, 5000);
     };
 
-    // Function to broadcast a help request to teammates.
+    // Broadcast a help request to teammates.
     const broadcastHelp = (message) => {
-        if (waveSocket && waveSocket.readyState === WebSocket.OPEN) {
-            const msg = { type: 'help', message: message };
-            waveSocket.send(JSON.stringify(msg));
-        }
+        broadcastTeamMessage({ type: 'help', message: message });
     };
 
-    // Listen for keydown events—when a team member presses "H", send a help request.
+    // Listen for keydown events—press "H" to broadcast help.
     document.addEventListener('keydown', (e) => {
         if (e.key.toLowerCase() === 'h') {
             broadcastHelp("Help needed from a team member!");
             showHelpMessage("You requested help!");
+            console.log("Help broadcast sent.");
         }
     });
 
     /***************************************************************
-     * 5. Attach the Wave Effect to the Game Canvas
+     * 7. Attach the Wave Effect to the Game Canvas
      ***************************************************************/
     const attachWaveEffect = () => {
         const canvas = document.querySelector('canvas');
@@ -265,7 +282,5 @@
         attachWaveEffect();
     }
 
-    console.log("Delta script modifications, team wave effect, help broadcast, and console logging setup attempted.");
-
-    
+    console.log("Delta script modifications, team wave effect, help broadcast, and Firebase integration setup attempted.");
 })();
