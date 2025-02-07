@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Team Help & Wave Broadcast Mod for Agar.io
+// @name         Delta Team Help & Wave Broadcast Mod for Agar.io (with Logging)
 // @namespace    http://your-namespace-here.com
-// @version      1.0
-// @description  Opens local restrictions, adds a team-shared wave effect on canvas, and lets team members broadcast help requests (press "H") so everyone sees that someone needs help. (Experimental & insecure!)
+// @version      1.1
+// @description  Opens local restrictions, adds a team-shared wave effect on canvas, and lets team members broadcast help requests (press "H"). Logs messages in the console when waves are triggered. (Experimental & insecure!)
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -83,7 +83,7 @@
     }
 
     /***************************************************************
-     * 3. Set Up the Click-Triggered Wave Effect with Broadcast
+     * 3. Set Up the Click-Triggered Wave Effect with Broadcast & Logging
      ***************************************************************/
     const CONFIG = {
         WAVE: {
@@ -107,13 +107,14 @@
         }
 
         init() {
-            // On canvas click: create a local wave and broadcast the coordinates.
+            // On canvas click: create a local wave, log the event, and broadcast the coordinates.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const waveData = {
                     x: e.clientX - rect.left,
                     y: e.clientY - rect.top
                 };
+                console.log("Local wave triggered at:", waveData);
                 this.createWave(waveData.x, waveData.y);
                 broadcastWave(waveData);  // Send to teammates.
             });
@@ -164,12 +165,14 @@
                     const data = JSON.parse(event.data);
                     // Handle wave events.
                     if (data.type === 'wave') {
+                        console.log("Received wave broadcast from teammate:", data);
                         if (window.waveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
                             window.waveRenderer.createWave(data.x, data.y);
                         }
                     }
                     // Handle help events.
                     else if (data.type === 'help') {
+                        console.log("Received help request:", data.message);
                         showHelpMessage(data.message || "A team member is asking for help!");
                     }
                 } catch (e) {
@@ -239,7 +242,6 @@
     document.addEventListener('keydown', (e) => {
         if (e.key.toLowerCase() === 'h') {
             broadcastHelp("Help needed from a team member!");
-            // Optionally, also display your own help request locally.
             showHelpMessage("You requested help!");
         }
     });
@@ -263,5 +265,5 @@
         attachWaveEffect();
     }
 
-    console.log("Delta script modifications, team wave effect, and help broadcast setup attempted.");
+    console.log("Delta script modifications, team wave effect, help broadcast, and console logging setup attempted.");
 })();
