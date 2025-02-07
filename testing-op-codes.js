@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Team Help & Wave Broadcast Mod for Agar.io (Firebase)
+// @name         Delta Team Help & Cool Animation Broadcast Mod for Agar.io (Firebase)
 // @namespace    http://your-namespace-here.com
-// @version      1.0
-// @description  Relaxes local restrictions, attaches a team-shared wave effect and help request feature via Firebase Realtime Database so every team member sees when someone clicks or asks for help. (Experimental & insecure!)
+// @version      1.1
+// @description  Relaxes local restrictions and adds a team-shared cool particle explosion animation plus help request feature via Firebase so all teammates see when someone clicks or needs help. (Experimental & insecure!)
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -10,7 +10,7 @@
 
 (function() {
     'use strict';
-
+    
     /***************************************************************
      * 1. Remove & Override Content Security Policies (CSP)
      ***************************************************************/
@@ -19,11 +19,9 @@
             tag.parentNode.removeChild(tag);
         });
     };
-
-    // Remove current CSP meta tags immediately.
+    // Immediately remove existing CSP tags.
     removeCSPMetaTags();
-
-    // Use a MutationObserver to remove any new CSP meta tags.
+    // Observe any new CSP tags and remove them.
     const cspObserver = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
@@ -34,7 +32,6 @@
         });
     });
     cspObserver.observe(document.documentElement, { childList: true, subtree: true });
-
     // Insert an extremely permissive CSP meta tag when <head> is available.
     const insertPermissiveCSP = () => {
         if (document.head) {
@@ -56,7 +53,7 @@
         }
     };
     insertPermissiveCSP();
-
+    
     /***************************************************************
      * 2. Patch Worker Creation and System.import Polyfill
      ***************************************************************/
@@ -77,28 +74,24 @@
             return new OriginalWorker(script, options);
         };
     })();
-
     if (!window.System) {
         window.System = { import: src => import(src) };
     }
-
+    
     /***************************************************************
      * 3. Load Firebase SDK (v8) Dynamically and Initialize
      ***************************************************************/
-    // Utility: Load external scripts.
     function loadScript(src, onload) {
         const script = document.createElement('script');
         script.src = src;
         script.onload = onload;
         document.head.appendChild(script);
     }
-
-    // Load Firebase App and Firebase Database scripts sequentially.
     loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js", () => {
         loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
     });
-
-    // Replace with your Firebase project configuration.
+    
+    // Replace the placeholders below with your Firebase project configuration.
     const firebaseConfig = {
     apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
     authDomain: "agario-bb5ea.firebaseapp.com",
@@ -109,120 +102,131 @@
     appId: "1:306389211380:web:3c1eb559078b05734be6a1",
     measurementId: "G-5NTSETJHM9"
   };
-
+    
     function initializeFirebase() {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         console.log("Firebase initialized.");
-        // Listen for team messages.
         listenForTeamMessages();
     }
-
+    
     /***************************************************************
      * 4. Firebase Realtime Database Integration for Team Broadcast
      ***************************************************************/
-    // All team messages will be stored under this node.
     let teamMessagesRef = null;
     function listenForTeamMessages() {
         teamMessagesRef = firebase.database().ref('team_messages');
-        // Listen for new messages.
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
-            // Process wave messages.
-            if (data.type === 'wave') {
-                console.log("Received wave broadcast from teammate:", data);
-                if (window.waveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
-                    window.waveRenderer.createWave(data.x, data.y);
+            // Handle cool animation messages.
+            if (data.type === 'cool') {
+                console.log("Received cool animation broadcast from teammate:", data);
+                if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
+                    window.coolWaveRenderer.createParticles(data.x, data.y);
                 }
             }
-            // Process help messages.
+            // Handle help messages.
             else if (data.type === 'help') {
                 console.log("Received help request:", data.message);
                 showHelpMessage(data.message || "A team member is asking for help!");
             }
         });
     }
-
-    // Broadcast a team message by pushing to Firebase.
     function broadcastTeamMessage(messageObj) {
         if (teamMessagesRef) {
             teamMessagesRef.push(messageObj);
         }
     }
-
+    
     /***************************************************************
-     * 5. Set Up the Click-Triggered Wave Effect with Broadcast & Console Logging
+     * 5. Set Up the Cool Particle Animation Effect with Broadcast & Logging
      ***************************************************************/
+    // Configuration for the particle explosion effect.
     const CONFIG = {
-        WAVE: {
-            MAX_RADIUS: 200,   // Maximum radius before a wave disappears.
-            SPEED: 8,          // How fast the wave expands.
-            WIDTH: 3,          // Stroke width of the wave circle.
-            COLOR: 'rgba(100, 200, 255, 0.4)',  // Base color; the "0.4" will be replaced with dynamic opacity.
-            FADE: 0.02         // How fast the wave fades.
+        PARTICLE: {
+            PARTICLE_COUNT: 30,    // Number of particles per explosion.
+            SPEED_MIN: 1,          // Minimum speed.
+            SPEED_MAX: 4,          // Maximum speed.
+            SIZE_MIN: 2,           // Minimum particle size.
+            SIZE_MAX: 5,           // Maximum particle size.
+            FADE: 0.02             // Fade rate per frame.
         }
     };
-
-    // WaveRenderer draws and animates waves on the canvas.
-    class WaveRenderer {
+    
+    class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
             this.ctx = canvas.getContext('2d');
-            this.waves = [];
+            this.particles = [];
             this.init();
         }
-
+    
         init() {
-            // On canvas click: create a local wave, log the event, and broadcast the coordinates.
+            // On canvas click: trigger a cool animation and broadcast its coordinates.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
-                const waveData = {
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top
-                };
-                console.log("Local wave triggered at:", waveData);
-                this.createWave(waveData.x, waveData.y);
-                broadcastTeamMessage({ type: 'wave', x: waveData.x, y: waveData.y });
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                console.log("Local cool animation triggered at:", {x, y});
+                this.createParticles(x, y);
+                broadcastTeamMessage({ type: 'cool', x, y });
             });
             this.startAnimation();
         }
-
-        createWave(x, y) {
-            this.waves.push({
-                x: x,
-                y: y,
-                radius: 0,
-                opacity: 1
-            });
+    
+        createParticles(x, y) {
+            for (let i = 0; i < CONFIG.PARTICLE.PARTICLE_COUNT; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const speed = Math.random() * (CONFIG.PARTICLE.SPEED_MAX - CONFIG.PARTICLE.SPEED_MIN) + CONFIG.PARTICLE.SPEED_MIN;
+                const dx = Math.cos(angle) * speed;
+                const dy = Math.sin(angle) * speed;
+                const size = Math.random() * (CONFIG.PARTICLE.SIZE_MAX - CONFIG.PARTICLE.SIZE_MIN) + CONFIG.PARTICLE.SIZE_MIN;
+                this.particles.push({
+                    x: x,
+                    y: y,
+                    dx: dx,
+                    dy: dy,
+                    size: size,
+                    alpha: 1
+                });
+            }
         }
-
-        renderWaves() {
-            this.waves = this.waves.filter(wave => {
-                wave.radius += CONFIG.WAVE.SPEED;
-                wave.opacity -= CONFIG.WAVE.FADE;
+    
+        renderParticles() {
+            this.particles = this.particles.filter(particle => {
+                // Update particle position.
+                particle.x += particle.dx;
+                particle.y += particle.dy;
+                // Fade out.
+                particle.alpha -= CONFIG.PARTICLE.FADE;
+                if (particle.alpha <= 0) return false;
+                // Draw particle with a radial gradient for a cool effect.
+                const gradient = this.ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, particle.size);
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${particle.alpha})`);
+                gradient.addColorStop(1, `rgba(100, 200, 255, 0)`);
+                this.ctx.fillStyle = gradient;
                 this.ctx.beginPath();
-                this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
-                this.ctx.strokeStyle = CONFIG.WAVE.COLOR.replace('0.4', wave.opacity.toFixed(2));
-                this.ctx.lineWidth = CONFIG.WAVE.WIDTH;
-                this.ctx.stroke();
-                return wave.radius < CONFIG.WAVE.MAX_RADIUS && wave.opacity > 0;
+                this.ctx.arc(particle.x, particle.y, particle.size, 0, 2 * Math.PI);
+                this.ctx.fill();
+                return true;
             });
         }
-
+    
         startAnimation() {
             const animate = () => {
-                this.renderWaves();
+                // Note: We do not clear the canvas entirely as the game may be drawing beneath.
+                // Our effect is drawn on top.
+                this.renderParticles();
                 requestAnimationFrame(animate);
             };
             animate();
         }
     }
-
+    
     /***************************************************************
      * 6. Team Help Broadcast Functionality
      ***************************************************************/
-    // Create an overlay element for displaying help messages.
     const createHelpOverlay = () => {
         const overlay = document.createElement('div');
         overlay.id = 'help-overlay';
@@ -239,8 +243,6 @@
         return overlay;
     };
     const helpOverlay = createHelpOverlay();
-
-    // Display a help message on-screen.
     const showHelpMessage = (msg) => {
         helpOverlay.innerText = msg;
         helpOverlay.style.display = 'block';
@@ -248,13 +250,9 @@
             helpOverlay.style.display = 'none';
         }, 5000);
     };
-
-    // Broadcast a help request to teammates.
     const broadcastHelp = (message) => {
         broadcastTeamMessage({ type: 'help', message: message });
     };
-
-    // Listen for keydown events—press "H" to broadcast help.
     document.addEventListener('keydown', (e) => {
         if (e.key.toLowerCase() === 'h') {
             broadcastHelp("Help needed from a team member!");
@@ -262,25 +260,24 @@
             console.log("Help broadcast sent.");
         }
     });
-
+    
     /***************************************************************
-     * 7. Attach the Wave Effect to the Game Canvas
+     * 7. Attach the Cool Animation Effect to the Game Canvas
      ***************************************************************/
-    const attachWaveEffect = () => {
+    const attachCoolAnimationEffect = () => {
         const canvas = document.querySelector('canvas');
         if (canvas) {
-            window.waveRenderer = new WaveRenderer(canvas);
-            console.log("Wave effect activated on canvas.");
+            window.coolWaveRenderer = new CoolWaveRenderer(canvas);
+            console.log("Cool animation effect activated on canvas.");
         } else {
-            setTimeout(attachWaveEffect, 100);
+            setTimeout(attachCoolAnimationEffect, 100);
         }
     };
-
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', attachWaveEffect);
+        document.addEventListener('DOMContentLoaded', attachCoolAnimationEffect);
     } else {
-        attachWaveEffect();
+        attachCoolAnimationEffect();
     }
-
-    console.log("Delta script modifications, team wave effect, help broadcast, and Firebase integration setup attempted.");
+    
+    console.log("Delta script modifications, team cool animation effect, help broadcast, and Firebase integration setup attempted.");
 })();
