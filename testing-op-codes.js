@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI
+// @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI + CMD Chat
 // @namespace    http://your-namespace-here.com
-// @version      1.3
-// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel (visible only in spectator view).
+// @version      1.4
+// @description  Adds team-shared cinematic effect, help broadcast, a Delta spectators UI panel (visible only in spectator view), and a basic CMD Chat hook.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -14,19 +14,16 @@
     /***************************************************************
      * 1. Remove & Override Content Security Policies (CSP)
      ***************************************************************/
-    // Use the modern .remove() method to smartly remove any existing CSP meta tags.
     const removeCSPMetaTags = () => {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
             try {
-                tag.remove(); // Safely removes the tag if it exists.
+                tag.remove();
             } catch (e) {
                 console.error("Error removing meta tag:", e);
             }
         });
     };
-    // Immediately remove existing CSP tags.
     removeCSPMetaTags();
-    // Observe any new CSP tags added to the DOM and remove them.
     const cspObserver = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
@@ -43,7 +40,6 @@
         });
     });
     cspObserver.observe(document.documentElement, { childList: true, subtree: true });
-    // Insert an extremely permissive CSP meta tag when <head> is available.
     const insertPermissiveCSP = () => {
         if (document.head) {
             removeCSPMetaTags();
@@ -108,14 +104,15 @@
     
     // TODO: Replace these placeholders with your real Firebase config.
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
+  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
+  authDomain: "agario-bb5ea.firebaseapp.com",
+  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
+  projectId: "agario-bb5ea",
+  storageBucket: "agario-bb5ea.firebasestorage.app",
+  messagingSenderId: "306389211380",
+  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
+  measurementId: "G-5NTSETJHM9"
+};
     
     function initializeFirebase() {
         if (!firebase.apps.length) {
@@ -135,14 +132,14 @@
             const data = snapshot.val();
             if (!data) return;
             
-            // Handle cinematic animation messages.
+            // Cinematic animation messages.
             if (data.type === 'cool') {
                 console.log("Received cinematic animation from teammate:", data);
                 if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
                     window.coolWaveRenderer.createParticles(data.x, data.y);
                 }
             }
-            // Handle help messages.
+            // Help messages.
             else if (data.type === 'help') {
                 console.log("Received help request:", data.message);
                 showHelpMessage(data.message || "A team member is asking for help!");
@@ -238,7 +235,7 @@
     
         startAnimation() {
             const animate = () => {
-                // We do not clear the entire canvas so we overlay on the game.
+                // Overlay particles without fully clearing the canvas.
                 this.renderParticles();
                 requestAnimationFrame(animate);
             };
@@ -313,7 +310,7 @@
     let cmdChatEnabled = false; // Toggle for CMD Chat.
     let spectatorListContainer; // Reference to the list container element.
     
-    // 8.1. Create a container for our new UI.
+    // 8.1. Create the spectator UI container.
     const createSpectatorUI = () => {
         const uiWrapper = document.createElement('div');
         uiWrapper.id = 'delta-spectator-ui';
@@ -331,14 +328,14 @@
             borderRadius: '6px'
         });
         
-        // Title/heading.
+        // Header.
         const header = document.createElement('div');
         header.textContent = "Users (Delta)";
         header.style.fontWeight = 'bold';
         header.style.marginBottom = '6px';
         uiWrapper.appendChild(header);
         
-        // The scrollable list area.
+        // Scrollable list container.
         const listContainer = document.createElement('div');
         listContainer.id = 'delta-spectator-list';
         listContainer.style.maxHeight = '200px';
@@ -346,7 +343,7 @@
         listContainer.style.marginBottom = '8px';
         uiWrapper.appendChild(listContainer);
         
-        // CMD Chat toggle.
+        // CMD Chat toggle button.
         const cmdChatToggle = document.createElement('button');
         cmdChatToggle.textContent = "CMD Chat: OFF";
         cmdChatToggle.style.width = '100%';
@@ -354,7 +351,6 @@
         cmdChatToggle.onclick = () => {
             cmdChatEnabled = !cmdChatEnabled;
             cmdChatToggle.textContent = "CMD Chat: " + (cmdChatEnabled ? "ON" : "OFF");
-            // TODO: Hook into the actual Delta logic for enabling CMD Chat if needed.
             console.log("CMD Chat toggled:", cmdChatEnabled);
         };
         uiWrapper.appendChild(cmdChatToggle);
@@ -363,24 +359,21 @@
         return { uiWrapper, listContainer };
     };
     
-    // 8.2. Define a function to check if spectator view is active.
+    // 8.2. Check if spectator view is active.
     function isSpectatorView() {
         // TODO: Replace with your actual logic to detect spectator view on agar.io.
-        // For example, you might check for a specific DOM element, URL parameter, or global variable.
-        // Here, we demonstrate by checking if window.spectator is true or if an element with id "spectate" exists.
         return (window.spectator === true) || (document.getElementById('spectate') !== null);
     }
     
-    // 8.3. Ensure the spectator UI exists when in spectator view (or remove it when not).
+    // 8.3. Create or remove the spectator UI based on spectator view state.
     function ensureSpectatorUIExists() {
         if (isSpectatorView()) {
             if (!document.getElementById('delta-spectator-ui')) {
                 console.log("Spectator view active: Creating UI panel.");
-                let uiElements = createSpectatorUI();
+                const uiElements = createSpectatorUI();
                 spectatorListContainer = uiElements.listContainer;
             }
         } else {
-            // Remove UI if it exists when not in spectator view.
             const ui = document.getElementById('delta-spectator-ui');
             if (ui) {
                 console.log("Not in spectator view: Removing UI panel.");
@@ -389,23 +382,22 @@
         }
     }
     
-    // 8.4. Use Delta-specific spectator data.
+    // 8.4. Fetch Delta spectator data (from Delta developer tools if available).
     function getDeltaSpectators() {
-        // If your Delta system exposes spectator data via a global variable (e.g. window.delta.spectators),
-        // then use it. Otherwise, fall back to Delta-themed placeholder data.
         if (window.delta && window.delta.spectators) {
             return window.delta.spectators;
         }
+        // Sample data matching your outlined UI (with names "naze" and "Hook").
         return [
             {
-                name: "DeltaAce",
-                skinUrl: "https://i.imgur.com/YourDeltaSkin1.png", // Replace with your Delta skin image URL.
-                waveCount: 5
+                name: "naze",
+                skinUrl: "https://i.imgur.com/YourDeltaSkin1.png", // Replace with your actual Delta skin URL.
+                waveCount: 7
             },
             {
-                name: "DeltaChamp",
-                skinUrl: "https://i.imgur.com/YourDeltaSkin2.png", // Replace with your Delta skin image URL.
-                waveCount: 3
+                name: "Hook",
+                skinUrl: "https://i.imgur.com/YourDeltaSkin2.png", // Replace with your actual Delta skin URL.
+                waveCount: 4
             }
         ];
     }
@@ -414,7 +406,6 @@
     function updateSpectatorUI() {
         if (!isSpectatorView() || !spectatorListContainer) return;
         const specs = getDeltaSpectators();
-        // Clear old list.
         spectatorListContainer.innerHTML = "";
         
         specs.forEach(player => {
@@ -423,7 +414,7 @@
             row.style.alignItems = 'center';
             row.style.marginBottom = '5px';
             
-            // Skin image.
+            // Skin image element.
             const skinImg = document.createElement('img');
             skinImg.src = player.skinUrl;
             skinImg.alt = "skin";
@@ -431,18 +422,16 @@
             skinImg.height = 24;
             skinImg.style.cursor = 'pointer';
             skinImg.style.marginRight = '5px';
-            // Click to copy the URL.
             skinImg.addEventListener('click', () => copyToClipboard(player.skinUrl));
             
-            // Player name.
+            // Player name element.
             const nameSpan = document.createElement('span');
             nameSpan.textContent = player.name;
             nameSpan.style.cursor = 'pointer';
             nameSpan.style.flex = '1';
-            // Click to copy the name.
             nameSpan.addEventListener('click', () => copyToClipboard(player.name));
             
-            // Wave count.
+            // Wave count element.
             const waveSpan = document.createElement('span');
             waveSpan.textContent = `(${player.waveCount})`;
             waveSpan.style.marginLeft = '5px';
@@ -455,7 +444,7 @@
         });
     }
     
-    // 8.6. Helper to copy text to clipboard.
+    // 8.6. Clipboard helper.
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
             console.log("Copied to clipboard:", text);
@@ -464,22 +453,57 @@
         });
     }
     
-    // 8.7. Manage the spectator UI based on spectator view state.
+    // 8.7. Manage the spectator UI state.
     function manageSpectatorUI() {
         if (isSpectatorView()) {
             ensureSpectatorUIExists();
             updateSpectatorUI();
         } else {
-            // Remove the UI if it exists when not in spectator view.
             const ui = document.getElementById('delta-spectator-ui');
             if (ui) {
                 ui.remove();
             }
         }
     }
-    
-    // Periodically check and update the spectator UI.
     setInterval(manageSpectatorUI, 2000);
     
-    console.log("Delta script with spectators UI + cinematic effect + help broadcast loaded.");
+    console.log("Delta script with spectators UI, cinematic effect, help broadcast, and CMD chat loaded.");
+    
+    /***************************************************************
+     * 9. CMD Chat Integration (Basic Hook)
+     ***************************************************************/
+    // Placeholder function to process CMD chat messages.
+    function processCMDChat(message) {
+        // Implement your custom CMD chat logic here.
+        console.log("Processing CMD chat message:", message);
+        // For example, you could parse prefixes or commands and transform the text.
+        return message;
+    }
+    
+    // Attach CMD Chat handler once a chat input element appears.
+    function attachCMDChatHandler() {
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && cmdChatEnabled) {
+                    e.preventDefault();
+                    let msg = chatInput.value;
+                    msg = processCMDChat(msg);
+                    // TODO: Replace this with your actual method for sending CMD chat messages.
+                    console.log("CMD Chat message sent:", msg);
+                    chatInput.value = "";
+                }
+            });
+            console.log("CMD Chat handler attached.");
+        }
+    }
+    // Periodically check for the chat input element.
+    const chatInputInterval = setInterval(() => {
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            attachCMDChatHandler();
+            clearInterval(chatInputInterval);
+        }
+    }, 1000);
+
 })();
