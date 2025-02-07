@@ -1,441 +1,204 @@
 // ==UserScript==
-// @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI
+// @name         Delta Spectator Window (Creative Version) for Agar.io
 // @namespace    http://your-namespace-here.com
-// @version      1.3
-// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel.
+// @version      1.0
+// @description  Shows a live-updating spectator window with names, avatars, wave counts, and a CMD Chat toggle. Click a name to copy it or an image to copy its URL.
 // @match        *://agar.io/*
 // @grant        none
-// @run-at       document-start
+// @run-at       document-end
 // ==/UserScript==
 
 (function() {
     'use strict';
-    
-    /***************************************************************
-     * 1. Remove & Override Content Security Policies (CSP)
-     ***************************************************************/
-    const removeCSPMetaTags = () => {
+
+    /********************* Optional: Relax CSP ************************
+     * (Note: Userscripts cannot override server-sent CSP headers.)
+     *******************************************************************/
+    function removeCSPMetaTags() {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
-            if (tag.parentNode) {
-                tag.parentNode.removeChild(tag);
-            }
+            tag.remove();
         });
-    };
-    // Immediately remove existing CSP tags.
+    }
     removeCSPMetaTags();
-    // Observe any new CSP tags and remove them.
-    const cspObserver = new MutationObserver(mutations => {
-        mutations.forEach(mutation => {
-            mutation.addedNodes.forEach(node => {
-                if (node.tagName === 'META' &&
-                    node.getAttribute('http-equiv') === 'Content-Security-Policy' &&
-                    node.parentNode) {
-                    node.parentNode.removeChild(node);
-                }
-            });
-        });
-    });
-    cspObserver.observe(document.documentElement, { childList: true, subtree: true });
-    // Insert an extremely permissive CSP meta tag when <head> is available.
-    const insertPermissiveCSP = () => {
-        if (document.head) {
-            removeCSPMetaTags();
-            const meta = document.createElement('meta');
-            meta.httpEquiv = 'Content-Security-Policy';
-            meta.content = [
-                "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:",
-                "script-src * 'unsafe-inline' 'unsafe-eval' data: blob:",
-                "style-src * 'unsafe-inline' data: blob:",
-                "img-src * data: blob:",
-                "connect-src *",
-                "manifest-src *",
-                "worker-src * blob:",
-                "frame-src *"
-            ].join("; ");
-            document.head.prepend(meta);
-            console.log("CSP set to extremely permissive mode.");
+
+    /********************* Create the Spectator Panel CSS *********************/
+    const style = document.createElement('style');
+    style.textContent = `
+    /* Container style for the spectator window */
+    #delta-spectator-panel {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        width: 250px;
+        max-height: 90%;
+        background: rgba(0, 0, 0, 0.75);
+        color: #fff;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        padding: 10px;
+        overflow-y: auto;
+        z-index: 10000;
+        border: 2px solid #f00;
+        border-radius: 5px;
+    }
+    /* Header style */
+    #delta-spectator-panel h2 {
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        text-align: center;
+        border-bottom: 1px solid #fff;
+        padding-bottom: 5px;
+    }
+    /* Each spectator entry */
+    #delta-spectator-panel .spectator-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        cursor: pointer;
+    }
+    /* Avatar image style */
+    #delta-spectator-panel .spectator-item img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    /* Spectator name style */
+    #delta-spectator-panel .spectator-name {
+        flex: 1;
+    }
+    /* Wave count style */
+    #delta-spectator-panel .spectator-wave {
+        background: #f00;
+        padding: 2px 4px;
+        border-radius: 3px;
+        margin-left: 5px;
+        font-size: 12px;
+    }
+    /* CMD Chat toggle style */
+    #delta-spectator-panel .cmd-chat-toggle {
+        margin-top: 10px;
+        text-align: center;
+    }
+    `;
+    document.head.appendChild(style);
+
+    /********************* Create the Spectator Panel *********************/
+    const panel = document.createElement('div');
+    panel.id = 'delta-spectator-panel';
+    panel.innerHTML = `
+        <h2>Users (Delta)</h2>
+        <div id="spectator-list"></div>
+        <div class="cmd-chat-toggle">
+            <label>
+                <input type="checkbox" id="cmd-chat-checkbox">
+                CMD Chat
+            </label>
+        </div>
+    `;
+    document.body.appendChild(panel);
+
+    const spectatorList = document.getElementById('spectator-list');
+    const cmdChatCheckbox = document.getElementById('cmd-chat-checkbox');
+
+    // When the CMD Chat toggle changes, log its state.
+    cmdChatCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            console.log("CMD Chat enabled");
         } else {
-            setTimeout(insertPermissiveCSP, 10);
-        }
-    };
-    insertPermissiveCSP();
-    
-    /***************************************************************
-     * 2. Patch Worker Creation and System.import Polyfill
-     ***************************************************************/
-    (function() {
-        const OriginalWorker = window.Worker;
-        window.Worker = function(script, options) {
-            if (typeof script === 'string' && script.startsWith('data:')) {
-                try {
-                    const commaIndex = script.indexOf(',');
-                    const blobContent = decodeURIComponent(script.substring(commaIndex + 1));
-                    const blob = new Blob([blobContent], { type: 'application/javascript' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    return new OriginalWorker(blobUrl, options);
-                } catch (e) {
-                    console.error("Worker patch error:", e);
-                }
-            }
-            return new OriginalWorker(script, options);
-        };
-    })();
-    if (!window.System) {
-        window.System = { import: src => import(src) };
-    }
-    
-    /***************************************************************
-     * 3. Load Firebase SDK (v8) Dynamically and Initialize
-     ***************************************************************/
-    function loadScript(src, onload) {
-        const script = document.createElement('script');
-        script.src = src;
-        script.onload = onload;
-        document.head.appendChild(script);
-    }
-    
-    // Load Firebase scripts in sequence
-    loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js", () => {
-        loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
-    });
-    
-    // TODO: Replace these placeholders with your real Firebase config
-    const firebaseConfig = {
-  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-  authDomain: "agario-bb5ea.firebaseapp.com",
-  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-  projectId: "agario-bb5ea",
-  storageBucket: "agario-bb5ea.firebasestorage.app",
-  messagingSenderId: "306389211380",
-  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-  measurementId: "G-5NTSETJHM9"
-};
-    
-    function initializeFirebase() {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        console.log("Firebase initialized.");
-        listenForTeamMessages();
-    }
-    
-    /***************************************************************
-     * 4. Firebase Realtime Database Integration for Team Broadcast
-     ***************************************************************/
-    let teamMessagesRef = null;
-    function listenForTeamMessages() {
-        teamMessagesRef = firebase.database().ref('team_messages');
-        teamMessagesRef.on('child_added', snapshot => {
-            const data = snapshot.val();
-            if (!data) return;
-            
-            // Handle cinematic animation messages.
-            if (data.type === 'cool') {
-                console.log("Received cinematic animation from teammate:", data);
-                if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
-                    window.coolWaveRenderer.createParticles(data.x, data.y);
-                }
-            }
-            // Handle help messages.
-            else if (data.type === 'help') {
-                console.log("Received help request:", data.message);
-                showHelpMessage(data.message || "A team member is asking for help!");
-            }
-        });
-    }
-    
-    function broadcastTeamMessage(messageObj) {
-        if (teamMessagesRef) {
-            teamMessagesRef.push(messageObj);
-        }
-    }
-    
-    /***************************************************************
-     * 5. Set Up the Cinematic Particle Animation Effect with Broadcast
-     ***************************************************************/
-    const CONFIG = {
-        PARTICLE: {
-            PARTICLE_COUNT: 50,
-            SPEED_MIN: 2,
-            SPEED_MAX: 6,
-            SIZE_MIN: 3,
-            SIZE_MAX: 7,
-            FADE: 0.015
-        }
-    };
-    
-    class CoolWaveRenderer {
-        constructor(canvas) {
-            this.canvas = canvas;
-            this.ctx = canvas.getContext('2d');
-            this.particles = [];
-            this.init();
-        }
-    
-        init() {
-            // On canvas click: local & broadcast cinematic animation
-            this.canvas.addEventListener('click', e => {
-                const rect = this.canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                console.log("Local cinematic animation triggered at:", {x, y});
-                this.createParticles(x, y);
-                broadcastTeamMessage({ type: 'cool', x, y });
-            });
-            this.startAnimation();
-        }
-    
-        createParticles(x, y) {
-            const colorPalette = [
-                "255, 100, 100",  // red
-                "255, 150, 50",   // orange
-                "255, 255, 100",  // yellow
-                "100, 255, 100",  // green
-                "100, 200, 255",  // light blue
-                "200, 100, 255"   // purple
-            ];
-            const baseColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-            for (let i = 0; i < CONFIG.PARTICLE.PARTICLE_COUNT; i++) {
-                const angle = Math.random() * 2 * Math.PI;
-                const speed = Math.random() * (CONFIG.PARTICLE.SPEED_MAX - CONFIG.PARTICLE.SPEED_MIN)
-                                                + CONFIG.PARTICLE.SPEED_MIN;
-                const dx = Math.cos(angle) * speed;
-                const dy = Math.sin(angle) * speed;
-                const size = Math.random() * (CONFIG.PARTICLE.SIZE_MAX - CONFIG.PARTICLE.SIZE_MIN)
-                                                + CONFIG.PARTICLE.SIZE_MIN;
-                this.particles.push({
-                    x, y, dx, dy,
-                    size,
-                    alpha: 1,
-                    color: baseColor
-                });
-            }
-        }
-    
-        renderParticles() {
-            this.particles = this.particles.filter(p => {
-                p.x += p.dx;
-                p.y += p.dy;
-                p.alpha -= CONFIG.PARTICLE.FADE;
-                if (p.alpha <= 0) return false;
-                
-                // radial gradient
-                const gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
-                gradient.addColorStop(0, `rgba(${p.color}, ${p.alpha})`);
-                gradient.addColorStop(1, `rgba(${p.color}, 0)`);
-                
-                this.ctx.fillStyle = gradient;
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
-                this.ctx.fill();
-                return true;
-            });
-        }
-    
-        startAnimation() {
-            const animate = () => {
-                // We do not clear the entire canvas so we overlay on the game.
-                this.renderParticles();
-                requestAnimationFrame(animate);
-            };
-            animate();
-        }
-    }
-    
-    /***************************************************************
-     * 6. Team Help Broadcast Functionality (Press "H")
-     ***************************************************************/
-    const createHelpOverlay = () => {
-        const overlay = document.createElement('div');
-        overlay.id = 'help-overlay';
-        Object.assign(overlay.style, {
-            position: 'fixed',
-            top: '10px',
-            right: '10px',
-            padding: '10px',
-            backgroundColor: 'rgba(255, 0, 0, 0.8)',
-            color: 'white',
-            fontSize: '20px',
-            zIndex: 9999,
-            display: 'none'
-        });
-        document.body.appendChild(overlay);
-        return overlay;
-    };
-    const helpOverlay = createHelpOverlay();
-    
-    const showHelpMessage = (msg) => {
-        helpOverlay.innerText = msg;
-        helpOverlay.style.display = 'block';
-        setTimeout(() => {
-            helpOverlay.style.display = 'none';
-        }, 5000);
-    };
-    
-    const broadcastHelp = (message) => {
-        broadcastTeamMessage({ type: 'help', message: message });
-    };
-    
-    document.addEventListener('keydown', (e) => {
-        if (e.key.toLowerCase() === 'h') {
-            broadcastHelp("Help needed from a team member!");
-            showHelpMessage("You requested help!");
-            console.log("Help broadcast sent.");
+            console.log("CMD Chat disabled");
         }
     });
-    
-    /***************************************************************
-     * 7. Attach Cinematic Animation Effect to the Game Canvas
-     ***************************************************************/
-    const attachCoolAnimationEffect = () => {
-        const canvas = document.querySelector('canvas');
-        if (canvas) {
-            window.coolWaveRenderer = new CoolWaveRenderer(canvas);
-            console.log("Cinematic particle animation effect activated on canvas.");
-        } else {
-            setTimeout(attachCoolAnimationEffect, 100);
-        }
-    };
-    
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', attachCoolAnimationEffect);
-    } else {
-        attachCoolAnimationEffect();
-    }
-    
-    /***************************************************************
-     * 8. Delta Spectators UI Panel
-     ***************************************************************/
-    let cmdChatEnabled = false; // We'll toggle this on/off
-    
-    // 8.1. Create a container for our new UI
-    const createSpectatorUI = () => {
-        const uiWrapper = document.createElement('div');
-        uiWrapper.id = 'delta-spectator-ui';
-        Object.assign(uiWrapper.style, {
-            position: 'fixed',
-            right: '10px',
-            bottom: '10px',
-            width: '200px',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            color: '#fff',
-            padding: '8px',
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
-            zIndex: 99999,
-            borderRadius: '6px'
-        });
-        
-        // Title/heading
-        const header = document.createElement('div');
-        header.textContent = "Users (Delta)";
-        header.style.fontWeight = 'bold';
-        header.style.marginBottom = '6px';
-        uiWrapper.appendChild(header);
-        
-        // The scrollable list area
-        const listContainer = document.createElement('div');
-        listContainer.id = 'delta-spectator-list';
-        listContainer.style.maxHeight = '200px';
-        listContainer.style.overflowY = 'auto';
-        listContainer.style.marginBottom = '8px';
-        uiWrapper.appendChild(listContainer);
-        
-        // CMD Chat toggle
-        const cmdChatToggle = document.createElement('button');
-        cmdChatToggle.textContent = "CMD Chat: OFF";
-        cmdChatToggle.style.width = '100%';
-        cmdChatToggle.style.marginTop = '4px';
-        cmdChatToggle.onclick = () => {
-            cmdChatEnabled = !cmdChatEnabled;
-            cmdChatToggle.textContent = "CMD Chat: " + (cmdChatEnabled ? "ON" : "OFF");
-            // TODO: Hook into the actual Delta logic for enabling cmd chat if needed.
-            console.log("CMD Chat toggled:", cmdChatEnabled);
-        };
-        uiWrapper.appendChild(cmdChatToggle);
-        
-        document.body.appendChild(uiWrapper);
-        return { uiWrapper, listContainer };
-    };
-    
-    const { listContainer: spectatorListContainer } = createSpectatorUI();
-    
-    // 8.2. Example function that returns "real" links for the two known spectators.
-    // In a real scenario, you'd dynamically read from Delta's actual data structures.
-    function getDeltaSpectators() {
-        // Replace with real logic that fetches from window.delta, or websockets, etc.
-        // Here, we use 2 valid Imgur URLs for demonstration.
-        return [
-            {
-                name: "naze",
-                skinUrl: "https://i.imgur.com/2HvuJiY.png", // Real Imgur link
-                waveCount: 4
-            },
-            {
-                name: "Hook",
-                skinUrl: "https://i.imgur.com/L4WMSiH.png", // Real Imgur link
-                waveCount: 1
-            }
-        ];
-    }
-    
-    // 8.3. A function to build the UI list
-    function updateSpectatorUI() {
-        const specs = getDeltaSpectators();
-        // Clear old list
-        spectatorListContainer.innerHTML = "";
-        
-        specs.forEach(player => {
-            const row = document.createElement('div');
-            row.style.display = 'flex';
-            row.style.alignItems = 'center';
-            row.style.marginBottom = '5px';
-            
-            // Skin image
-            const skinImg = document.createElement('img');
-            skinImg.src = player.skinUrl;
-            skinImg.alt = "skin";
-            skinImg.width = 24;
-            skinImg.height = 24;
-            skinImg.style.cursor = 'pointer';
-            skinImg.style.marginRight = '5px';
-            // Click to copy the URL
-            skinImg.addEventListener('click', () => copyToClipboard(player.skinUrl));
-            
-            // Player name
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = player.name;
-            nameSpan.style.cursor = 'pointer';
-            nameSpan.style.flex = '1';
-            // Click to copy the name
-            nameSpan.addEventListener('click', () => copyToClipboard(player.name));
-            
-            // Wave count
-            const waveSpan = document.createElement('span');
-            waveSpan.textContent = `(${player.waveCount})`;
-            waveSpan.style.marginLeft = '5px';
-            waveSpan.style.color = '#0ff';
-            
-            row.appendChild(skinImg);
-            row.appendChild(nameSpan);
-            row.appendChild(waveSpan);
-            spectatorListContainer.appendChild(row);
-        });
-    }
-    
-    // 8.4. Helper to copy text to clipboard
+
+    /********************* Utility: Copy Text to Clipboard *********************/
     function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            console.log("Copied to clipboard:", text);
-        }).catch(err => {
-            console.error("Failed to copy:", err);
+        // Use the Clipboard API if available
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log(`Copied to clipboard: ${text}`);
+            }).catch(err => {
+                console.error('Clipboard write failed: ', err);
+            });
+        } else {
+            // Fallback for older browsers
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed"; // Avoid scrolling to bottom
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                console.log(`Copied to clipboard: ${text}`);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+            document.body.removeChild(textArea);
+        }
+    }
+
+    /********************* Simulate Spectator Data *************************
+     * In a real implementation, you'd fetch this data from Delta.
+     *********************************************************************/
+    function getSpectatorData() {
+        // Dummy data simulating Delta players
+        const dummySpectators = [
+            { name: "PlayerOne", skin: "https://via.placeholder.com/40/FF0000/FFFFFF?text=P1", waves: Math.floor(Math.random() * 10) },
+            { name: "PlayerTwo", skin: "https://via.placeholder.com/40/00FF00/FFFFFF?text=P2", waves: Math.floor(Math.random() * 10) },
+            { name: "PlayerThree", skin: "https://via.placeholder.com/40/0000FF/FFFFFF?text=P3", waves: Math.floor(Math.random() * 10) },
+            { name: "PlayerFour", skin: "https://via.placeholder.com/40/FFFF00/FFFFFF?text=P4", waves: Math.floor(Math.random() * 10) }
+        ];
+        // Occasionally simulate a new player joining
+        if (Math.random() < 0.3) {
+            dummySpectators.push({
+                name: "Player" + Math.floor(Math.random() * 100),
+                skin: "https://via.placeholder.com/40/" + Math.floor(Math.random() * 16777215).toString(16) + "/FFFFFF?text=New",
+                waves: Math.floor(Math.random() * 10)
+            });
+        }
+        return dummySpectators;
+    }
+
+    /********************* Update Spectator List UI ************************/
+    function updateSpectatorList() {
+        const spectators = getSpectatorData();
+        spectatorList.innerHTML = ""; // Clear current list
+        spectators.forEach(spectator => {
+            const item = document.createElement('div');
+            item.className = 'spectator-item';
+            // Create avatar image element
+            const img = document.createElement('img');
+            img.src = spectator.skin;
+            // Clicking on the avatar copies the skin URL
+            img.addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyToClipboard(spectator.skin);
+            });
+            // Create name element
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'spectator-name';
+            nameDiv.textContent = spectator.name;
+            // Clicking on the name copies the player's name
+            nameDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyToClipboard(spectator.name);
+            });
+            // Create wave count element
+            const waveCount = document.createElement('div');
+            waveCount.className = 'spectator-wave';
+            waveCount.textContent = spectator.waves;
+            // Append all parts to the spectator item
+            item.appendChild(img);
+            item.appendChild(nameDiv);
+            item.appendChild(waveCount);
+            spectatorList.appendChild(item);
         });
     }
-    
-    // 8.5. Poll or observe changes in Delta data (here, we just poll)
-    setInterval(() => {
-        updateSpectatorUI();
-    }, 2000);
-    
-    console.log("Delta script with spectators UI + cinematic effect + help broadcast loaded.");
+
+    // Refresh the spectator list every 5 seconds
+    setInterval(updateSpectatorList, 5000);
+    updateSpectatorList(); // Initial population
+
+    console.log("Delta spectator window initialized.");
+
 })();
