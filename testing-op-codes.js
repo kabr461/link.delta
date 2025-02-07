@@ -2,7 +2,7 @@
 // @name         Delta Spectator & Wave Broadcast Mod for Agar.io (Firebase)
 // @namespace    http://your-namespace-here.com
 // @version      1.0
-// @description  When in spectating mode, displays a professional floating spectator panel (with CMD Chat on by default) and triggers a cinematic particle wave animation on canvas clicks that is broadcast via Firebase to teammates.
+// @description  When in spectating mode, displays a professional floating spectator panel (with CMD Chat on by default) and triggers a cinematic, colorful particle wave animation on canvas clicks that is broadcast via Firebase to teammates.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-end
@@ -93,9 +93,9 @@
         document.head.appendChild(style);
     }
 
-    /***************** Create / Remove the Spectator Panel *****************/
+    /***************** Create/Remove the Spectator Panel *****************/
     function createSpectatorPanel() {
-        if (document.getElementById('delta-spectator-panel')) return;
+        if (document.getElementById('delta-spectator-panel')) return; // already exists
         insertSpectatorStyles();
         const panel = document.createElement('div');
         panel.id = 'delta-spectator-panel';
@@ -111,6 +111,7 @@
         `;
         document.body.appendChild(panel);
 
+        // Attach event listener for CMD Chat toggle.
         const cmdChatCheckbox = document.getElementById('cmd-chat-checkbox');
         cmdChatCheckbox.addEventListener('change', function() {
             console.log("CMD Chat " + (this.checked ? "enabled" : "disabled"));
@@ -147,7 +148,6 @@
     }
 
     /***************** Firebase Integration *****************/
-    // Load Firebase SDK scripts dynamically.
     function loadScript(src, onload) {
         const script = document.createElement('script');
         script.src = src;
@@ -158,30 +158,28 @@
         loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
     });
 
-    // Replace with your actual Firebase project settings.
+    // Replace these with your actual Firebase configuration details.
     const firebaseConfig = {
-  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-  authDomain: "agario-bb5ea.firebaseapp.com",
-  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-  projectId: "agario-bb5ea",
-  storageBucket: "agario-bb5ea.firebasestorage.app",
-  messagingSenderId: "306389211380",
-  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-  measurementId: "G-5NTSETJHM9"
-};
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
     function initializeFirebase() {
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         console.log("Firebase initialized.");
-        // Set up listeners for spectator data and wave events.
         setupSpectatorListener();
         setupWaveListener();
     }
 
     /***************** Listen for Spectator Data from Firebase *****************/
     function setupSpectatorListener() {
-        // Delta is expected to write spectator data to "delta_spectators".
         const ref = firebase.database().ref("delta_spectators");
         ref.on("value", snapshot => {
             const data = snapshot.val();
@@ -232,7 +230,6 @@
 
     /***************** Listen for Wave Events from Firebase *****************/
     function setupWaveListener() {
-        // Wave events are expected at "delta_wave_events".
         const ref = firebase.database().ref("delta_wave_events");
         ref.on("child_added", snapshot => {
             const data = snapshot.val();
@@ -243,37 +240,45 @@
                 }
             }
         }, error => {
-            console.error("Firebase wave listener error:", error);
+            console.error("Firebase wave listener error: ", error);
         });
     }
 
     /***************** Broadcast a Wave Event to Firebase *****************/
     function broadcastWaveEvent(x, y) {
+        // Check if Firebase is ready.
+        if (typeof firebase === "undefined" || !firebase.database) {
+            console.warn("Firebase not ready, wave event not broadcasted.");
+            return;
+        }
         const ref = firebase.database().ref("delta_wave_events");
-        // Push a new wave event.
         ref.push({ x: x, y: y, timestamp: Date.now() });
     }
 
-    /***************** Attach the Spectator Panel Only in Spectating Mode *****************/
-    // We assume that when in spectating mode, Delta writes data to "delta_spectators" in Firebase.
+    /***************** Check Spectating Mode and Manage the Panel *****************/
     function checkSpectatingMode() {
-        // For simplicity, we check if the spectator panel exists.
-        // The spectator panel will be shown if Firebase returns spectator data.
-        // (If not in spectating mode, Delta should not update "delta_spectators" so our listener will show "No spectator data".)
-        // Here, we simply always keep the panel visible once Firebase data arrives.
-        // If desired, you could remove the panel when no data is present.
-        if (!document.getElementById('delta-spectator-panel')) {
-            createSpectatorPanel();
-        }
+        // We assume Delta writes spectator data to Firebase ("delta_spectators").
+        // If there's data, we are in spectating mode.
+        const ref = firebase.database().ref("delta_spectators");
+        ref.once("value", snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                if (!document.getElementById('delta-spectator-panel')) {
+                    createSpectatorPanel();
+                }
+                updateSpectatorListFromFirebase(data);
+            } else {
+                removeSpectatorPanel();
+            }
+        });
     }
-    // Check spectating mode every 2 seconds.
     setInterval(checkSpectatingMode, 2000);
     checkSpectatingMode();
 
     /***************** MutationObserver to Re-Add the Panel if Removed *****************/
     const uiObserver = new MutationObserver(mutations => {
         if (!document.getElementById('delta-spectator-panel')) {
-            console.warn("Spectator panel missing! Re-adding it...");
+            console.warn("Spectator panel missing! Re-adding...");
             checkSpectatingMode();
         }
     });
@@ -300,7 +305,6 @@
         }
 
         init() {
-            // When in spectating mode, clicking on the canvas triggers a wave event.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
@@ -313,7 +317,6 @@
         }
 
         createParticles(x, y) {
-            // Choose a random base color from a vibrant palette.
             const palette = [
                 "255, 100, 100", // red
                 "255, 150, 50",  // orange
@@ -361,7 +364,6 @@
         startAnimation() {
             const animate = () => {
                 try {
-                    // Note: We don't clear the canvas completely, so our effect overlays on the game.
                     this.renderParticles();
                 } catch (err) {
                     console.error("Error in particle animation:", err);
