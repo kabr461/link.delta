@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Agar.io Ultimate Mod v7.0 (Fixed)
+// @name         Agar.io Ultimate Mod v7.0 (Comprehensive Fix)
 // @namespace    http://secure-scripts.com
-// @version      7.0.1
-// @description  Fixed version with CSP and dependency fixes
+// @version      7.0.2
+// @description  A comprehensive mod for Agar.io with fixes for CSP issues, missing dependencies, and worker errors.
 // @author       Your Name
 // @match        *://agar.io/*
 // @grant        none
@@ -13,7 +13,96 @@
 (function() {
     'use strict';
 
-    // ===== Configuration =====
+    /* -------------------------------------------------------------------------
+       1. Patch Worker to handle data: URLs 
+       (Some external scripts try to create workers using inline code; this patch
+       converts such “data:” URLs into Blob URLs so that they are allowed to run.)
+    -------------------------------------------------------------------------- */
+    (function() {
+        const OriginalWorker = window.Worker;
+        window.Worker = function(script, options) {
+            if (typeof script === 'string' && script.startsWith('data:')) {
+                try {
+                    const commaIndex = script.indexOf(',');
+                    const blobContent = decodeURIComponent(script.substring(commaIndex+1));
+                    const blob = new Blob([blobContent], { type: 'application/javascript' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    return new OriginalWorker(blobUrl, options);
+                } catch (e) {
+                    console.error('Worker patch error:', e);
+                }
+            }
+            return new OriginalWorker(script, options);
+        };
+    })();
+
+    /* -------------------------------------------------------------------------
+       2. Define System.import Polyfill 
+       (Some external scripts call System.import; we define it to use dynamic import.)
+    -------------------------------------------------------------------------- */
+    if (!window.System) {
+        window.System = {
+            import: src => import(src)
+        };
+    }
+
+    /* -------------------------------------------------------------------------
+       3. Configure a Very Permissive Content Security Policy (CSP)
+       (This meta tag is added to allow external scripts, styles, images, and workers.
+       It makes the site much less restrictive so that the mod’s resources can load.)
+    -------------------------------------------------------------------------- */
+    const configureSecurity = () => {
+        // Remove any existing CSP meta tags.
+        document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
+        // Very permissive CSP (Note: This reduces security.)
+        const cspContent = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+                           "script-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+                           "style-src * 'unsafe-inline' data: blob:; " +
+                           "img-src * data: blob:; " +
+                           "connect-src *; " +
+                           "manifest-src *; " +
+                           "worker-src * blob:; " +
+                           "frame-src *;";
+        const meta = document.createElement('meta');
+        meta.httpEquiv = 'Content-Security-Policy';
+        meta.content = cspContent;
+        document.head.prepend(meta);
+        console.log("[CSP] Configured permissively:", cspContent);
+    };
+
+    /* -------------------------------------------------------------------------
+       4. Utility to Load External Scripts
+       (Used to load libraries like jQuery and Preact from trusted CDNs.)
+    -------------------------------------------------------------------------- */
+    const loadScript = (src, callback) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = callback || function(){ console.log(`Loaded: ${src}`); };
+        script.onerror = () => console.error("Failed to load script:", src);
+        document.head.appendChild(script);
+    };
+
+    /* -------------------------------------------------------------------------
+       5. Load External Dependencies: jQuery and Preact
+       (Some external code expects jQuery (the $ variable) or Preact to be available.)
+    -------------------------------------------------------------------------- */
+    const loadDependencies = () => {
+        if (typeof window.jQuery === 'undefined') {
+            loadScript('https://code.jquery.com/jquery-3.6.0.min.js', () => {
+                console.log("jQuery loaded");
+            });
+        }
+        if (typeof window.preact === 'undefined') {
+            loadScript('https://unpkg.com/preact@latest/dist/preact.min.js', () => {
+                console.log("Preact loaded");
+            });
+        }
+    };
+
+    /* -------------------------------------------------------------------------
+       6. Main Mod Functionality
+       (This includes a wrapped WebSocket manager and a simple wave effect on the game canvas.)
+    -------------------------------------------------------------------------- */
     const CONFIG = {
         DEBUG: true,
         MAX_RETRIES: 5,
@@ -22,7 +111,6 @@
             CONNECT: [
                 'wss://*.agar.io',
                 'wss://*.miniclippt.com'
-                // Removed 'wss://delta.agar.io' to avoid 404 errors.
             ],
             SCRIPT: [
                 'https://deltav4.gitlab.io',
@@ -42,29 +130,7 @@
         }
     };
 
-    // ===== Security Policy Management =====
-    const configureSecurity = () => {
-        // Remove any existing CSP meta tags
-        document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
-
-        // Build a new CSP meta tag with extra allowances for inline scripts, eval, and blob workers.
-        const csp = document.createElement('meta');
-        csp.httpEquiv = "Content-Security-Policy";
-        csp.content = `
-            default-src 'self' agar.io;
-            connect-src 'self' ${CONFIG.DOMAINS.CONNECT.join(' ')};
-            script-src 'self' 'unsafe-inline' 'unsafe-eval' ${CONFIG.DOMAINS.SCRIPT.join(' ')};
-            style-src 'self' 'unsafe-inline';
-            img-src 'self' data: blob: ${CONFIG.DOMAINS.IMG.join(' ')};
-            worker-src 'self' blob:;
-            manifest-src 'self';
-            frame-src https://accounts.google.com;
-        `.replace(/\s{2,}/g, ' ').trim();
-        document.head.prepend(csp);
-        if (CONFIG.DEBUG) console.log("[CSP] Configured:", csp.content);
-    };
-
-    // ===== WebSocket Management System =====
+    // WSManager: Wraps and monitors WebSocket connections.
     class WSManager {
         static init() {
             this.originalWS = window.WebSocket;
@@ -161,7 +227,7 @@
         }
     }
 
-    // ===== Wave Effect System =====
+    // WaveRenderer: Adds a simple “wave” effect on the game’s canvas when you click.
     class WaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -189,13 +255,11 @@
             this.waves = this.waves.filter(wave => {
                 wave.radius += CONFIG.WAVE.SPEED;
                 wave.opacity -= CONFIG.WAVE.FADE;
-                
                 this.ctx.beginPath();
                 this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
                 this.ctx.strokeStyle = this.getWaveStyle(wave.opacity);
                 this.ctx.lineWidth = CONFIG.WAVE.WIDTH;
                 this.ctx.stroke();
-                
                 return wave.radius < CONFIG.WAVE.MAX_RADIUS && wave.opacity > 0;
             });
         }
@@ -213,27 +277,16 @@
         }
     }
 
-    // ===== Load jQuery (if needed) =====
-    const loadjQuery = () => {
-        if (!window.jQuery) {
-            const script = document.createElement('script');
-            script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
-            script.integrity = 'sha256-/xUj+3OJ+Yh8iY/6Nr3GH3InVQJ6lE/5ODJln+1XECY=';
-            script.crossOrigin = 'anonymous';
-            document.head.appendChild(script);
-            if (CONFIG.DEBUG) console.log("[jQuery] Loading jQuery...");
-        }
-    };
-
-    // ===== Dummy Globals for External Scripts =====
-    if (typeof window.PropTypes === 'undefined') window.PropTypes = {};
-    if (typeof window.System === 'undefined') window.System = {};
-
-    // ===== Main Initialization =====
+    /* -------------------------------------------------------------------------
+       7. Main Initialization
+       (This sets up the CSP, loads dependencies, patches WebSocket, and waits for
+       the game canvas so that the wave effect can be applied.)
+    -------------------------------------------------------------------------- */
     const initialize = () => {
         configureSecurity();
+        loadDependencies();
 
-        // Remove the deprecated apple-mobile-web-app-capable meta tag and add the updated one.
+        // Remove deprecated mobile meta tag and add the updated one.
         document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.remove();
         const mobileMeta = document.createElement('meta');
         mobileMeta.name = 'mobile-web-app-capable';
@@ -241,9 +294,8 @@
         document.head.appendChild(mobileMeta);
 
         WSManager.init();
-        loadjQuery();
 
-        // Wait for the game canvas to appear, then add the wave effect.
+        // Wait until the game canvas appears, then add the wave effect.
         const canvasObserver = new MutationObserver((mutations, observer) => {
             const canvas = document.querySelector('canvas');
             if (canvas) {
