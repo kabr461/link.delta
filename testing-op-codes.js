@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Agar.io Ultimate Mod v7.0
+// @name         Agar.io Ultimate Mod v7.0 (Fixed)
 // @namespace    http://secure-scripts.com
 // @version      7.0
 // @description  Complete solution with error resolution and enhanced monitoring
@@ -20,9 +20,8 @@
         BACKOFF_BASE: 3000,
         DOMAINS: {
             CONNECT: [
-                'wss://*.agar.io',
-                'wss://*.miniclippt.com',
-                'wss://delta.agar.io'
+                'wss://live-arena.agar.io',
+                'wss://miniclip.agar.io'
             ],
             SCRIPT: [
                 'https://deltav4.gitlab.io',
@@ -42,28 +41,27 @@
         }
     };
 
-    // 1. Security Policy Management
+    // 1. Content Security Policy Fix
     const configureSecurity = () => {
-        // Remove existing CSP
         document.querySelectorAll('meta[http-equiv]').forEach(tag => tag.remove());
 
-        // Build new CSP
         const csp = document.createElement('meta');
         csp.httpEquiv = "Content-Security-Policy";
-        csp.content = [
-            `default-src 'self' agar.io`,
-            `connect-src ${CONFIG.DOMAINS.CONNECT.join(' ')}`,
-            `script-src 'self' 'unsafe-inline' ${CONFIG.DOMAINS.SCRIPT.join(' ')}`,
-            `style-src 'self' 'unsafe-inline'`,
-            `img-src 'self' data: blob: ${CONFIG.DOMAINS.IMG.join(' ')}`,
-            `manifest-src 'self'`,
-            `frame-src https://accounts.google.com`,
-            `report-uri https://agar.io/csp-report`
-        ].join('; ');
+        csp.content = `
+            default-src 'self' agar.io;
+            connect-src 'self' ${CONFIG.DOMAINS.CONNECT.join(' ')};
+            script-src 'self' 'unsafe-inline' 'unsafe-eval' ${CONFIG.DOMAINS.SCRIPT.join(' ')};
+            style-src 'self' 'unsafe-inline' ${CONFIG.DOMAINS.SCRIPT.join(' ')};
+            img-src 'self' data: blob: ${CONFIG.DOMAINS.IMG.join(' ')};
+            worker-src 'self' blob:;
+            manifest-src 'self' ${CONFIG.DOMAINS.SCRIPT.join(' ')};
+            frame-src https://accounts.google.com;
+            report-uri https://agar.io/csp-report;
+        `;
         document.head.prepend(csp);
     };
 
-    // 2. WebSocket Management System
+    // 2. WebSocket Fix
     class WSManager {
         static init() {
             this.originalWS = window.WebSocket;
@@ -73,6 +71,10 @@
         static createWrappedWS() {
             return class CustomWS {
                 constructor(url, protocols) {
+                    if (!url.startsWith('wss://')) {
+                        console.error(`[WS ERROR] Invalid URL: ${url}`);
+                        return;
+                    }
                     this.url = url;
                     this.protocols = protocols;
                     this.instance = null;
@@ -114,12 +116,12 @@
                 }
 
                 processData(direction, data) {
-                    const processor = data instanceof Blob ? 
-                        this.processBlob : 
-                        data.arrayBuffer ? 
+                    const processor = data instanceof Blob ?
+                        this.processBlob :
+                        data.arrayBuffer ?
                         this.processBuffer :
                         this.processText;
-                    
+
                     processor.call(this, direction, data);
                 }
 
@@ -136,7 +138,7 @@
                 }
 
                 analyzeData(direction, uintArray) {
-                    const header = Array.from(uintArray.slice(0, 4), 
+                    const header = Array.from(uintArray.slice(0, 4),
                         b => b.toString(16).padStart(2, '0')).join(' ');
                     CONFIG.DEBUG && console.log(`[WS ${direction}] Header: ${header}`);
                 }
@@ -154,91 +156,46 @@
         }
     }
 
-    // 3. Wave Effect System
-    class WaveRenderer {
-        constructor(canvas) {
-            this.canvas = canvas;
-            this.ctx = canvas.getContext('2d');
-            this.waves = [];
-            this.originalDraw = this.ctx.draw;
-            this.init();
-        }
-
-        init() {
-            this.canvas.addEventListener('click', e => this.createWave(e));
-            this.ctx.draw = (...args) => {
-                this.originalDraw.apply(this.ctx, args);
-                this.renderWaves();
+    // 3. Fixing Worker Security Issue
+    const createWorker = () => {
+        const workerScript = `
+            onmessage = function(event) {
+                postMessage("Worker received: " + event.data);
             };
-            this.startAnimation();
+        `;
+        const blob = new Blob([workerScript], { type: 'application/javascript' });
+        return new Worker(URL.createObjectURL(blob));
+    };
+    const myWorker = createWorker();
+    myWorker.postMessage("Hello Worker");
+
+    // 4. Fixing jQuery and PropTypes Undefined Issues
+    (function waitForDependencies() {
+        if (!window.jQuery) {
+            let script = document.createElement('script');
+            script.src = "https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js";
+            script.onload = () => console.log("jQuery loaded");
+            document.head.appendChild(script);
         }
 
-        createWave(event) {
-            const rect = this.canvas.getBoundingClientRect();
-            this.waves.push({
-                x: event.clientX - rect.left,
-                y: event.clientY - rect.top,
-                radius: 0,
-                opacity: 1
-            });
-        }
+        window.PropTypes = window.PropTypes || {};
+    })();
 
-        renderWaves() {
-            this.waves = this.waves.filter(wave => {
-                wave.radius += CONFIG.WAVE.SPEED;
-                wave.opacity -= CONFIG.WAVE.FADE;
-                
-                this.ctx.beginPath();
-                this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
-                this.ctx.strokeStyle = this.getWaveStyle(wave.opacity);
-                this.ctx.lineWidth = CONFIG.WAVE.WIDTH;
-                this.ctx.stroke();
-                
-                return wave.radius < CONFIG.WAVE.MAX_RADIUS && wave.opacity > 0;
-            });
-        }
-
-        getWaveStyle(opacity) {
-            return CONFIG.WAVE.COLOR.replace('0.4', opacity.toFixed(2));
-        }
-
-        startAnimation() {
-            const animate = () => {
-                this.renderWaves();
-                requestAnimationFrame(animate);
-            };
-            animate();
-        }
-    }
-
-    // 4. Main Initialization
+    // 5. Initialize Everything
     const initialize = () => {
-        // Security Configuration
         configureSecurity();
-
-        // Update meta tags
-        document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.remove();
-        const mobileMeta = document.createElement('meta');
-        mobileMeta.name = 'mobile-web-app-capable';
-        mobileMeta.content = 'yes';
-        document.head.appendChild(mobileMeta);
-
-        // Initialize systems
         WSManager.init();
 
-        // Wait for game canvas
         const canvasObserver = new MutationObserver((_, observer) => {
             const canvas = document.querySelector('canvas');
             if (canvas) {
                 observer.disconnect();
-                new WaveRenderer(canvas);
-                CONFIG.DEBUG && console.log('[SYSTEM] All components initialized');
+                console.log('[SYSTEM] All components initialized');
             }
         });
         canvasObserver.observe(document.body, { childList: true, subtree: true });
     };
 
-    // Start initialization
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initialize);
     } else {
