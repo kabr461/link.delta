@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Team Wave Broadcast Mod for Agar.io
+// @name         Delta Team Help & Wave Broadcast Mod for Agar.io
 // @namespace    http://your-namespace-here.com
 // @version      1.0
-// @description  Removes local restrictions, adds a wave effect on canvas, and broadcasts clicks so all teammates see the waves. (For testing only—extremely insecure!)
+// @description  Opens local restrictions, adds a team-shared wave effect on canvas, and lets team members broadcast help requests (press "H") so everyone sees that someone needs help. (Experimental & insecure!)
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -19,8 +19,11 @@
             tag.parentNode.removeChild(tag);
         });
     };
+
+    // Remove current CSP meta tags immediately.
     removeCSPMetaTags();
 
+    // Use a MutationObserver to remove any new CSP tags.
     const cspObserver = new MutationObserver((mutations) => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
@@ -32,6 +35,7 @@
     });
     cspObserver.observe(document.documentElement, { childList: true, subtree: true });
 
+    // Insert an extremely permissive CSP meta tag into the <head> when available.
     const insertPermissiveCSP = () => {
         if (document.head) {
             removeCSPMetaTags();
@@ -81,20 +85,19 @@
     /***************************************************************
      * 3. Set Up the Click-Triggered Wave Effect with Broadcast
      ***************************************************************/
-    // Configuration for the wave effect.
     const CONFIG = {
         WAVE: {
             MAX_RADIUS: 200,   // Maximum radius before a wave disappears.
             SPEED: 8,          // How fast the wave expands.
             WIDTH: 3,          // Stroke width of the wave circle.
-            COLOR: 'rgba(100, 200, 255, 0.4)',  // Base color (the "0.4" will be replaced with dynamic opacity).
+            COLOR: 'rgba(100, 200, 255, 0.4)',  // Base color; the "0.4" will be replaced with dynamic opacity.
             FADE: 0.02         // How fast the wave fades.
         },
-        // WebSocket server URL (you must set up or use a broadcast server here)
-        WS_SERVER: 'wss://your-wave-server.example.com'  // <-- Replace with your working WebSocket server URL.
+        // Replace with your working WebSocket server URL.
+        WS_SERVER: 'wss://your-wave-server.example.com'
     };
 
-    // WaveRenderer creates and animates wave effects on a canvas.
+    // WaveRenderer: draws and animates waves on the canvas.
     class WaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -104,7 +107,7 @@
         }
 
         init() {
-            // When you click, create a wave and broadcast it.
+            // On canvas click: create a local wave and broadcast the coordinates.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const waveData = {
@@ -112,13 +115,12 @@
                     y: e.clientY - rect.top
                 };
                 this.createWave(waveData.x, waveData.y);
-                broadcastWave(waveData);  // send to other clients
+                broadcastWave(waveData);  // Send to teammates.
             });
             this.startAnimation();
         }
 
         createWave(x, y) {
-            // Add a wave at the given coordinates.
             this.waves.push({
                 x: x,
                 y: y,
@@ -128,13 +130,11 @@
         }
 
         renderWaves() {
-            // Update and draw each wave.
             this.waves = this.waves.filter(wave => {
                 wave.radius += CONFIG.WAVE.SPEED;
                 wave.opacity -= CONFIG.WAVE.FADE;
                 this.ctx.beginPath();
                 this.ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
-                // Replace the alpha value in the color string with the current opacity.
                 this.ctx.strokeStyle = CONFIG.WAVE.COLOR.replace('0.4', wave.opacity.toFixed(2));
                 this.ctx.lineWidth = CONFIG.WAVE.WIDTH;
                 this.ctx.stroke();
@@ -151,8 +151,7 @@
         }
     }
 
-    // --- WebSocket Broadcast Integration ---
-    // Establish a WebSocket connection to the broadcast server.
+    // --- WebSocket Broadcast Integration for Waves and Help ---
     let waveSocket;
     const initWaveSocket = () => {
         try {
@@ -163,14 +162,18 @@
             waveSocket.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
+                    // Handle wave events.
                     if (data.type === 'wave') {
-                        // When a wave event is received, add it to the renderer.
                         if (window.waveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
                             window.waveRenderer.createWave(data.x, data.y);
                         }
                     }
+                    // Handle help events.
+                    else if (data.type === 'help') {
+                        showHelpMessage(data.message || "A team member is asking for help!");
+                    }
                 } catch (e) {
-                    console.error("Error parsing wave message:", e);
+                    console.error("Error parsing broadcast message:", e);
                 }
             };
             waveSocket.onerror = (err) => {
@@ -184,11 +187,9 @@
             console.error("Failed to initialize wave WebSocket:", e);
         }
     };
-
-    // Call the function to open the WebSocket connection.
     initWaveSocket();
 
-    // Function to broadcast a wave event to the server.
+    // Function to broadcast a wave event.
     const broadcastWave = (data) => {
         if (waveSocket && waveSocket.readyState === WebSocket.OPEN) {
             const message = { type: 'wave', x: data.x, y: data.y };
@@ -196,7 +197,56 @@
         }
     };
 
-    // --- Attach the Wave Effect to the Game Canvas ---
+    /***************************************************************
+     * 4. Team Help Broadcast Functionality
+     ***************************************************************/
+    // Create an overlay element for displaying help messages.
+    const createHelpOverlay = () => {
+        const overlay = document.createElement('div');
+        overlay.id = 'help-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '10px';
+        overlay.style.right = '10px';
+        overlay.style.padding = '10px';
+        overlay.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+        overlay.style.color = 'white';
+        overlay.style.fontSize = '20px';
+        overlay.style.zIndex = '9999';
+        overlay.style.display = 'none';
+        document.body.appendChild(overlay);
+        return overlay;
+    };
+    const helpOverlay = createHelpOverlay();
+
+    // Function to display a help message on-screen.
+    const showHelpMessage = (msg) => {
+        helpOverlay.innerText = msg;
+        helpOverlay.style.display = 'block';
+        setTimeout(() => {
+            helpOverlay.style.display = 'none';
+        }, 5000);
+    };
+
+    // Function to broadcast a help request to teammates.
+    const broadcastHelp = (message) => {
+        if (waveSocket && waveSocket.readyState === WebSocket.OPEN) {
+            const msg = { type: 'help', message: message };
+            waveSocket.send(JSON.stringify(msg));
+        }
+    };
+
+    // Listen for keydown events—when a team member presses "H", send a help request.
+    document.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'h') {
+            broadcastHelp("Help needed from a team member!");
+            // Optionally, also display your own help request locally.
+            showHelpMessage("You requested help!");
+        }
+    });
+
+    /***************************************************************
+     * 5. Attach the Wave Effect to the Game Canvas
+     ***************************************************************/
     const attachWaveEffect = () => {
         const canvas = document.querySelector('canvas');
         if (canvas) {
@@ -213,5 +263,5 @@
         attachWaveEffect();
     }
 
-    console.log("Delta script modifications and team wave effect setup attempted.");
+    console.log("Delta script modifications, team wave effect, and help broadcast setup attempted.");
 })();
