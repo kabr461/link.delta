@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Spectator Window with Persistent CMD Chat UI for Agar.io
+// @name         Delta Spectator Window (Spectating Mode Only) for Agar.io
 // @namespace    http://your-namespace-here.com
-// @version      1.2.3
-// @description  Displays a live spectator window (with a CMD Chat toggle that is ON by default) and smartly re-adds the UI if it’s removed by the page. (Dummy data for simulation.)
+// @version      1.0
+// @description  Displays a floating spectator panel (with names, avatars, and wave counts) only when in spectating mode—using Delta’s data smartly. Clicking a name copies it; clicking an avatar copies its URL. CMD Chat is enabled by default.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-end
@@ -19,9 +19,9 @@
     }
     removeCSPMetaTags();
 
-    /***************** Insert Custom CSS for the Spectator Window *****************/
+    /***************** Insert Custom CSS for the Spectator Panel *****************/
     function insertSpectatorStyles() {
-        if (document.getElementById('delta-spectator-style')) return; // Only insert once.
+        if (document.getElementById('delta-spectator-style')) return; // only insert once
         const style = document.createElement('style');
         style.id = 'delta-spectator-style';
         style.textContent = `
@@ -85,15 +85,10 @@
         document.head.appendChild(style);
     }
 
-    /***************** Function to Create the Spectator Panel UI *****************/
+    /***************** Create/Remove the Spectator Panel UI *****************/
     function createSpectatorPanel() {
-        // If the panel already exists, do nothing.
         if (document.getElementById('delta-spectator-panel')) return;
-
-        // Insert our custom CSS.
         insertSpectatorStyles();
-
-        // Create the panel container.
         const panel = document.createElement('div');
         panel.id = 'delta-spectator-panel';
         panel.innerHTML = `
@@ -108,104 +103,147 @@
         `;
         document.body.appendChild(panel);
 
-        // Attach event listeners.
-        const spectatorList = document.getElementById('spectator-list');
+        // Attach event listener for CMD Chat toggle.
         const cmdChatCheckbox = document.getElementById('cmd-chat-checkbox');
         cmdChatCheckbox.addEventListener('change', function() {
             console.log("CMD Chat " + (this.checked ? "enabled" : "disabled"));
         });
-
-        // For demonstration, simulate spectator data update.
-        function copyToClipboard(text) {
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(() => {
-                    console.log(`Copied to clipboard: ${text}`);
-                }).catch(err => {
-                    console.error('Clipboard write failed: ', err);
-                });
-            } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    console.log(`Copied to clipboard: ${text}`);
-                } catch (err) {
-                    console.error('Failed to copy text: ', err);
-                }
-                document.body.removeChild(textArea);
-            }
-        }
-
-        // Dummy function to simulate fetching spectator data.
-        function getSpectatorData() {
-            // Use dummy images via dummyimage.com to avoid DNS issues.
-            return [
-                { name: "PlayerOne", skin: "https://dummyimage.com/40x40/FF0000/FFFFFF.png&text=P1", waves: Math.floor(Math.random() * 10) },
-                { name: "PlayerTwo", skin: "https://dummyimage.com/40x40/00FF00/FFFFFF.png&text=P2", waves: Math.floor(Math.random() * 10) },
-                { name: "PlayerThree", skin: "https://dummyimage.com/40x40/0000FF/FFFFFF.png&text=P3", waves: Math.floor(Math.random() * 10) },
-                { name: "PlayerFour", skin: "https://dummyimage.com/40x40/FFFF00/FFFFFF.png&text=P4", waves: Math.floor(Math.random() * 10) }
-            ];
-        }
-
-        function updateSpectatorList() {
-            try {
-                const spectators = getSpectatorData();
-                spectatorList.innerHTML = "";
-                spectators.forEach(spectator => {
-                    const item = document.createElement('div');
-                    item.className = 'spectator-item';
-
-                    const img = document.createElement('img');
-                    img.src = spectator.skin;
-                    img.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        copyToClipboard(spectator.skin);
-                    });
-
-                    const nameDiv = document.createElement('div');
-                    nameDiv.className = 'spectator-name';
-                    nameDiv.textContent = spectator.name;
-                    nameDiv.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        copyToClipboard(spectator.name);
-                    });
-
-                    const waveCount = document.createElement('div');
-                    waveCount.className = 'spectator-wave';
-                    waveCount.textContent = spectator.waves;
-                    
-                    item.appendChild(img);
-                    item.appendChild(nameDiv);
-                    item.appendChild(waveCount);
-                    spectatorList.appendChild(item);
-                });
-            } catch (err) {
-                console.error("Error updating spectator list:", err);
-            }
-        }
-        // Update the list every 5 seconds.
-        setInterval(updateSpectatorList, 5000);
-        updateSpectatorList();
-
-        console.log("Delta spectator window initialized.");
     }
 
-    /***************** Ensure the Spectator Panel Persists *****************/
-    // Create the panel initially.
-    createSpectatorPanel();
+    function removeSpectatorPanel() {
+        const panel = document.getElementById('delta-spectator-panel');
+        if (panel) {
+            panel.remove();
+        }
+    }
 
-    // Use a MutationObserver to watch the document body for removal of the panel.
+    /***************** Utility: Copy Text to Clipboard *****************/
+    function copyToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                console.log(`Copied to clipboard: ${text}`);
+            }).catch(err => {
+                console.error('Clipboard write failed: ', err);
+            });
+        } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                console.log(`Copied to clipboard: ${text}`);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+            document.body.removeChild(textArea);
+        }
+    }
+
+    /***************** Get Spectator Data from Delta (Smartly) *****************
+     * In a real setup, Delta should provide live data.
+     * For this example, we assume that when in spectating mode, a global
+     * variable `window.deltaSpectators` exists and is an array of objects:
+     * { name: "PlayerOne", skin: "https://example.com/avatar.png", waves: 3 }
+     **********************************************************************/
+    function getSpectatorData() {
+        if (window.deltaSpectators && Array.isArray(window.deltaSpectators) && window.deltaSpectators.length > 0) {
+            return window.deltaSpectators;
+        }
+        return null;
+    }
+
+    /***************** Update the Spectator List UI from Delta Data *****************/
+    function updateSpectatorList() {
+        const data = getSpectatorData();
+        const spectatorList = document.getElementById('spectator-list');
+        if (!spectatorList) return;
+        spectatorList.innerHTML = "";
+        if (data) {
+            data.forEach(spectator => {
+                const item = document.createElement('div');
+                item.className = 'spectator-item';
+
+                const img = document.createElement('img');
+                img.src = spectator.skin;
+                img.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    copyToClipboard(spectator.skin);
+                });
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'spectator-name';
+                nameDiv.textContent = spectator.name;
+                nameDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    copyToClipboard(spectator.name);
+                });
+
+                const waveCount = document.createElement('div');
+                waveCount.className = 'spectator-wave';
+                waveCount.textContent = spectator.waves || 0;
+
+                item.appendChild(img);
+                item.appendChild(nameDiv);
+                item.appendChild(waveCount);
+                spectatorList.appendChild(item);
+            });
+        } else {
+            spectatorList.innerHTML = "<div>No spectators (not in spectating mode)</div>";
+        }
+    }
+
+    /***************** Check Spectating Mode & Persist the Panel *****************
+     * We assume that Delta sets window.deltaSpectators when in spectating mode.
+     * If that data exists, we show (or update) the panel; if not, we remove it.
+     ******************************************************************************/
+    function checkSpectatingMode() {
+        const data = getSpectatorData();
+        if (data) {
+            // In spectating mode—ensure the panel exists and update it.
+            if (!document.getElementById('delta-spectator-panel')) {
+                createSpectatorPanel();
+            }
+            updateSpectatorList();
+        } else {
+            // Not in spectating mode—remove the panel if it exists.
+            removeSpectatorPanel();
+        }
+    }
+
+    // Check spectating mode every 5 seconds.
+    setInterval(checkSpectatingMode, 5000);
+    // Also run once immediately.
+    checkSpectatingMode();
+
+    /***************** MutationObserver to Re-Add the UI if Removed *****************/
     const uiObserver = new MutationObserver((mutations) => {
         if (!document.getElementById('delta-spectator-panel')) {
-            console.warn("Spectator panel missing! Re-adding...");
-            createSpectatorPanel();
+            console.warn("Spectator panel missing! Re-adding it...");
+            checkSpectatingMode();
         }
     });
     uiObserver.observe(document.body, { childList: true, subtree: true });
 
-    console.log("Delta Spectator Window with persistent CMD Chat UI is running.");
+    console.log("Delta Spectator Window (Spectating Mode Only) script is running.");
+
+    /***************** (Optional) For Testing: Simulate Delta Data *****************
+     * Remove or disable this section in production.
+     * This dummy simulation makes window.deltaSpectators available.
+     ******************************************************************************/
+    if (!window.deltaSpectators) {
+        window.deltaSpectators = [
+            { name: "DeltaPlayer1", skin: "https://dummyimage.com/40x40/FF5733/FFFFFF.png&text=D1", waves: 3 },
+            { name: "DeltaPlayer2", skin: "https://dummyimage.com/40x40/33FF57/FFFFFF.png&text=D2", waves: 5 },
+            { name: "DeltaPlayer3", skin: "https://dummyimage.com/40x40/3357FF/FFFFFF.png&text=D3", waves: 2 }
+        ];
+        // For testing, update the dummy data every 10 seconds.
+        setInterval(() => {
+            window.deltaSpectators.forEach(s => s.waves = Math.floor(Math.random() * 10));
+        }, 10000);
+    }
+    /***************** End of Dummy Simulation Section *****************/
+
 })();
