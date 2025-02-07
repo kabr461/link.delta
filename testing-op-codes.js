@@ -2,16 +2,15 @@
 // @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI
 // @namespace    http://your-namespace-here.com
 // @version      1.3
-// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel.
+// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel (visible only in spectator view).
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
 // ==/UserScript==
 
-
 (function() {
     'use strict';
-    
+
     /***************************************************************
      * 1. Remove & Override Content Security Policies (CSP)
      ***************************************************************/
@@ -60,7 +59,7 @@
         }
     };
     insertPermissiveCSP();
-    
+
     /***************************************************************
      * 2. Patch Worker Creation and System.import Polyfill
      ***************************************************************/
@@ -84,7 +83,7 @@
     if (!window.System) {
         window.System = { import: src => import(src) };
     }
-    
+
     /***************************************************************
      * 3. Load Firebase SDK (v8) Dynamically and Initialize
      ***************************************************************/
@@ -95,22 +94,21 @@
         document.head.appendChild(script);
     }
     
-    // Load Firebase scripts in sequence
+    // Load Firebase scripts in sequence.
     loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js", () => {
         loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
     });
     
-    // TODO: Replace these placeholders with your real Firebase config
+    // TODO: Replace these placeholders with your real Firebase config.
     const firebaseConfig = {
-  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-  authDomain: "agario-bb5ea.firebaseapp.com",
-  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-  projectId: "agario-bb5ea",
-  storageBucket: "agario-bb5ea.firebasestorage.app",
-  messagingSenderId: "306389211380",
-  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-  measurementId: "G-5NTSETJHM9"
-};
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
     
     function initializeFirebase() {
         if (!firebase.apps.length) {
@@ -174,7 +172,7 @@
         }
     
         init() {
-            // On canvas click: local & broadcast cinematic animation
+            // On canvas click: trigger local & broadcast cinematic animation.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
@@ -220,7 +218,7 @@
                 p.alpha -= CONFIG.PARTICLE.FADE;
                 if (p.alpha <= 0) return false;
                 
-                // radial gradient
+                // Create a radial gradient.
                 const gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
                 gradient.addColorStop(0, `rgba(${p.color}, ${p.alpha})`);
                 gradient.addColorStop(1, `rgba(${p.color}, 0)`);
@@ -305,12 +303,12 @@
     }
     
     /***************************************************************
-     * 8. Delta Spectators UI Panel
+     * 8. Delta Spectators UI Panel (Visible Only in Spectator View)
      ***************************************************************/
-    let cmdChatEnabled = false; // We'll toggle this on/off
-    let spectatorListContainer; // Will hold reference to the list container element
+    let cmdChatEnabled = false; // Toggle for CMD Chat.
+    let spectatorListContainer; // Reference to the list container element.
     
-    // 8.1. Create a container for our new UI
+    // 8.1. Create a container for our new UI.
     const createSpectatorUI = () => {
         const uiWrapper = document.createElement('div');
         uiWrapper.id = 'delta-spectator-ui';
@@ -328,14 +326,14 @@
             borderRadius: '6px'
         });
         
-        // Title/heading
+        // Title/heading.
         const header = document.createElement('div');
         header.textContent = "Users (Delta)";
         header.style.fontWeight = 'bold';
         header.style.marginBottom = '6px';
         uiWrapper.appendChild(header);
         
-        // The scrollable list area
+        // The scrollable list area.
         const listContainer = document.createElement('div');
         listContainer.id = 'delta-spectator-list';
         listContainer.style.maxHeight = '200px';
@@ -343,7 +341,7 @@
         listContainer.style.marginBottom = '8px';
         uiWrapper.appendChild(listContainer);
         
-        // CMD Chat toggle
+        // CMD Chat toggle.
         const cmdChatToggle = document.createElement('button');
         cmdChatToggle.textContent = "CMD Chat: OFF";
         cmdChatToggle.style.width = '100%';
@@ -351,7 +349,7 @@
         cmdChatToggle.onclick = () => {
             cmdChatEnabled = !cmdChatEnabled;
             cmdChatToggle.textContent = "CMD Chat: " + (cmdChatEnabled ? "ON" : "OFF");
-            // TODO: Hook into the actual Delta logic for enabling cmd chat if needed.
+            // TODO: Hook into the actual Delta logic for enabling CMD Chat if needed.
             console.log("CMD Chat toggled:", cmdChatEnabled);
         };
         uiWrapper.appendChild(cmdChatToggle);
@@ -360,20 +358,33 @@
         return { uiWrapper, listContainer };
     };
     
-    // Create the initial UI and keep a reference to the list container.
-    let spectatorUI = createSpectatorUI();
-    spectatorListContainer = spectatorUI.listContainer;
+    // 8.2. Define a function to check if spectator view is active.
+    function isSpectatorView() {
+        // TODO: Replace with your actual logic to detect spectator view on agar.io.
+        // For example, you might check for a specific DOM element, URL parameter, or global variable.
+        // Here, we demonstrate by checking if window.spectator is true or if an element with id "spectate" exists.
+        return (window.spectator === true) || (document.getElementById('spectate') !== null);
+    }
     
-    // Helper to ensure the spectator UI exists. If removed, recreate it.
+    // 8.3. Ensure the spectator UI exists when in spectator view (or remove it when not).
     function ensureSpectatorUIExists() {
-        if (!document.getElementById('delta-spectator-ui')) {
-            console.log("Spectator UI was removed, re-creating it.");
-            spectatorUI = createSpectatorUI();
-            spectatorListContainer = spectatorUI.listContainer;
+        if (isSpectatorView()) {
+            if (!document.getElementById('delta-spectator-ui')) {
+                console.log("Spectator view active: Creating UI panel.");
+                let uiElements = createSpectatorUI();
+                spectatorListContainer = uiElements.listContainer;
+            }
+        } else {
+            // Remove UI if it exists when not in spectator view.
+            const ui = document.getElementById('delta-spectator-ui');
+            if (ui) {
+                console.log("Not in spectator view: Removing UI panel.");
+                ui.remove();
+            }
         }
     }
     
-    // 8.2. Use Delta-specific spectator data
+    // 8.4. Use Delta-specific spectator data.
     function getDeltaSpectators() {
         // If your Delta system exposes spectator data via a global variable (e.g. window.delta.spectators),
         // then use it. Otherwise, fall back to Delta-themed placeholder data.
@@ -383,24 +394,22 @@
         return [
             {
                 name: "DeltaAce",
-                skinUrl: "https://i.imgur.com/YourDeltaSkin1.png", // Replace with your Delta skin image URL
+                skinUrl: "https://i.imgur.com/YourDeltaSkin1.png", // Replace with your Delta skin image URL.
                 waveCount: 5
             },
             {
                 name: "DeltaChamp",
-                skinUrl: "https://i.imgur.com/YourDeltaSkin2.png", // Replace with your Delta skin image URL
+                skinUrl: "https://i.imgur.com/YourDeltaSkin2.png", // Replace with your Delta skin image URL.
                 waveCount: 3
             }
         ];
     }
     
-    // 8.3. A function to build the UI list
+    // 8.5. Build the UI list.
     function updateSpectatorUI() {
-        // First ensure the UI is still in the DOM
-        ensureSpectatorUIExists();
-        
+        if (!isSpectatorView() || !spectatorListContainer) return;
         const specs = getDeltaSpectators();
-        // Clear old list
+        // Clear old list.
         spectatorListContainer.innerHTML = "";
         
         specs.forEach(player => {
@@ -409,7 +418,7 @@
             row.style.alignItems = 'center';
             row.style.marginBottom = '5px';
             
-            // Skin image
+            // Skin image.
             const skinImg = document.createElement('img');
             skinImg.src = player.skinUrl;
             skinImg.alt = "skin";
@@ -417,18 +426,18 @@
             skinImg.height = 24;
             skinImg.style.cursor = 'pointer';
             skinImg.style.marginRight = '5px';
-            // Click to copy the URL
+            // Click to copy the URL.
             skinImg.addEventListener('click', () => copyToClipboard(player.skinUrl));
             
-            // Player name
+            // Player name.
             const nameSpan = document.createElement('span');
             nameSpan.textContent = player.name;
             nameSpan.style.cursor = 'pointer';
             nameSpan.style.flex = '1';
-            // Click to copy the name
+            // Click to copy the name.
             nameSpan.addEventListener('click', () => copyToClipboard(player.name));
             
-            // Wave count
+            // Wave count.
             const waveSpan = document.createElement('span');
             waveSpan.textContent = `(${player.waveCount})`;
             waveSpan.style.marginLeft = '5px';
@@ -441,7 +450,7 @@
         });
     }
     
-    // 8.4. Helper to copy text to clipboard
+    // 8.6. Helper to copy text to clipboard.
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
             console.log("Copied to clipboard:", text);
@@ -450,16 +459,22 @@
         });
     }
     
-    // 8.5. Periodically update the spectator UI.
-    setInterval(() => {
-        updateSpectatorUI();
-    }, 2000);
+    // 8.7. Manage the spectator UI based on spectator view state.
+    function manageSpectatorUI() {
+        if (isSpectatorView()) {
+            ensureSpectatorUIExists();
+            updateSpectatorUI();
+        } else {
+            // Remove the UI if it exists when not in spectator view.
+            const ui = document.getElementById('delta-spectator-ui');
+            if (ui) {
+                ui.remove();
+            }
+        }
+    }
     
-    // Additionally, use a MutationObserver to watch for removal of the spectator UI.
-    const uiObserver = new MutationObserver(mutations => {
-        ensureSpectatorUIExists();
-    });
-    uiObserver.observe(document.body, { childList: true, subtree: true });
+    // Periodically check and update the spectator UI.
+    setInterval(manageSpectatorUI, 2000);
     
     console.log("Delta script with spectators UI + cinematic effect + help broadcast loaded.");
 })();
