@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Team Help & Cool Animation Broadcast Mod for Agar.io (Firebase)
+// @name         Delta Team Help & Cinematic Particle Broadcast Mod for Agar.io (Firebase)
 // @namespace    http://your-namespace-here.com
-// @version      1.1
-// @description  Relaxes local restrictions and adds a team-shared cool particle explosion animation plus help request feature via Firebase so all teammates see when someone clicks or needs help. (Experimental & insecure!)
+// @version      1.2
+// @description  Relaxes local restrictions and adds a team-shared, cinematic, colorful particle explosion animation plus help request feature via Firebase so all teammates see when someone clicks or needs help. (Experimental & insecure!)
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -119,9 +119,9 @@
         teamMessagesRef = firebase.database().ref('team_messages');
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
-            // Handle cool animation messages.
+            // Handle cinematic animation messages.
             if (data.type === 'cool') {
-                console.log("Received cool animation broadcast from teammate:", data);
+                console.log("Received cinematic animation broadcast from teammate:", data);
                 if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
                     window.coolWaveRenderer.createParticles(data.x, data.y);
                 }
@@ -140,17 +140,17 @@
     }
     
     /***************************************************************
-     * 5. Set Up the Cool Particle Animation Effect with Broadcast & Logging
+     * 5. Set Up the Cinematic Particle Animation Effect with Broadcast & Logging
      ***************************************************************/
-    // Configuration for the particle explosion effect.
+    // Configuration for the cinematic particle explosion effect.
     const CONFIG = {
         PARTICLE: {
-            PARTICLE_COUNT: 30,    // Number of particles per explosion.
-            SPEED_MIN: 1,          // Minimum speed.
-            SPEED_MAX: 4,          // Maximum speed.
-            SIZE_MIN: 2,           // Minimum particle size.
-            SIZE_MAX: 5,           // Maximum particle size.
-            FADE: 0.02             // Fade rate per frame.
+            PARTICLE_COUNT: 50,    // Number of particles per explosion.
+            SPEED_MIN: 2,          // Minimum speed.
+            SPEED_MAX: 6,          // Maximum speed.
+            SIZE_MIN: 3,           // Minimum particle size.
+            SIZE_MAX: 7,           // Maximum particle size.
+            FADE: 0.015            // Fade rate per frame.
         }
     };
     
@@ -163,12 +163,12 @@
         }
     
         init() {
-            // On canvas click: trigger a cool animation and broadcast its coordinates.
+            // On canvas click: trigger a cinematic animation and broadcast the coordinates.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
-                console.log("Local cool animation triggered at:", {x, y});
+                console.log("Local cinematic animation triggered at:", {x, y});
                 this.createParticles(x, y);
                 broadcastTeamMessage({ type: 'cool', x, y });
             });
@@ -176,6 +176,16 @@
         }
     
         createParticles(x, y) {
+            // Choose a random base color for this explosion from a vibrant palette.
+            const colorPalette = [
+                "255, 100, 100", // soft red
+                "255, 150, 50",  // orange
+                "255, 255, 100", // yellow
+                "100, 255, 100", // green
+                "100, 200, 255", // light blue
+                "200, 100, 255"  // purple
+            ];
+            const baseColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
             for (let i = 0; i < CONFIG.PARTICLE.PARTICLE_COUNT; i++) {
                 const angle = Math.random() * 2 * Math.PI;
                 const speed = Math.random() * (CONFIG.PARTICLE.SPEED_MAX - CONFIG.PARTICLE.SPEED_MIN) + CONFIG.PARTICLE.SPEED_MIN;
@@ -188,23 +198,22 @@
                     dx: dx,
                     dy: dy,
                     size: size,
-                    alpha: 1
+                    alpha: 1,
+                    color: baseColor
                 });
             }
         }
     
         renderParticles() {
             this.particles = this.particles.filter(particle => {
-                // Update particle position.
                 particle.x += particle.dx;
                 particle.y += particle.dy;
-                // Fade out.
                 particle.alpha -= CONFIG.PARTICLE.FADE;
                 if (particle.alpha <= 0) return false;
-                // Draw particle with a radial gradient for a cool effect.
+                // Create a radial gradient using the particle's base color.
                 const gradient = this.ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, particle.size);
-                gradient.addColorStop(0, `rgba(255, 255, 255, ${particle.alpha})`);
-                gradient.addColorStop(1, `rgba(100, 200, 255, 0)`);
+                gradient.addColorStop(0, `rgba(${particle.color}, ${particle.alpha})`);
+                gradient.addColorStop(1, `rgba(${particle.color}, 0)`);
                 this.ctx.fillStyle = gradient;
                 this.ctx.beginPath();
                 this.ctx.arc(particle.x, particle.y, particle.size, 0, 2 * Math.PI);
@@ -215,8 +224,7 @@
     
         startAnimation() {
             const animate = () => {
-                // Note: We do not clear the canvas entirely as the game may be drawing beneath.
-                // Our effect is drawn on top.
+                // We don't clear the entire canvas, so our effects overlay on the game's drawing.
                 this.renderParticles();
                 requestAnimationFrame(animate);
             };
@@ -243,6 +251,7 @@
         return overlay;
     };
     const helpOverlay = createHelpOverlay();
+    
     const showHelpMessage = (msg) => {
         helpOverlay.innerText = msg;
         helpOverlay.style.display = 'block';
@@ -250,9 +259,11 @@
             helpOverlay.style.display = 'none';
         }, 5000);
     };
+    
     const broadcastHelp = (message) => {
         broadcastTeamMessage({ type: 'help', message: message });
     };
+    
     document.addEventListener('keydown', (e) => {
         if (e.key.toLowerCase() === 'h') {
             broadcastHelp("Help needed from a team member!");
@@ -262,13 +273,13 @@
     });
     
     /***************************************************************
-     * 7. Attach the Cool Animation Effect to the Game Canvas
+     * 7. Attach the Cinematic Animation Effect to the Game Canvas
      ***************************************************************/
     const attachCoolAnimationEffect = () => {
         const canvas = document.querySelector('canvas');
         if (canvas) {
             window.coolWaveRenderer = new CoolWaveRenderer(canvas);
-            console.log("Cool animation effect activated on canvas.");
+            console.log("Cinematic particle animation effect activated on canvas.");
         } else {
             setTimeout(attachCoolAnimationEffect, 100);
         }
@@ -279,5 +290,5 @@
         attachCoolAnimationEffect();
     }
     
-    console.log("Delta script modifications, team cool animation effect, help broadcast, and Firebase integration setup attempted.");
+    console.log("Delta script modifications, team cinematic animation effect, help broadcast, and Firebase integration setup attempted.");
 })();
