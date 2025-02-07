@@ -100,16 +100,16 @@
     });
     
     // TODO: Replace these placeholders with your real Firebase config
-   const firebaseConfig = {
-    apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-    authDomain: "agario-bb5ea.firebaseapp.com",
-    databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-    projectId: "agario-bb5ea",
-    storageBucket: "agario-bb5ea.firebasestorage.app",
-    messagingSenderId: "306389211380",
-    appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-    measurementId: "G-5NTSETJHM9"
-  };
+    const firebaseConfig = {
+  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
+  authDomain: "agario-bb5ea.firebaseapp.com",
+  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
+  projectId: "agario-bb5ea",
+  storageBucket: "agario-bb5ea.firebasestorage.app",
+  messagingSenderId: "306389211380",
+  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
+  measurementId: "G-5NTSETJHM9"
+};
     
     function initializeFirebase() {
         if (!firebase.apps.length) {
@@ -307,6 +307,7 @@
      * 8. Delta Spectators UI Panel
      ***************************************************************/
     let cmdChatEnabled = false; // We'll toggle this on/off
+    let spectatorListContainer; // Will hold reference to the list container element
     
     // 8.1. Create a container for our new UI
     const createSpectatorUI = () => {
@@ -358,7 +359,18 @@
         return { uiWrapper, listContainer };
     };
     
-    const { listContainer: spectatorListContainer } = createSpectatorUI();
+    // Create the initial UI and keep a reference to the list container.
+    let spectatorUI = createSpectatorUI();
+    spectatorListContainer = spectatorUI.listContainer;
+    
+    // Helper to ensure the spectator UI exists. If removed, recreate it.
+    function ensureSpectatorUIExists() {
+        if (!document.getElementById('delta-spectator-ui')) {
+            console.log("Spectator UI was removed, re-creating it.");
+            spectatorUI = createSpectatorUI();
+            spectatorListContainer = spectatorUI.listContainer;
+        }
+    }
     
     // 8.2. Use Delta-specific spectator data
     function getDeltaSpectators() {
@@ -383,6 +395,9 @@
     
     // 8.3. A function to build the UI list
     function updateSpectatorUI() {
+        // First ensure the UI is still in the DOM
+        ensureSpectatorUIExists();
+        
         const specs = getDeltaSpectators();
         // Clear old list
         spectatorListContainer.innerHTML = "";
@@ -434,10 +449,16 @@
         });
     }
     
-    // 8.5. Poll or observe changes in Delta data (here, we just poll)
+    // 8.5. Periodically update the spectator UI.
     setInterval(() => {
         updateSpectatorUI();
     }, 2000);
+    
+    // Additionally, use a MutationObserver to watch for removal of the spectator UI.
+    const uiObserver = new MutationObserver(mutations => {
+        ensureSpectatorUIExists();
+    });
+    uiObserver.observe(document.body, { childList: true, subtree: true });
     
     console.log("Delta script with spectators UI + cinematic effect + help broadcast loaded.");
 })();
