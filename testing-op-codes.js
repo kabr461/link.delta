@@ -208,6 +208,10 @@
             });
         } else {
             spectatorList.innerHTML = "<div>No spectators found</div>";
+
+
+
+            
         }
     }
 
