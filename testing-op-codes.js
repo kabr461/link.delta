@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Delta Spectator Window (Creative Cinematic Version) for Agar.io
 // @namespace    http://your-namespace-here.com
-// @version      1.0
-// @description  Displays a live spectator window with names, avatars, wave counts, and a CMD Chat toggle. Clicking a name or image copies details to the clipboard. (Dummy data is used for simulation.)
+// @version      1.1.1
+// @description  Displays a live spectator window with names, avatars, wave counts, and a CMD Chat toggle (which is ON by default). Clicking a name or image copies details to the clipboard. (Dummy data is used for simulation.)
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-end
@@ -91,7 +91,7 @@
         <div id="spectator-list"></div>
         <div class="cmd-chat-toggle">
             <label>
-                <input type="checkbox" id="cmd-chat-checkbox">
+                <input type="checkbox" id="cmd-chat-checkbox" checked>
                 CMD Chat
             </label>
         </div>
