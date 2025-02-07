@@ -14,32 +14,27 @@
     /***************************************************************
      * 1. Remove & Override Content Security Policies (CSP)
      ***************************************************************/
+    // Use the modern .remove() method to smartly remove any existing CSP meta tags.
     const removeCSPMetaTags = () => {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
             try {
-                // Only remove if the tag is still attached to its parent.
-                if (tag.parentNode && tag.parentNode.contains(tag)) {
-                    tag.parentNode.removeChild(tag);
-                }
+                tag.remove(); // Safely removes the tag if it exists.
             } catch (e) {
-                console.error("Error removing CSP meta tag:", e);
+                console.error("Error removing meta tag:", e);
             }
         });
     };
     // Immediately remove existing CSP tags.
     removeCSPMetaTags();
-    // Observe any new CSP tags and remove them.
+    // Observe any new CSP tags added to the DOM and remove them.
     const cspObserver = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
-                // Ensure the node is an element and has the correct tagName.
                 if (node.nodeType === Node.ELEMENT_NODE &&
                     node.tagName === 'META' &&
                     node.getAttribute('http-equiv') === 'Content-Security-Policy') {
                     try {
-                        if (node.parentNode && node.parentNode.contains(node)) {
-                            node.parentNode.removeChild(node);
-                        }
+                        node.remove();
                     } catch (e) {
                         console.error("Error in MutationObserver removing CSP meta tag:", e);
                     }
@@ -112,7 +107,7 @@
     });
     
     // TODO: Replace these placeholders with your real Firebase config.
-    const firebaseConfig = {
+  const firebaseConfig = {
   apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
   authDomain: "agario-bb5ea.firebaseapp.com",
   databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
@@ -209,12 +204,10 @@
             const baseColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
             for (let i = 0; i < CONFIG.PARTICLE.PARTICLE_COUNT; i++) {
                 const angle = Math.random() * 2 * Math.PI;
-                const speed = Math.random() * (CONFIG.PARTICLE.SPEED_MAX - CONFIG.PARTICLE.SPEED_MIN)
-                                                + CONFIG.PARTICLE.SPEED_MIN;
+                const speed = Math.random() * (CONFIG.PARTICLE.SPEED_MAX - CONFIG.PARTICLE.SPEED_MIN) + CONFIG.PARTICLE.SPEED_MIN;
                 const dx = Math.cos(angle) * speed;
                 const dy = Math.sin(angle) * speed;
-                const size = Math.random() * (CONFIG.PARTICLE.SIZE_MAX - CONFIG.PARTICLE.SIZE_MIN)
-                                                + CONFIG.PARTICLE.SIZE_MIN;
+                const size = Math.random() * (CONFIG.PARTICLE.SIZE_MAX - CONFIG.PARTICLE.SIZE_MIN) + CONFIG.PARTICLE.SIZE_MIN;
                 this.particles.push({
                     x, y, dx, dy,
                     size,
@@ -488,9 +481,6 @@
     
     // Periodically check and update the spectator UI.
     setInterval(manageSpectatorUI, 2000);
-
-
-    
     
     console.log("Delta script with spectators UI + cinematic effect + help broadcast loaded.");
 })();
