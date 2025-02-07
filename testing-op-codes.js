@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Agar.io Enhanced with Click Debugging & Wave Effects
+// @name         Agar.io Enhanced with Waves & WebSocket Monitor
 // @namespace    http://secure-scripts.com
-// @version      6.6
-// @description  Click Debugging, Wave Effects, WebSocket Monitoring for Agar.io
+// @version      6.4
+// @description  WebSocket monitoring & visual wave effects in Agar.io with detailed click logging.
 // @author       Your Name
 // @match        *://agar.io/*
 // @grant        none
@@ -13,21 +13,55 @@
 (function () {
     'use strict';
 
-    console.log("🚀 [Agar.io Enhanced] Script loaded successfully.");
+    /** Configuration **/
+    const CONFIG = {
+        DEBUG_MODE: true,
+        MAX_RETRIES: 5,
+        BACKOFF_BASE: 2000,
+        ALLOWED_DOMAINS: [
+            'wss://live.agar.io',
+            'wss://mca.agar.io',
+            'wss://delta.agar.io',
+            'https://deltav4.gitlab.io'
+        ],
+        WAVE: {
+            MAX_RADIUS: 120,
+            WAVE_SPEED: 3,
+            LINE_WIDTH: 2,
+            STROKE_STYLE: 'rgba(0, 200, 255, 0.5)',
+            FADE_RATE: 0.02
+        }
+    };
 
-    /** ✅ WebSocket Monitoring & Auto-Reconnect **/
+    /** Content Security Policy Fix **/
+    function applySecurityPolicy() {
+        document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
+        const csp = document.createElement('meta');
+        csp.httpEquiv = "Content-Security-Policy";
+        csp.content = [
+            `default-src 'self' agar.io *.agar.io`,
+            `connect-src ${CONFIG.ALLOWED_DOMAINS.join(' ')}`,
+            `img-src 'self' data: blob: https://*.gitlab.io https://i.imgur.com`,
+            `script-src 'self' 'unsafe-inline' ${CONFIG.ALLOWED_DOMAINS.join(' ')}`,
+            `style-src 'self' 'unsafe-inline'`,
+            `manifest-src 'self' https://deltav4.gitlab.io`,
+            `frame-src https://accounts.google.com`
+        ].join('; ');
+        document.head.prepend(csp);
+    }
+
+    /** WebSocket Interceptor (Auto-Reconnect & Debug) **/
     function installWebSocketHandler() {
-        console.log("🔍 [WebSocket Monitor] Initializing...");
-        
         const script = document.createElement('script');
         script.textContent = `(${(() => {
             const OriginalWebSocket = window.WebSocket;
-            
+            const MAX_RETRIES = ${CONFIG.MAX_RETRIES};
+            const BACKOFF_BASE = ${CONFIG.BACKOFF_BASE};
+
             class WSInterceptor {
                 constructor(url) {
                     this.url = url;
                     this.retryCount = 0;
-                    console.log("🔗 [WS] Attempting connection to:", url);
                     this.initSocket();
                 }
 
@@ -38,79 +72,55 @@
 
                 bindEvents() {
                     this.ws.addEventListener('open', () => {
-                        console.log("✅ [WS] Connected to:", this.url);
+                        console.log("[WS] Connected to:", this.url);
                         this.retryCount = 0;
                     });
-
-                    this.ws.addEventListener('message', event => {
-                        console.log("📩 [WS] Message received:", event.data);
-                    });
-
-                    this.ws.addEventListener('close', () => {
-                        console.log("❌ [WS] Connection closed. Retrying...");
-                        this.handleClose();
-                    });
+                    this.ws.addEventListener('message', event => console.log('[WS] Message:', event.data));
+                    this.ws.addEventListener('close', () => this.handleClose());
                 }
 
                 handleClose() {
-                    if (this.retryCount < 5) {
+                    console.log(\`[WS] Connection closed. Retrying \${this.retryCount + 1}...\`);
+                    if (this.retryCount < MAX_RETRIES) {
                         setTimeout(() => {
                             this.retryCount++;
-                            console.log(`♻️ [WS] Reconnecting... Attempt ${this.retryCount}/5`);
                             this.initSocket();
-                        }, 2000 * this.retryCount);
-                    } else {
-                        console.error("🚫 [WS] Max reconnection attempts reached.");
+                        }, BACKOFF_BASE * this.retryCount);
                     }
                 }
             }
 
             window.WebSocket = function (url) {
-                return new WSInterceptor(url).ws;
+                return ${JSON.stringify(CONFIG.ALLOWED_DOMAINS)}.some(d => url.startsWith(d))
+                    ? new WSInterceptor(url).ws
+                    : new OriginalWebSocket(url);
             };
         }).toString()})();`;
-
         document.documentElement.appendChild(script);
-        console.log("✅ [WebSocket Monitor] Installed successfully.");
     }
 
-    /** 🎨 Wave Configuration **/
-    const WAVE_CONFIG = {
-        MAX_RADIUS: 150,
-        WAVE_SPEED: 4,
-        LINE_WIDTH: 3,
-        STROKE_STYLE: 'rgba(0, 200, 255, 0.6)',
-        FADE_RATE: 0.015
-    };
-
-    let overlayCanvas, ctx, waves = [];
-
-    /** ✅ Ensures Click Detection is Working **/
+    /** Wave Effect System with Detailed Click Logging **/
     function setupWaveEffect() {
-        console.log("🔍 [Wave System] Checking for overlay...");
-
         if (document.getElementById('wave-overlay')) {
             console.log("✅ [Wave System] Overlay canvas already exists.");
             return;
         }
 
-        // Find the game canvas
+        // Attempt to get the game canvas. If not found, log an error.
         const gameCanvas = document.querySelector('canvas');
         if (!gameCanvas) {
-            console.error("❌ [Wave System] Game canvas NOT found! Waves will NOT work.");
+            console.error("❌ [Wave System] Game canvas not found! Waves will NOT work.");
             return;
-        } else {
-            console.log("✅ [Wave System] Game canvas detected.");
         }
 
-        // Create overlay canvas
-        overlayCanvas = document.createElement('canvas');
+        // Create an overlay canvas covering the entire viewport.
+        const overlayCanvas = document.createElement('canvas');
         overlayCanvas.id = 'wave-overlay';
         overlayCanvas.style.position = 'absolute';
         overlayCanvas.style.left = '0';
         overlayCanvas.style.top = '0';
-        overlayCanvas.style.pointerEvents = 'none';
-        overlayCanvas.style.zIndex = '9999';
+        overlayCanvas.style.pointerEvents = 'none'; // So clicks pass through to the game.
+        overlayCanvas.style.zIndex = '9999'; // Ensure overlay is on top.
         document.body.appendChild(overlayCanvas);
 
         function resizeCanvas() {
@@ -120,22 +130,20 @@
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        ctx = overlayCanvas.getContext('2d');
+        const ctx = overlayCanvas.getContext('2d');
+        let waves = [];
 
-        /** ✅ Logs Click & Ensures Event Fires **/
-        gameCanvas.addEventListener('click', (event) => {
-            console.log("🖱️ [Click Detected] Click event fired!");
-
-            // Get coordinates relative to the overlay canvas
+        // Attach click listener to the document for detailed logging.
+        document.addEventListener('click', (event) => {
             const rect = overlayCanvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
+            console.log(`🖱️ [Click Detected] at (${x}, ${y})`);
 
-            console.log(`🖱️ [Click Position] X: ${x}, Y: ${y}`);
-
-            // Ensure waves are created
+            // Add a new wave object.
             waves.push({ x, y, radius: 0, opacity: 1 });
 
+            // After a short delay, verify if a wave exists.
             setTimeout(() => {
                 if (waves.length === 0) {
                     console.warn("⚠️ [Wave System] Wave was NOT generated after click!");
@@ -145,44 +153,54 @@
             }, 100);
         });
 
-        /** ✅ Render Waves on Overlay Canvas **/
+        // Animation loop to render waves.
         function animateWaves() {
             ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
             waves = waves.filter(wave => {
-                wave.radius += WAVE_CONFIG.WAVE_SPEED;
-                wave.opacity -= WAVE_CONFIG.FADE_RATE;
-
+                wave.radius += CONFIG.WAVE.WAVE_SPEED;
+                wave.opacity -= CONFIG.WAVE.FADE_RATE;
                 ctx.beginPath();
                 ctx.arc(wave.x, wave.y, wave.radius, 0, 2 * Math.PI);
-                ctx.lineWidth = WAVE_CONFIG.LINE_WIDTH;
+                ctx.lineWidth = CONFIG.WAVE.LINE_WIDTH;
                 ctx.strokeStyle = `rgba(0, 200, 255, ${wave.opacity})`;
                 ctx.stroke();
-
                 return wave.opacity > 0;
             });
-
             requestAnimationFrame(animateWaves);
         }
-
         animateWaves();
         console.log("✅ [Wave System] Initialized successfully.");
     }
 
-    /** 🕵️‍♂️ Ensure Canvas Exists Before Running Script **/
+    /** MutationObserver to ensure the wave system runs once the game canvas is present **/
     const observer = new MutationObserver(() => {
-        const canvas = document.querySelector('canvas');
-        if (canvas) {
+        if (document.querySelector('canvas')) {
             observer.disconnect();
             setupWaveEffect();
         }
     });
-
     observer.observe(document.body, { childList: true, subtree: true });
 
-    /** ✅ Main Execution **/
+    /** Update Meta Tags to include mobile-web-app-capable **/
+    function updateMetaTags() {
+        document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.remove();
+        const mobileMeta = document.createElement('meta');
+        mobileMeta.name = 'mobile-web-app-capable';
+        mobileMeta.content = 'yes';
+        document.head.appendChild(mobileMeta);
+    }
+
+    /** Main Execution **/
     (function main() {
-        console.log("🚀 [Agar.io Enhanced] Starting...");
-        installWebSocketHandler();
+        applySecurityPolicy();
+        updateMetaTags();
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                installWebSocketHandler();
+            });
+        } else {
+            installWebSocketHandler();
+        }
     })();
 })();
