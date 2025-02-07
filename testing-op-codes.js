@@ -16,7 +16,9 @@
      ***************************************************************/
     const removeCSPMetaTags = () => {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
-            tag.parentNode.removeChild(tag);
+            if (tag.parentNode) {
+                tag.parentNode.removeChild(tag);
+            }
         });
     };
     // Immediately remove existing CSP tags.
@@ -25,7 +27,9 @@
     const cspObserver = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
-                if (node.tagName === 'META' && node.getAttribute('http-equiv') === 'Content-Security-Policy') {
+                if (node.tagName === 'META' &&
+                    node.getAttribute('http-equiv') === 'Content-Security-Policy' &&
+                    node.parentNode) {
                     node.parentNode.removeChild(node);
                 }
             });
@@ -38,14 +42,16 @@
             removeCSPMetaTags();
             const meta = document.createElement('meta');
             meta.httpEquiv = 'Content-Security-Policy';
-            meta.content = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " +
-                           "script-src * 'unsafe-inline' 'unsafe-eval' data: blob:; " +
-                           "style-src * 'unsafe-inline' data: blob:; " +
-                           "img-src * data: blob:; " +
-                           "connect-src *; " +
-                           "manifest-src *; " +
-                           "worker-src * blob:; " +
-                           "frame-src *;";
+            meta.content = [
+                "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:",
+                "script-src * 'unsafe-inline' 'unsafe-eval' data: blob:",
+                "style-src * 'unsafe-inline' data: blob:",
+                "img-src * data: blob:",
+                "connect-src *",
+                "manifest-src *",
+                "worker-src * blob:",
+                "frame-src *"
+            ].join("; ");
             document.head.prepend(meta);
             console.log("CSP set to extremely permissive mode.");
         } else {
@@ -87,11 +93,13 @@
         script.onload = onload;
         document.head.appendChild(script);
     }
+    
+    // Load Firebase scripts in sequence
     loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js", () => {
         loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
     });
     
-    // Replace the placeholders below with your Firebase project configuration.
+    // TODO: Replace these placeholders with your real Firebase config
     const firebaseConfig = {
         apiKey: "YOUR_API_KEY",
         authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -118,9 +126,11 @@
         teamMessagesRef = firebase.database().ref('team_messages');
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
+            if (!data) return;
+            
             // Handle cinematic animation messages.
             if (data.type === 'cool') {
-                console.log("Received cinematic animation broadcast from teammate:", data);
+                console.log("Received cinematic animation from teammate:", data);
                 if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
                     window.coolWaveRenderer.createParticles(data.x, data.y);
                 }
@@ -132,6 +142,7 @@
             }
         });
     }
+    
     function broadcastTeamMessage(messageObj) {
         if (teamMessagesRef) {
             teamMessagesRef.push(messageObj);
@@ -161,7 +172,7 @@
         }
     
         init() {
-            // On canvas click: trigger local + broadcast cinematic animation
+            // On canvas click: local & broadcast cinematic animation
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
@@ -193,7 +204,7 @@
                                                 + CONFIG.PARTICLE.SIZE_MIN;
                 this.particles.push({
                     x, y, dx, dy,
-                    size: size,
+                    size,
                     alpha: 1,
                     color: baseColor
                 });
@@ -206,10 +217,12 @@
                 p.y += p.dy;
                 p.alpha -= CONFIG.PARTICLE.FADE;
                 if (p.alpha <= 0) return false;
-                // radial gradient for each particle
+                
+                // radial gradient
                 const gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
                 gradient.addColorStop(0, `rgba(${p.color}, ${p.alpha})`);
                 gradient.addColorStop(1, `rgba(${p.color}, 0)`);
+                
                 this.ctx.fillStyle = gradient;
                 this.ctx.beginPath();
                 this.ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
@@ -220,7 +233,7 @@
     
         startAnimation() {
             const animate = () => {
-                // Do not clear entire canvas each frame (we overlay on the game).
+                // We do not clear the entire canvas so we overlay on the game.
                 this.renderParticles();
                 requestAnimationFrame(animate);
             };
@@ -229,20 +242,22 @@
     }
     
     /***************************************************************
-     * 6. Team Help Broadcast Functionality
+     * 6. Team Help Broadcast Functionality (Press "H")
      ***************************************************************/
     const createHelpOverlay = () => {
         const overlay = document.createElement('div');
         overlay.id = 'help-overlay';
-        overlay.style.position = 'fixed';
-        overlay.style.top = '10px';
-        overlay.style.right = '10px';
-        overlay.style.padding = '10px';
-        overlay.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
-        overlay.style.color = 'white';
-        overlay.style.fontSize = '20px';
-        overlay.style.zIndex = '9999';
-        overlay.style.display = 'none';
+        Object.assign(overlay.style, {
+            position: 'fixed',
+            top: '10px',
+            right: '10px',
+            padding: '10px',
+            backgroundColor: 'rgba(255, 0, 0, 0.8)',
+            color: 'white',
+            fontSize: '20px',
+            zIndex: 9999,
+            display: 'none'
+        });
         document.body.appendChild(overlay);
         return overlay;
     };
@@ -269,7 +284,7 @@
     });
     
     /***************************************************************
-     * 7. Attach the Cinematic Animation Effect to the Game Canvas
+     * 7. Attach Cinematic Animation Effect to the Game Canvas
      ***************************************************************/
     const attachCoolAnimationEffect = () => {
         const canvas = document.querySelector('canvas');
@@ -280,6 +295,7 @@
             setTimeout(attachCoolAnimationEffect, 100);
         }
     };
+    
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', attachCoolAnimationEffect);
     } else {
@@ -289,9 +305,9 @@
     /***************************************************************
      * 8. Delta Spectators UI Panel
      ***************************************************************/
-    let cmdChatEnabled = false; // We’ll toggle this on/off
-
-    // 8.1. Create a container for our new UI:
+    let cmdChatEnabled = false; // We'll toggle this on/off
+    
+    // 8.1. Create a container for our new UI
     const createSpectatorUI = () => {
         const uiWrapper = document.createElement('div');
         uiWrapper.id = 'delta-spectator-ui';
@@ -309,22 +325,22 @@
             borderRadius: '6px'
         });
         
-        // Title or header:
+        // Title/heading
         const header = document.createElement('div');
         header.textContent = "Users (Delta)";
         header.style.fontWeight = 'bold';
         header.style.marginBottom = '6px';
         uiWrapper.appendChild(header);
         
-        // The list area:
+        // The scrollable list area
         const listContainer = document.createElement('div');
         listContainer.id = 'delta-spectator-list';
         listContainer.style.maxHeight = '200px';
         listContainer.style.overflowY = 'auto';
         listContainer.style.marginBottom = '8px';
         uiWrapper.appendChild(listContainer);
-
-        // CMD Chat toggle:
+        
+        // CMD Chat toggle
         const cmdChatToggle = document.createElement('button');
         cmdChatToggle.textContent = "CMD Chat: OFF";
         cmdChatToggle.style.width = '100%';
@@ -332,9 +348,7 @@
         cmdChatToggle.onclick = () => {
             cmdChatEnabled = !cmdChatEnabled;
             cmdChatToggle.textContent = "CMD Chat: " + (cmdChatEnabled ? "ON" : "OFF");
-            // Here you might also do the actual activation or deactivation
-            // of your command chat feature, e.g. hooking to Delta’s chat system:
-            // delta.enableCmdChat(cmdChatEnabled);
+            // TODO: Hook into the actual Delta logic for enabling cmd chat if needed.
             console.log("CMD Chat toggled:", cmdChatEnabled);
         };
         uiWrapper.appendChild(cmdChatToggle);
@@ -344,40 +358,39 @@
     };
     
     const { listContainer: spectatorListContainer } = createSpectatorUI();
-
-    // 8.2. A function to “fake” or sample how to get the data from Delta.
-    // Replace this with the real logic you see in Dev Tools or via the delta script’s exposed variables.
+    
+    // 8.2. Example function that returns "real" links for the two known spectators.
+    // In a real scenario, you'd dynamically read from Delta's actual data structures.
     function getDeltaSpectators() {
-        // For demonstration, we’ll return a static list.
-        // In real usage, you’d read from window.delta or an internal socket, etc.
+        // Replace with real logic that fetches from window.delta, or websockets, etc.
+        // Here, we use 2 valid Imgur URLs for demonstration.
         return [
             {
-                name: "naze", 
-                skinUrl: "https://i.imgur.com/qexample.png",
-                waveCount: 3
+                name: "naze",
+                skinUrl: "https://i.imgur.com/2HvuJiY.png", // Real Imgur link
+                waveCount: 4
             },
             {
-                name: "Hook", 
-                skinUrl: "https://i.imgur.com/rexample.png",
-                waveCount: 0
+                name: "Hook",
+                skinUrl: "https://i.imgur.com/L4WMSiH.png", // Real Imgur link
+                waveCount: 1
             }
         ];
     }
-
-    // 8.3. A function to build or rebuild the UI list whenever the data changes.
+    
+    // 8.3. A function to build the UI list
     function updateSpectatorUI() {
         const specs = getDeltaSpectators();
-        // Clear out the old list
+        // Clear old list
         spectatorListContainer.innerHTML = "";
-
+        
         specs.forEach(player => {
-            // Container for each row
             const row = document.createElement('div');
             row.style.display = 'flex';
             row.style.alignItems = 'center';
             row.style.marginBottom = '5px';
             
-            // The “avatar” or skin image
+            // Skin image
             const skinImg = document.createElement('img');
             skinImg.src = player.skinUrl;
             skinImg.alt = "skin";
@@ -385,24 +398,18 @@
             skinImg.height = 24;
             skinImg.style.cursor = 'pointer';
             skinImg.style.marginRight = '5px';
-
-            // Clicking the image copies the URL
-            skinImg.addEventListener('click', () => {
-                copyToClipboard(player.skinUrl);
-            });
-
-            // The name
+            // Click to copy the URL
+            skinImg.addEventListener('click', () => copyToClipboard(player.skinUrl));
+            
+            // Player name
             const nameSpan = document.createElement('span');
             nameSpan.textContent = player.name;
             nameSpan.style.cursor = 'pointer';
             nameSpan.style.flex = '1';
-
-            // Clicking the name copies the name
-            nameSpan.addEventListener('click', () => {
-                copyToClipboard(player.name);
-            });
-
-            // The wave count
+            // Click to copy the name
+            nameSpan.addEventListener('click', () => copyToClipboard(player.name));
+            
+            // Wave count
             const waveSpan = document.createElement('span');
             waveSpan.textContent = `(${player.waveCount})`;
             waveSpan.style.marginLeft = '5px';
@@ -414,22 +421,20 @@
             spectatorListContainer.appendChild(row);
         });
     }
-
+    
     // 8.4. Helper to copy text to clipboard
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(() => {
             console.log("Copied to clipboard:", text);
-        }, err => {
-            console.error("Failed to copy!", err);
+        }).catch(err => {
+            console.error("Failed to copy:", err);
         });
     }
-
-    // 8.5. Poll or observe changes in Delta to refresh UI
-    // In a real scenario, you might listen to delta’s WebSocket or a custom event.
-    // For demo: just poll every 2 seconds
+    
+    // 8.5. Poll or observe changes in Delta data (here, we just poll)
     setInterval(() => {
         updateSpectatorUI();
     }, 2000);
-
-    console.log("Delta script modifications + Spectator UI loaded.");
+    
+    console.log("Delta script with spectators UI + cinematic effect + help broadcast loaded.");
 })();
