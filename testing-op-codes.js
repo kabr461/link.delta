@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Agar.io Enhanced with Waves & WebSocket Monitor
 // @namespace    http://secure-scripts.com
-// @version      6.1
+// @version      6.2
 // @description  WebSocket monitoring & visual wave effects in Agar.io
 // @author       Your Name
 // @match        *://agar.io/*
@@ -16,7 +16,7 @@
     /** Configuration **/
     const CONFIG = {
         DEBUG_MODE: true,
-        MAX_RETRIES: 3,
+        MAX_RETRIES: 5,
         BACKOFF_BASE: 2000,
         ALLOWED_DOMAINS: [
             'wss://live.agar.io',
@@ -26,15 +26,15 @@
         ],
 
         WAVE: {
-            MAX_RADIUS: 150,
-            WAVE_SPEED: 6,
-            LINE_WIDTH: 3,
-            STROKE_STYLE: 'rgba(0, 200, 255, 0.3)',
-            FADE_RATE: 0.015
+            MAX_RADIUS: 120,
+            WAVE_SPEED: 3,
+            LINE_WIDTH: 2,
+            STROKE_STYLE: 'rgba(0, 200, 255, 0.5)',
+            FADE_RATE: 0.02
         }
     };
 
-    /** Content Security Policy Fix **/
+    /** ✅ Content Security Policy Fix **/
     function applySecurityPolicy() {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
 
@@ -53,7 +53,7 @@
         document.head.prepend(csp);
     }
 
-    /** WebSocket Interceptor **/
+    /** ✅ WebSocket Interceptor (Auto-Reconnect & Debug) **/
     function installWebSocketHandler() {
         const script = document.createElement('script');
         script.textContent = `(${(() => {
@@ -74,44 +74,19 @@
                 }
 
                 bindEvents() {
-                    this.ws.addEventListener('open', () => this.handleOpen());
-                    this.ws.addEventListener('message', e => this.handleMessage(e));
-                    this.ws.addEventListener('close', e => this.handleClose(e));
-                    this.ws.addEventListener('error', e => this.handleError(e));
-
-                    const originalSend = this.ws.send.bind(this.ws);
-                    this.ws.send = data => {
-                        this.logData('OUTGOING', data);
-                        originalSend(data);
-                    };
+                    this.ws.addEventListener('open', () => this.retryCount = 0);
+                    this.ws.addEventListener('message', event => console.log('[WS] Message:', event.data));
+                    this.ws.addEventListener('close', () => this.handleClose());
                 }
 
-                handleOpen() {
-                    console.log('[WS] Connected to:', this.url);
-                    this.retryCount = 0;
-                }
-
-                handleMessage(event) {
-                    console.log('[WS] Message:', event.data);
-                }
-
-                handleClose(event) {
-                    console.log(`[WS] Closed: ${event.reason} (Code: ${event.code})`);
+                handleClose() {
+                    console.log(`[WS] Connection closed. Retrying ${this.retryCount + 1}...`);
                     if (this.retryCount < MAX_RETRIES) {
                         setTimeout(() => {
                             this.retryCount++;
-                            console.log(`[WS] Retrying ${this.retryCount}/${MAX_RETRIES}...`);
                             this.initSocket();
                         }, BACKOFF_BASE * this.retryCount);
                     }
-                }
-
-                handleError(event) {
-                    console.error('[WS] Error:', event);
-                }
-
-                logData(direction, data) {
-                    console.log(`[WS] ${direction} Data:`, data);
                 }
             }
 
@@ -125,66 +100,79 @@
         document.documentElement.appendChild(script);
     }
 
-    /** Wave Effect System **/
-    class WaveEffect {
-        constructor(canvas) {
-            this.canvas = canvas;
-            this.ctx = canvas.getContext('2d');
-            this.waves = [];
-            this.init();
-        }
+    /** ✅ Working Wave Effect with Overlay Canvas **/
+    function setupWaveEffect() {
+        if (document.getElementById('wave-overlay')) return;
 
-        init() {
-            this.canvas.addEventListener('click', (e) => this.createWave(e));
-            requestAnimationFrame(() => this.animate());
-        }
+        // Find the game canvas
+        const gameCanvas = document.querySelector('canvas');
+        if (!gameCanvas) return;
 
-        createWave(e) {
-            const rect = this.canvas.getBoundingClientRect();
-            this.waves.push({
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
+        // Create an overlay canvas
+        const overlayCanvas = document.createElement('canvas');
+        overlayCanvas.id = 'wave-overlay';
+        overlayCanvas.style.position = 'absolute';
+        overlayCanvas.style.left = '0';
+        overlayCanvas.style.top = '0';
+        overlayCanvas.style.pointerEvents = 'none'; // Allows interaction with game
+        overlayCanvas.style.zIndex = '9999'; // Above the game canvas
+        document.body.appendChild(overlayCanvas);
+
+        // Set canvas size
+        function resizeCanvas() {
+            overlayCanvas.width = window.innerWidth;
+            overlayCanvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const ctx = overlayCanvas.getContext('2d');
+        let waves = [];
+
+        // Click event to create waves
+        gameCanvas.addEventListener('click', (event) => {
+            const rect = overlayCanvas.getBoundingClientRect();
+            waves.push({
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top,
                 radius: 0,
                 opacity: 1
             });
-        }
+        });
 
-        drawWaves() {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.waves = this.waves.filter(wave => {
+        function animateWaves() {
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+            waves = waves.filter(wave => {
                 wave.radius += CONFIG.WAVE.WAVE_SPEED;
                 wave.opacity -= CONFIG.WAVE.FADE_RATE;
 
-                this.ctx.beginPath();
-                this.ctx.arc(wave.x, wave.y, wave.radius, 0, 2 * Math.PI);
-                this.ctx.lineWidth = CONFIG.WAVE.LINE_WIDTH;
-                this.ctx.strokeStyle = `rgba(0, 200, 255, ${wave.opacity})`;
-                this.ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(wave.x, wave.y, wave.radius, 0, 2 * Math.PI);
+                ctx.lineWidth = CONFIG.WAVE.LINE_WIDTH;
+                ctx.strokeStyle = `rgba(0, 200, 255, ${wave.opacity})`;
+                ctx.stroke();
 
                 return wave.opacity > 0;
             });
+
+            requestAnimationFrame(animateWaves);
         }
 
-        animate() {
-            this.drawWaves();
-            requestAnimationFrame(() => this.animate());
+        animateWaves();
+    }
+
+    /** ✅ Ensures the Wave Effect Runs After Game Loads **/
+    const observer = new MutationObserver(() => {
+        if (document.querySelector('canvas')) {
+            observer.disconnect();
+            setupWaveEffect();
         }
-    }
+    });
 
-    /** Initialize Wave System **/
-    function initWaveSystem() {
-        const canvasObserver = new MutationObserver(() => {
-            const canvas = document.querySelector('canvas');
-            if (canvas) {
-                canvasObserver.disconnect();
-                new WaveEffect(canvas);
-            }
-        });
+    observer.observe(document.body, { childList: true, subtree: true });
 
-        canvasObserver.observe(document.body, { childList: true, subtree: true });
-    }
-
-    /** Update Meta Tags **/
+    /** ✅ Update Meta Tags **/
     function updateMetaTags() {
         document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.remove();
         const mobileMeta = document.createElement('meta');
@@ -193,7 +181,7 @@
         document.head.appendChild(mobileMeta);
     }
 
-    /** Main Execution **/
+    /** ✅ Main Execution **/
     (function main() {
         applySecurityPolicy();
         updateMetaTags();
@@ -201,11 +189,9 @@
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 installWebSocketHandler();
-                initWaveSystem();
             });
         } else {
             installWebSocketHandler();
-            initWaveSystem();
         }
     })();
 })();
