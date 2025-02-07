@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Agar.io Enhanced with Waves & WebSocket Monitor
 // @namespace    http://secure-scripts.com
-// @version      6.2
+// @version      6.3
 // @description  WebSocket monitoring & visual wave effects in Agar.io
 // @author       Your Name
 // @match        *://agar.io/*
@@ -74,7 +74,11 @@
                 }
 
                 bindEvents() {
-                    this.ws.addEventListener('open', () => this.retryCount = 0);
+                    this.ws.addEventListener('open', () => {
+                        console.log("[WS] Connected to:", this.url);
+                        this.retryCount = 0;
+                    });
+
                     this.ws.addEventListener('message', event => console.log('[WS] Message:', event.data));
                     this.ws.addEventListener('close', () => this.handleClose());
                 }
@@ -100,13 +104,18 @@
         document.documentElement.appendChild(script);
     }
 
-    /** ✅ Working Wave Effect with Overlay Canvas **/
+    /** ✅ Working Wave Effect with Console Debugging **/
     function setupWaveEffect() {
-        if (document.getElementById('wave-overlay')) return;
+        if (document.getElementById('wave-overlay')) {
+            console.log("✅ [Wave System] Overlay canvas already exists.");
+            return;
+        }
 
-        // Find the game canvas
         const gameCanvas = document.querySelector('canvas');
-        if (!gameCanvas) return;
+        if (!gameCanvas) {
+            console.error("❌ [Wave System] Game canvas not found! Waves will NOT work.");
+            return;
+        }
 
         // Create an overlay canvas
         const overlayCanvas = document.createElement('canvas');
@@ -114,11 +123,10 @@
         overlayCanvas.style.position = 'absolute';
         overlayCanvas.style.left = '0';
         overlayCanvas.style.top = '0';
-        overlayCanvas.style.pointerEvents = 'none'; // Allows interaction with game
-        overlayCanvas.style.zIndex = '9999'; // Above the game canvas
+        overlayCanvas.style.pointerEvents = 'none';
+        overlayCanvas.style.zIndex = '9999';
         document.body.appendChild(overlayCanvas);
 
-        // Set canvas size
         function resizeCanvas() {
             overlayCanvas.width = window.innerWidth;
             overlayCanvas.height = window.innerHeight;
@@ -132,12 +140,20 @@
         // Click event to create waves
         gameCanvas.addEventListener('click', (event) => {
             const rect = overlayCanvas.getBoundingClientRect();
-            waves.push({
-                x: event.clientX - rect.left,
-                y: event.clientY - rect.top,
-                radius: 0,
-                opacity: 1
-            });
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            console.log(`🖱️ [Click Detected] at (${x}, ${y})`);
+
+            waves.push({ x, y, radius: 0, opacity: 1 });
+
+            setTimeout(() => {
+                if (waves.length === 0) {
+                    console.warn("⚠️ [Wave System] Wave was NOT generated after click!");
+                } else {
+                    console.log("🌊 [Wave Generated] Successfully added wave.");
+                }
+            }, 100);
         });
 
         function animateWaves() {
@@ -160,6 +176,7 @@
         }
 
         animateWaves();
+        console.log("✅ [Wave System] Initialized successfully.");
     }
 
     /** ✅ Ensures the Wave Effect Runs After Game Loads **/
