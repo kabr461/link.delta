@@ -488,6 +488,9 @@
     
     // Periodically check and update the spectator UI.
     setInterval(manageSpectatorUI, 2000);
+
+
+    
     
     console.log("Delta script with spectators UI + cinematic effect + help broadcast loaded.");
 })();
