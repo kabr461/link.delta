@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Agar.io Enhanced with Waves & WebSocket Monitor
 // @namespace    http://secure-scripts.com
-// @version      6.4
+// @version      6.6
 // @description  WebSocket monitoring & visual wave effects in Agar.io with detailed click logging.
 // @author       Your Name
 // @match        *://agar.io/*
@@ -33,7 +33,7 @@
         }
     };
 
-    /** Content Security Policy Fix **/
+    /** 1. Content Security Policy Fix **/
     function applySecurityPolicy() {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
         const csp = document.createElement('meta');
@@ -50,7 +50,7 @@
         document.head.prepend(csp);
     }
 
-    /** WebSocket Interceptor (Auto-Reconnect & Debug) **/
+    /** 2. WebSocket Interceptor (Auto-Reconnect & Debug) **/
     function installWebSocketHandler() {
         const script = document.createElement('script');
         script.textContent = `(${(() => {
@@ -99,14 +99,14 @@
         document.documentElement.appendChild(script);
     }
 
-    /** Wave Effect System with Detailed Click Logging **/
+    /** 3. Wave Effect System with Detailed Click Logging **/
     function setupWaveEffect() {
         if (document.getElementById('wave-overlay')) {
             console.log("✅ [Wave System] Overlay canvas already exists.");
             return;
         }
 
-        // Attempt to get the game canvas. If not found, log an error.
+        // Attempt to get the game canvas.
         const gameCanvas = document.querySelector('canvas');
         if (!gameCanvas) {
             console.error("❌ [Wave System] Game canvas not found! Waves will NOT work.");
@@ -119,10 +119,11 @@
         overlayCanvas.style.position = 'absolute';
         overlayCanvas.style.left = '0';
         overlayCanvas.style.top = '0';
-        overlayCanvas.style.pointerEvents = 'none'; // So clicks pass through to the game.
-        overlayCanvas.style.zIndex = '9999'; // Ensure overlay is on top.
+        overlayCanvas.style.pointerEvents = 'none'; // So clicks pass through.
+        overlayCanvas.style.zIndex = '9999'; // High z-index ensures visibility.
         document.body.appendChild(overlayCanvas);
 
+        // Size the overlay to cover the full window.
         function resizeCanvas() {
             overlayCanvas.width = window.innerWidth;
             overlayCanvas.height = window.innerHeight;
@@ -133,17 +134,17 @@
         const ctx = overlayCanvas.getContext('2d');
         let waves = [];
 
-        // Attach click listener to the document for detailed logging.
+        // Attach click listener to the document (captures all clicks).
         document.addEventListener('click', (event) => {
             const rect = overlayCanvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
             console.log(`🖱️ [Click Detected] at (${x}, ${y})`);
 
-            // Add a new wave object.
+            // Add a new wave.
             waves.push({ x, y, radius: 0, opacity: 1 });
 
-            // After a short delay, verify if a wave exists.
+            // Verify wave generation after a short delay.
             setTimeout(() => {
                 if (waves.length === 0) {
                     console.warn("⚠️ [Wave System] Wave was NOT generated after click!");
@@ -153,7 +154,7 @@
             }, 100);
         });
 
-        // Animation loop to render waves.
+        // Animation loop: clears and redraws waves.
         function animateWaves() {
             ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
             waves = waves.filter(wave => {
@@ -172,7 +173,7 @@
         console.log("✅ [Wave System] Initialized successfully.");
     }
 
-    /** MutationObserver to ensure the wave system runs once the game canvas is present **/
+    /** 4. MutationObserver to Initialize Wave System Once the Game Canvas Appears **/
     const observer = new MutationObserver(() => {
         if (document.querySelector('canvas')) {
             observer.disconnect();
@@ -181,7 +182,7 @@
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    /** Update Meta Tags to include mobile-web-app-capable **/
+    /** 5. Update Meta Tags for Mobile Compatibility **/
     function updateMetaTags() {
         document.querySelector('meta[name="apple-mobile-web-app-capable"]')?.remove();
         const mobileMeta = document.createElement('meta');
@@ -190,11 +191,10 @@
         document.head.appendChild(mobileMeta);
     }
 
-    /** Main Execution **/
+    /** Main Execution: Run CSP update, meta tag update, and WebSocket handler setup. **/
     (function main() {
         applySecurityPolicy();
         updateMetaTags();
-
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 installWebSocketHandler();
