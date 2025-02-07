@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Spectator & Wave Broadcast Mod for Agar.io (Firebase)
+// @name         Delta Spectator Panel & Wave Broadcast Mod (Firebase, Persistent UI)
 // @namespace    http://your-namespace-here.com
-// @version      1.0
-// @description  When in spectating mode, displays a professional floating spectator panel (with CMD Chat on by default) and triggers a cinematic, colorful particle wave animation on canvas clicks that is broadcast via Firebase to teammates.
+// @version      1.0.1
+// @description  When in spectating mode (with Delta data from Firebase), shows a professional spectator panel and triggers a cinematic particle wave animation on canvas clicks that is broadcast via Firebase. CMD Chat toggle is on by default.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-end
@@ -12,7 +12,7 @@
     'use strict';
 
     /***************** Remove Local CSP Meta Tags (Optional) *****************
-     * Note: This does not override server-sent headers.
+     * Note: Userscripts cannot override server-sent headers.
      *************************************************************************/
     function removeCSPMetaTags() {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => tag.remove());
@@ -93,7 +93,7 @@
         document.head.appendChild(style);
     }
 
-    /***************** Create/Remove the Spectator Panel *****************/
+    /***************** Create/Remove the Spectator Panel UI *****************/
     function createSpectatorPanel() {
         if (document.getElementById('delta-spectator-panel')) return; // already exists
         insertSpectatorStyles();
@@ -176,6 +176,9 @@
         console.log("Firebase initialized.");
         setupSpectatorListener();
         setupWaveListener();
+        // Now that Firebase is ready, start checking spectating mode.
+        setInterval(checkSpectatingMode, 2000);
+        checkSpectatingMode();
     }
 
     /***************** Listen for Spectator Data from Firebase *****************/
@@ -246,7 +249,6 @@
 
     /***************** Broadcast a Wave Event to Firebase *****************/
     function broadcastWaveEvent(x, y) {
-        // Check if Firebase is ready.
         if (typeof firebase === "undefined" || !firebase.database) {
             console.warn("Firebase not ready, wave event not broadcasted.");
             return;
@@ -257,8 +259,11 @@
 
     /***************** Check Spectating Mode and Manage the Panel *****************/
     function checkSpectatingMode() {
-        // We assume Delta writes spectator data to Firebase ("delta_spectators").
-        // If there's data, we are in spectating mode.
+        // Ensure Firebase is ready before checking.
+        if (typeof firebase === "undefined" || !firebase.database) {
+            console.warn("Firebase not loaded yet, skipping checkSpectatingMode.");
+            return;
+        }
         const ref = firebase.database().ref("delta_spectators");
         ref.once("value", snapshot => {
             const data = snapshot.val();
@@ -272,8 +277,6 @@
             }
         });
     }
-    setInterval(checkSpectatingMode, 2000);
-    checkSpectatingMode();
 
     /***************** MutationObserver to Re-Add the Panel if Removed *****************/
     const uiObserver = new MutationObserver(mutations => {
