@@ -3,7 +3,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 (function () {
     'use strict';
 
-    // Opcode registry for classification
     const opcodeRegistry = {};
     let opcodeSummary = {};
     let lastSummaryTime = Date.now();
@@ -22,7 +21,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         const opcode = data.opcode;
         logOpcodeOnce(opcode);
 
-        // Special handling for opcode 25 (Message Sending)
         if (opcode === 25) {
             processMessageOpcode(data);
         }
@@ -58,8 +56,16 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     function processMessageOpcode(data) {
         if (data.rawMessage) {
             try {
-                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
-                console.log(`[Message Sent] ${messageText}`);
+                let messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+
+                // Modify message if it contains "UJ"
+                if (messageText.includes("UJ")) {
+                    messageText = messageText.replace(/UJ/g, "up here!");
+                    console.log(`[Message Modified] ${messageText}`);
+                } else {
+                    console.log(`[Message Sent] ${messageText}`);
+                }
+
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
             }
@@ -91,6 +97,28 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 }, 1000);
             });
         }
+
+        send(data) {
+            if (typeof data === "string") {
+                // Modify message if it contains "UJ"
+                if (data.includes("UJ")) {
+                    data = data.replace(/UJ/g, "up here!");
+                    console.log(`[Outgoing Message Modified] ${data}`);
+                }
+            } else if (data instanceof ArrayBuffer) {
+                try {
+                    let messageText = new TextDecoder("utf-8").decode(data);
+                    if (messageText.includes("UJ")) {
+                        messageText = messageText.replace(/UJ/g, "up here!");
+                        console.log(`[Outgoing Binary Message Modified] ${messageText}`);
+                        data = new TextEncoder().encode(messageText).buffer;
+                    }
+                } catch (e) {
+                    console.warn("[Binary Message Processing Error]", e);
+                }
+            }
+            super.send(data);
+        }
     }
 
     function processBinaryData(buffer) {
@@ -98,7 +126,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         if (dataArray.length >= 2) {
             const opcode = dataArray[0];
             const signalStrength = dataArray[1];
-            const rawMessage = buffer.slice(2); // Extract the message part
+            const rawMessage = buffer.slice(2);
             processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
         }
     }
