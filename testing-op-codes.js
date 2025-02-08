@@ -416,4 +416,10 @@
     setInterval(manageSpectatorUI, 2000);
     
     console.log("Delta script with spectators UI, circular wave animation, and team communication loaded.");
+
+
+
+
+
+    
 })();
