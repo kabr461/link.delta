@@ -2,7 +2,7 @@
 // @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI
 // @namespace    http://your-namespace-here.com
 // @version      1.5
-// @description  Team messaging with map-based circular wave animations and a spectator UI panel.
+// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel using game map coordinates.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -106,6 +106,51 @@
     }
 
     /***************************************************************
+     * Helper Functions for Map Coordinate Conversion
+     ***************************************************************/
+    // Convert screen (canvas) coordinates to game map coordinates.
+    function screenToMap(x, y) {
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+            // Use global camera variables if defined; otherwise, default to canvas center.
+            const cameraX = (window.gameCameraX !== undefined) ? window.gameCameraX : canvas.width / 2;
+            const cameraY = (window.gameCameraY !== undefined) ? window.gameCameraY : canvas.height / 2;
+            const zoom = (window.gameZoom !== undefined) ? window.gameZoom : 1;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const dx = x - cx;
+            const dy = y - cy;
+            return { mapX: cameraX + dx / zoom, mapY: cameraY + dy / zoom };
+        }
+        return { mapX: x, mapY: y };
+    }
+    // Convert game map coordinates back to screen (canvas) coordinates.
+    function mapToScreen(mapX, mapY) {
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+            const cameraX = (window.gameCameraX !== undefined) ? window.gameCameraX : canvas.width / 2;
+            const cameraY = (window.gameCameraY !== undefined) ? window.gameCameraY : canvas.height / 2;
+            const zoom = (window.gameZoom !== undefined) ? window.gameZoom : 1;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const dx = (mapX - cameraX) * zoom;
+            const dy = (mapY - cameraY) * zoom;
+            return { x: cx + dx, y: cy + dy };
+        }
+        return { x: mapX, y: mapY };
+    }
+    // Return the current map coordinates of the spectator’s view center.
+    function getSpectatorMapCenter() {
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+            const cameraX = (window.gameCameraX !== undefined) ? window.gameCameraX : canvas.width / 2;
+            const cameraY = (window.gameCameraY !== undefined) ? window.gameCameraY : canvas.height / 2;
+            return { x: cameraX, y: cameraY };
+        }
+        return { x: 0, y: 0 };
+    }
+
+    /***************************************************************
      * 3. Load Firebase SDK (v8) Dynamically and Initialize (Team Communication)
      ***************************************************************/
     function loadScript(src, onload) {
@@ -115,7 +160,7 @@
         document.head.appendChild(script);
     }
     
-    // Firebase configuration with your credentials.
+    // Firebase configuration updated with your credentials.
     const firebaseConfig = {
         apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
         authDomain: "agario-bb5ea.firebaseapp.com",
@@ -145,14 +190,18 @@
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
+            // When receiving a "cool" message, data now contains map coordinates.
             if (data.type === 'cool') {
                 console.log("Received cinematic animation message:", data);
-                if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
-                    // 'data.x' and 'data.y' are in game-map coordinates.
+                if (window.coolWaveRenderer && typeof data.mapX === 'number' && typeof data.mapY === 'number') {
+                    // Calculate distance (in map units) from spectator's view center.
                     const viewer = getSpectatorMapCenter();
-                    const d = Math.sqrt((data.x - viewer.x) ** 2 + (data.y - viewer.y) ** 2);
+                    const d = Math.sqrt((data.mapX - viewer.x) ** 2 + (data.mapY - viewer.y) ** 2);
+                    // Scale factor: closer map coordinates yield larger waves.
                     const scale = 1 / (0.5 + d / 500);
-                    window.coolWaveRenderer.createWave(data.x, data.y, scale);
+                    // Convert map coordinates to screen coordinates for drawing.
+                    const screenCoord = mapToScreen(data.mapX, data.mapY);
+                    window.coolWaveRenderer.createWave(screenCoord.x, screenCoord.y, scale);
                 }
             } else if (data.type === 'help') {
                 console.log("Received help message:", data.message);
@@ -168,54 +217,26 @@
     }
     
     /***************************************************************
-     * Helper Functions for Map Coordinate Conversions
+     * 4. Cinematic Circular Wave Animation Effect (Map-Based)
      ***************************************************************/
-    // Convert a screen coordinate (relative to canvas) into a map coordinate using the inverse transform.
-    function screenToMapCoordinates(ctx, x, y) {
-        const inv = ctx.getTransform().inverse();
-        const mapPoint = inv.transformPoint(new DOMPoint(x, y));
-        return { x: mapPoint.x, y: mapPoint.y };
-    }
-    
-    // Get the spectator's current view center in map coordinates.
-    function getSpectatorMapCenter() {
-        const canvas = document.querySelector('canvas');
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            const screenCenter = new DOMPoint(canvas.width / 2, canvas.height / 2);
-            const inv = ctx.getTransform().inverse();
-            const mapCenter = inv.transformPoint(screenCenter);
-            return { x: mapCenter.x, y: mapCenter.y };
-        }
-        return { x: 0, y: 0 };
-    }
-    
-    /***************************************************************
-     * 4. Cinematic Circular Wave Animation Effect (Using Map Coordinates)
-     ***************************************************************/
-    // CircularWave now stores its position in map coordinates.
+    // CircularWave creates an expanding circular wave at given screen coordinates.
     class CircularWave {
-        constructor(mapX, mapY, scale) {
-            this.mapX = mapX;
-            this.mapY = mapY;
-            this.mapRadius = 0; // Radius in map units.
-            this.expansionRate = 2; // Map units per frame.
+        constructor(x, y, scale) {
+            this.x = x;
+            this.y = y;
+            this.radius = 0;
+            this.expansionRate = 2; // Adjust speed as needed.
             this.alpha = 1;
-            this.maxMapRadius = 100 * scale; // Maximum map radius.
+            this.maxRadius = 100 * scale; // Maximum radius scaled.
         }
         update() {
-            this.mapRadius += this.expansionRate;
-            this.alpha = Math.max(0, 1 - this.mapRadius / this.maxMapRadius);
+            this.radius += this.expansionRate;
+            this.alpha = Math.max(0, 1 - this.radius / this.maxRadius);
         }
         draw(ctx) {
-            // Transform the map coordinate to screen coordinate.
-            const centerScreen = ctx.getTransform().transformPoint(new DOMPoint(this.mapX, this.mapY));
-            // To compute the screen radius, transform a point offset by mapRadius.
-            const edgeScreen = ctx.getTransform().transformPoint(new DOMPoint(this.mapX + this.mapRadius, this.mapY));
-            const screenRadius = edgeScreen.x - centerScreen.x;
             ctx.save();
             ctx.beginPath();
-            ctx.arc(centerScreen.x, centerScreen.y, screenRadius, 0, 2 * Math.PI);
+            ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
             ctx.strokeStyle = `rgba(255,255,255,${this.alpha})`;
             ctx.lineWidth = 2;
             ctx.stroke();
@@ -226,7 +247,7 @@
         }
     }
     
-    // CoolWaveRenderer now works entirely in map coordinates.
+    // CoolWaveRenderer manages and animates circular waves.
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -235,25 +256,28 @@
             this.init();
         }
         init() {
-            // When the canvas is clicked, convert the screen coordinate to map coordinate.
+            // When the canvas is clicked, convert the click from screen to map coordinates,
+            // then broadcast the map coordinates.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const screenX = e.clientX - rect.left;
                 const screenY = e.clientY - rect.top;
-                const mapPoint = screenToMapCoordinates(this.ctx, screenX, screenY);
-                console.log("Canvas clicked, map coordinate:", mapPoint);
+                console.log("Canvas clicked at (screen):", { screenX, screenY });
+                const mapCoord = screenToMap(screenX, screenY);
+                console.log("Converted to map coordinates:", mapCoord);
                 const viewer = getSpectatorMapCenter();
-                const d = Math.sqrt((mapPoint.x - viewer.x) ** 2 + (mapPoint.y - viewer.y) ** 2);
+                const d = Math.sqrt((mapCoord.mapX - viewer.x) ** 2 + (mapCoord.mapY - viewer.y) ** 2);
                 const scale = 1 / (0.5 + d / 500);
-                console.log("Calculated scale based on spectator view:", scale);
-                this.createWave(mapPoint.x, mapPoint.y, scale);
-                // Broadcast the event with map coordinates.
-                broadcastTeamMessage({ type: 'cool', x: mapPoint.x, y: mapPoint.y });
+                const screenCoord = mapToScreen(mapCoord.mapX, mapCoord.mapY);
+                console.log("Calculated scale:", scale, "and drawing at screen coordinates:", screenCoord);
+                this.createWave(screenCoord.x, screenCoord.y, scale);
+                // Broadcast the map coordinates so teammates can draw the same wave.
+                broadcastTeamMessage({ type: 'cool', mapX: mapCoord.mapX, mapY: mapCoord.mapY });
             });
             this.startAnimation();
         }
-        createWave(mapX, mapY, scale) {
-            this.waves.push(new CircularWave(mapX, mapY, scale));
+        createWave(x, y, scale) {
+            this.waves.push(new CircularWave(x, y, scale));
         }
         renderWaves() {
             this.waves = this.waves.filter(wave => {
@@ -335,8 +359,8 @@
         return { uiWrapper, listContainer };
     };
     
+    // Spectator view detection: check if the URL contains "spectate".
     function isSpectatorView() {
-        // Smart detection: check if the URL contains "spectate" (used in agar.io).
         return window.location.href.includes("spectate");
     }
     
@@ -357,7 +381,7 @@
     }
     
     function getDeltaSpectators() {
-        // Replace with your actual logic; here we use placeholder data.
+        // Replace with your actual logic or use placeholder data.
         if (window.delta && window.delta.spectators) {
             return window.delta.spectators;
         }
@@ -422,5 +446,5 @@
     
     setInterval(manageSpectatorUI, 2000);
     
-    console.log("Delta script with map-based wave animation, spectators UI, and team communication loaded.");
+    console.log("Delta script with spectators UI, map-based circular wave animation, and team communication loaded.");
 })();
