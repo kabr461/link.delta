@@ -5,16 +5,16 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     // Opcode registry for classification
     const opcodeRegistry = {};  // { opcode: { count: number, strongestSignal: number, messageSizes: [] } }
-    let opcodeSummary = {};  // Temporary summary to show per second
+    let opcodeSummary = {};  // Temporary summary to show per interval
     let lastSummaryTime = Date.now();
 
-    // Set to track logged opcodes (only log once)
+    // Set to track opcodes that have already been logged once
     const loggedOpcodes = new Set();
 
-    // Function to log an opcode only once
+    // Log an opcode only the first time it's seen during this session
     function logOpcodeOnce(opcode) {
         if (!loggedOpcodes.has(opcode)) {
-            console.log(`Opcode ${opcode} logged for the first time.`);
+            console.log(`Opcode ${opcode} detected for the first time.`);
             loggedOpcodes.add(opcode);
         }
     }
@@ -23,7 +23,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         if (!data || data.opcode === undefined) return;
 
         const opcode = data.opcode;
-        // Log each opcode only once
+        // Log this opcode only once per session
         logOpcodeOnce(opcode);
 
         const signalStrength = data.signalStrength || 0;
@@ -40,7 +40,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             }
         }
 
-        // Track per-second summary
+        // Track per-interval summary
         if (!opcodeSummary[opcode]) {
             opcodeSummary[opcode] = 1;
         } else {
@@ -49,11 +49,9 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         // Print summary every 10 seconds
         if (Date.now() - lastSummaryTime > 10000) {
-            console.clear(); // Keep the console clean
+            console.clear(); // Clean the console
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
             console.table(opcodeSummary);
-
-            // Reset counters for the next interval
             opcodeSummary = {};
             lastSummaryTime = Date.now();
         }
@@ -87,20 +85,20 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
         if (dataArray.length >= 2) {
-            const opcode = dataArray[0];  // Assuming first byte is opcode
-            const signalStrength = dataArray[1]; // Assuming second byte is signal
+            const opcode = dataArray[0];      // First byte as opcode
+            const signalStrength = dataArray[1]; // Second byte as signal strength
             const messageSize = dataArray.length;
             processSignal({ opcode, signalStrength, messageSize });
         }
     }
 
-    // Apply override after 1 second
+    // Override the WebSocket after a short delay
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] WebSocket Override Applied');
     }, 1000);
 
-    // Helper function to analyze collected data
+    // Expose a helper to analyze collected opcode data
     window.analyzeOpcodes = function () {
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
