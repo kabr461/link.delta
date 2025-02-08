@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI
 // @namespace    http://your-namespace-here.com
-// @version      1.4
-// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel.
+// @version      1.5
+// @description  Team messaging with map-based circular wave animations and a spectator UI panel.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -115,7 +115,7 @@
         document.head.appendChild(script);
     }
     
-    // Firebase configuration updated with your credentials.
+    // Firebase configuration with your credentials.
     const firebaseConfig = {
         apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
         authDomain: "agario-bb5ea.firebaseapp.com",
@@ -145,13 +145,12 @@
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
-            // When receiving a "cool" message, use map-based coordinates.
             if (data.type === 'cool') {
                 console.log("Received cinematic animation message:", data);
                 if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
+                    // 'data.x' and 'data.y' are in game-map coordinates.
                     const viewer = getSpectatorMapCenter();
                     const d = Math.sqrt((data.x - viewer.x) ** 2 + (data.y - viewer.y) ** 2);
-                    // Compute scale based on distance from the spectator's view.
                     const scale = 1 / (0.5 + d / 500);
                     window.coolWaveRenderer.createWave(data.x, data.y, scale);
                 }
@@ -169,52 +168,54 @@
     }
     
     /***************************************************************
-     * Helper Functions for Spectator View
+     * Helper Functions for Map Coordinate Conversions
      ***************************************************************/
-    function isSpectatorView() {
-        // Check if the URL contains "spectate" (a common indicator in agar.io).
-        return window.location.href.includes("spectate");
+    // Convert a screen coordinate (relative to canvas) into a map coordinate using the inverse transform.
+    function screenToMapCoordinates(ctx, x, y) {
+        const inv = ctx.getTransform().inverse();
+        const mapPoint = inv.transformPoint(new DOMPoint(x, y));
+        return { x: mapPoint.x, y: mapPoint.y };
     }
     
+    // Get the spectator's current view center in map coordinates.
     function getSpectatorMapCenter() {
-        // Try to get the current camera/view translation from the canvas transform.
-        // Modern browsers support getTransform() on canvas contexts.
         const canvas = document.querySelector('canvas');
         if (canvas) {
             const ctx = canvas.getContext('2d');
-            if (ctx.getTransform) {
-                const transform = ctx.getTransform();
-                // Assume the translation (transform.e, transform.f) is the top-left of the current view.
-                // Adding half the canvas dimensions gives an approximate map center.
-                return { x: transform.e + canvas.width / 2, y: transform.f + canvas.height / 2 };
-            }
-            // Fallback: use canvas center if no transform is available.
-            return { x: canvas.width / 2, y: canvas.height / 2 };
+            const screenCenter = new DOMPoint(canvas.width / 2, canvas.height / 2);
+            const inv = ctx.getTransform().inverse();
+            const mapCenter = inv.transformPoint(screenCenter);
+            return { x: mapCenter.x, y: mapCenter.y };
         }
         return { x: 0, y: 0 };
     }
     
     /***************************************************************
-     * 4. Cinematic Circular Wave Animation Effect (Smart Map-Based)
+     * 4. Cinematic Circular Wave Animation Effect (Using Map Coordinates)
      ***************************************************************/
-    // CircularWave creates an expanding circular wave at given map coordinates.
+    // CircularWave now stores its position in map coordinates.
     class CircularWave {
-        constructor(x, y, scale) {
-            this.x = x;
-            this.y = y;
-            this.radius = 0;
-            this.expansionRate = 2; // Adjust speed as needed.
+        constructor(mapX, mapY, scale) {
+            this.mapX = mapX;
+            this.mapY = mapY;
+            this.mapRadius = 0; // Radius in map units.
+            this.expansionRate = 2; // Map units per frame.
             this.alpha = 1;
-            this.maxRadius = 100 * scale; // Maximum radius scaled.
+            this.maxMapRadius = 100 * scale; // Maximum map radius.
         }
         update() {
-            this.radius += this.expansionRate;
-            this.alpha = Math.max(0, 1 - this.radius / this.maxRadius);
+            this.mapRadius += this.expansionRate;
+            this.alpha = Math.max(0, 1 - this.mapRadius / this.maxMapRadius);
         }
         draw(ctx) {
+            // Transform the map coordinate to screen coordinate.
+            const centerScreen = ctx.getTransform().transformPoint(new DOMPoint(this.mapX, this.mapY));
+            // To compute the screen radius, transform a point offset by mapRadius.
+            const edgeScreen = ctx.getTransform().transformPoint(new DOMPoint(this.mapX + this.mapRadius, this.mapY));
+            const screenRadius = edgeScreen.x - centerScreen.x;
             ctx.save();
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+            ctx.arc(centerScreen.x, centerScreen.y, screenRadius, 0, 2 * Math.PI);
             ctx.strokeStyle = `rgba(255,255,255,${this.alpha})`;
             ctx.lineWidth = 2;
             ctx.stroke();
@@ -225,7 +226,7 @@
         }
     }
     
-    // CoolWaveRenderer manages and animates circular waves.
+    // CoolWaveRenderer now works entirely in map coordinates.
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -234,24 +235,25 @@
             this.init();
         }
         init() {
-            // When the canvas is clicked, calculate the scale using the spectator's map center.
+            // When the canvas is clicked, convert the screen coordinate to map coordinate.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                console.log("Canvas clicked at:", { x, y });
+                const screenX = e.clientX - rect.left;
+                const screenY = e.clientY - rect.top;
+                const mapPoint = screenToMapCoordinates(this.ctx, screenX, screenY);
+                console.log("Canvas clicked, map coordinate:", mapPoint);
                 const viewer = getSpectatorMapCenter();
-                const d = Math.sqrt((x - viewer.x) ** 2 + (y - viewer.y) ** 2);
+                const d = Math.sqrt((mapPoint.x - viewer.x) ** 2 + (mapPoint.y - viewer.y) ** 2);
                 const scale = 1 / (0.5 + d / 500);
                 console.log("Calculated scale based on spectator view:", scale);
-                this.createWave(x, y, scale);
+                this.createWave(mapPoint.x, mapPoint.y, scale);
                 // Broadcast the event with map coordinates.
-                broadcastTeamMessage({ type: 'cool', x, y });
+                broadcastTeamMessage({ type: 'cool', x: mapPoint.x, y: mapPoint.y });
             });
             this.startAnimation();
         }
-        createWave(x, y, scale) {
-            this.waves.push(new CircularWave(x, y, scale));
+        createWave(mapX, mapY, scale) {
+            this.waves.push(new CircularWave(mapX, mapY, scale));
         }
         renderWaves() {
             this.waves = this.waves.filter(wave => {
@@ -333,6 +335,11 @@
         return { uiWrapper, listContainer };
     };
     
+    function isSpectatorView() {
+        // Smart detection: check if the URL contains "spectate" (used in agar.io).
+        return window.location.href.includes("spectate");
+    }
+    
     function ensureSpectatorUIExists() {
         if (isSpectatorView()) {
             if (!document.getElementById('delta-spectator-ui')) {
@@ -350,7 +357,7 @@
     }
     
     function getDeltaSpectators() {
-        // Replace with your actual logic or use placeholder data.
+        // Replace with your actual logic; here we use placeholder data.
         if (window.delta && window.delta.spectators) {
             return window.delta.spectators;
         }
@@ -415,11 +422,5 @@
     
     setInterval(manageSpectatorUI, 2000);
     
-    console.log("Delta script with spectators UI, circular wave animation, and team communication loaded.");
-
-
-
-
-
-    
+    console.log("Delta script with map-based wave animation, spectators UI, and team communication loaded.");
 })();
