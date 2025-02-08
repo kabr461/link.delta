@@ -149,7 +149,6 @@
             if (data.type === 'cool') {
                 console.log("Received cinematic animation message:", data);
                 if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
-                    // Instead of canvas center, get the spectator's map center.
                     const viewer = getSpectatorMapCenter();
                     const d = Math.sqrt((data.x - viewer.x) ** 2 + (data.y - viewer.y) ** 2);
                     // Compute scale based on distance from the spectator's view.
@@ -170,17 +169,26 @@
     }
     
     /***************************************************************
-     * Helper: Get Spectator Map Center
+     * Helper Functions for Spectator View
      ***************************************************************/
+    function isSpectatorView() {
+        // Check if the URL contains "spectate" (a common indicator in agar.io).
+        return window.location.href.includes("spectate");
+    }
+    
     function getSpectatorMapCenter() {
-        // TODO: Replace this with your actual logic to retrieve the spectator's current map center.
-        // For example, if your game exposes the current camera or view coordinates, return those.
-        // Here we check for a global variable; otherwise, fall back to canvas center.
-        if (window.viewerMapCenter) {
-            return window.viewerMapCenter;
-        }
+        // Try to get the current camera/view translation from the canvas transform.
+        // Modern browsers support getTransform() on canvas contexts.
         const canvas = document.querySelector('canvas');
         if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx.getTransform) {
+                const transform = ctx.getTransform();
+                // Assume the translation (transform.e, transform.f) is the top-left of the current view.
+                // Adding half the canvas dimensions gives an approximate map center.
+                return { x: transform.e + canvas.width / 2, y: transform.f + canvas.height / 2 };
+            }
+            // Fallback: use canvas center if no transform is available.
             return { x: canvas.width / 2, y: canvas.height / 2 };
         }
         return { x: 0, y: 0 };
@@ -324,13 +332,6 @@
         document.body.appendChild(uiWrapper);
         return { uiWrapper, listContainer };
     };
-    
-    // Adjust this function to match your game's spectator mode detection.
-    function isSpectatorView() {
-        const spectatorFlag = window.spectator === true;
-        const spectateElem = document.getElementById('spectate');
-        return spectatorFlag || (spectateElem !== null);
-    }
     
     function ensureSpectatorUIExists() {
         if (isSpectatorView()) {
