@@ -130,14 +130,15 @@
     
     // TODO: Replace these placeholders with your real Firebase config.
     const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
+  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
+  authDomain: "agario-bb5ea.firebaseapp.com",
+  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
+  projectId: "agario-bb5ea",
+  storageBucket: "agario-bb5ea.firebasestorage.app",
+  messagingSenderId: "306389211380",
+  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
+  measurementId: "G-5NTSETJHM9"
+};
     
     function initializeFirebase() {
         if (!firebase.apps.length) {
