@@ -1,217 +1,112 @@
-console.log("[WebSocket Debug] Initializing Enhanced WebSocket Analyzer...");
+console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
 (function () {
     'use strict';
 
-    /**
-     * In-memory opcode registry. Structure:
-     * {
-     *   opcodeValue: {
-     *     count: number,
-     *     strongestSignal: number,
-     *     messageSizes: number[],
-     *     samples: Uint8Array[],  // Storing raw data samples
-     *   }
-     * }
-     */
-    let opcodeRegistry = {};
-
-    // Temporary summary to show per second
-    let opcodeSummary = {};
-    let lastSummaryTime = Date.now();
-
-    // Restore any previously stored opcode data from localStorage
-    loadOpcodeRegistryFromStorage();
-
-    /**
-     * Primary data processing function for each incoming binary WebSocket message.
-     */
-    function processBinaryData(buffer) {
-        const dataArray = new Uint8Array(buffer);
-        if (dataArray.length >= 2) {
-            const opcode = dataArray[0];       // Assuming first byte is opcode
-            const signalStrength = dataArray[1]; // Assuming second byte is signal
-            const messageSize = dataArray.length;
-
-            // Gather the data into our standard format
-            const processedData = { opcode, signalStrength, messageSize, dataArray };
-
-            processSignal(processedData);
-        }
+    // IndexedDB helper functions for storing opcode data
+    function openOpcodeDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('OpcodeDB', 1);
+            request.onerror = () => reject('Error opening IndexedDB');
+            request.onsuccess = () => resolve(request.result);
+            request.onupgradeneeded = event => {
+                const db = event.target.result;
+                const store = db.createObjectStore('opcodes', { keyPath: 'opcode' });
+                store.createIndex('opcode', 'opcode', { unique: true });
+            };
+        });
     }
 
-    /**
-     * Called after extracting key info (opcode, signalStrength, messageSize, raw data).
-     */
-    function processSignal({ opcode, signalStrength, messageSize, dataArray }) {
-        // Check if this is a new opcode
-        const isNewOpcode = !opcodeRegistry[opcode];
+    function saveOpcodeToDB(db, opcodeData) {
+        const transaction = db.transaction(['opcodes'], 'readwrite');
+        const store = transaction.objectStore('opcodes');
+        store.put(opcodeData); // "put" inserts or updates by keyPath
+    }
 
-        // Initialize or update registry entry
-        if (isNewOpcode) {
+    // In-memory registry for opcode tracking
+    const opcodeRegistry = {};  // { opcode: { count, strongestSignal, messageSizes, sampleData } }
+    let opcodeSummary = {};     // Temporary per-second summary
+    let lastSummaryTime = Date.now();
+
+    // Process each signal received from the WebSocket
+    function processSignal(data) {
+        if (!data || data.opcode === undefined) return;
+
+        const opcode = data.opcode;
+        const signalStrength = data.signalStrength || 0;
+        const messageSize = data.messageSize || 0;
+
+        if (!opcodeRegistry[opcode]) {
+            // New opcode detected: record structure, size, frequency, and a sample
             opcodeRegistry[opcode] = {
                 count: 1,
                 strongestSignal: signalStrength,
                 messageSizes: [messageSize],
-                // We'll store the first raw data sample (or store multiple samples if desired)
-                samples: [dataArray.slice(0, 16)],  // store a short sample of up to 16 bytes
+                sampleData: { opcode, signalStrength, messageSize }
             };
+            console.log(`[CustomWebSocket] New opcode detected: ${opcode}`, opcodeRegistry[opcode]);
+
+            // Save the new opcode record to IndexedDB
+            openOpcodeDB().then(db => {
+                saveOpcodeToDB(db, {
+                    opcode,
+                    count: 1,
+                    strongestSignal: signalStrength,
+                    messageSizes: [messageSize],
+                    sampleData: { opcode, signalStrength, messageSize }
+                });
+            }).catch(err => console.error(err));
         } else {
-            // Update existing
-            const entry = opcodeRegistry[opcode];
-            entry.count += 1;
-            entry.strongestSignal = Math.max(entry.strongestSignal, signalStrength);
-
-            // Track unique message sizes
-            if (!entry.messageSizes.includes(messageSize)) {
-                entry.messageSizes.push(messageSize);
+            // Update existing opcode record
+            opcodeRegistry[opcode].count += 1;
+            opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
+            if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
+                opcodeRegistry[opcode].messageSizes.push(messageSize);
             }
-
-            // Optionally store a new sample (or limit how many we keep to avoid large memory usage)
-            if (entry.samples.length < 5) {
-                // Keep up to 5 samples
-                entry.samples.push(dataArray.slice(0, 16));
-            }
+            openOpcodeDB().then(db => {
+                saveOpcodeToDB(db, {
+                    opcode,
+                    count: opcodeRegistry[opcode].count,
+                    strongestSignal: opcodeRegistry[opcode].strongestSignal,
+                    messageSizes: opcodeRegistry[opcode].messageSizes,
+                    sampleData: opcodeRegistry[opcode].sampleData
+                });
+            });
         }
 
-        // Immediately log if this is a new opcode
-        if (isNewOpcode) {
-            console.log(`[CustomWebSocket] New opcode detected: ${opcode}`);
-        }
-
-        // Keep track of frequency for the 1-second summary
+        // Track per-second opcode frequency summary
         opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
 
-        // Print summary once per second
-        const now = Date.now();
-        if (now - lastSummaryTime > 1000) {
-            console.clear(); // Keep the console clean
+        // Print summary every second
+        if (Date.now() - lastSummaryTime > 1000) {
+            console.clear();
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 1s)`);
             console.table(opcodeSummary);
-
-            // Reset counters for the next second
             opcodeSummary = {};
-            lastSummaryTime = now;
-        }
-
-        // Persist changes to localStorage
-        saveOpcodeRegistryToStorage();
-    }
-
-    /**
-     * Attempt to load a previously stored version of the opcode registry from localStorage
-     */
-    function loadOpcodeRegistryFromStorage() {
-        try {
-            const stored = localStorage.getItem('opcodeRegistry');
-            if (stored) {
-                // We need to revive the Uint8Arrays. We'll keep them as plain arrays for simplicity.
-                const parsed = JSON.parse(stored);
-                // Convert plain arrays back to typed arrays if needed
-                for (const op in parsed) {
-                    parsed[op].samples = parsed[op].samples.map(
-                        arr => new Uint8Array(arr)
-                    );
-                }
-                opcodeRegistry = parsed;
-                console.log('[CustomWebSocket] Loaded opcodeRegistry from localStorage');
-            }
-        } catch (err) {
-            console.warn('[CustomWebSocket] Failed to load opcodeRegistry:', err);
+            lastSummaryTime = Date.now();
         }
     }
 
-    /**
-     * Save the current opcode registry to localStorage. 
-     * We transform Uint8Arrays to plain arrays to be JSON-serializable.
-     */
-    function saveOpcodeRegistryToStorage() {
-        try {
-            const clone = {};
-            for (const op in opcodeRegistry) {
-                clone[op] = {
-                    ...opcodeRegistry[op],
-                    samples: opcodeRegistry[op].samples.map(ua => Array.from(ua))
-                };
-            }
-            localStorage.setItem('opcodeRegistry', JSON.stringify(clone));
-        } catch (err) {
-            console.warn('[CustomWebSocket] Failed to store opcodeRegistry:', err);
+    // Process binary data received from the WebSocket
+    function processBinaryData(buffer) {
+        const dataArray = new Uint8Array(buffer);
+        if (dataArray.length >= 2) {
+            // Assuming the first byte is the opcode and the second is the signal strength
+            const opcode = dataArray[0];
+            const signalStrength = dataArray[1];
+            const messageSize = dataArray.length;
+            processSignal({ opcode, signalStrength, messageSize });
         }
     }
 
-    /**
-     * Utility function to export the entire opcode registry as JSON.
-     * This is triggered by calling `window.exportOpcodesAsJSON()`
-     * from the console or any custom UI.
-     */
-    function exportOpcodesAsJSON() {
-        const dataStr = JSON.stringify(opcodeRegistryToPlainObject(), null, 2);
-        downloadFile(dataStr, 'opcode_registry.json', 'application/json');
-    }
-
-    /**
-     * Utility function to export the entire opcode registry as CSV.
-     * This is triggered by calling `window.exportOpcodesAsCSV()`
-     * from the console or any custom UI.
-     */
-    function exportOpcodesAsCSV() {
-        // Convert the registry to a simple CSV structure
-        // Columns: opcode, count, strongestSignal, messageSizes (joined), sampleCount
-        let csv = 'opcode,count,strongestSignal,messageSizes,sampleCount\n';
-        for (const [opcode, entry] of Object.entries(opcodeRegistry)) {
-            csv += `${opcode},${entry.count},${entry.strongestSignal},"[${entry.messageSizes.join(', ')}]",${entry.samples.length}\n`;
-        }
-        downloadFile(csv, 'opcode_registry.csv', 'text/csv');
-    }
-
-    /**
-     * Helper to create a "plain" version of the registry for JSON export.
-     * This transforms the Uint8Array samples to plain arrays so they’re JSON-friendly.
-     */
-    function opcodeRegistryToPlainObject() {
-        const clone = {};
-        for (const op in opcodeRegistry) {
-            clone[op] = {
-                count: opcodeRegistry[op].count,
-                strongestSignal: opcodeRegistry[op].strongestSignal,
-                messageSizes: opcodeRegistry[op].messageSizes,
-                samples: opcodeRegistry[op].samples.map(ua => Array.from(ua))
-            };
-        }
-        return clone;
-    }
-
-    /**
-     * Utility to trigger a download of a string as a file.
-     */
-    function downloadFile(dataStr, fileName, mimeType) {
-        const blob = new Blob([dataStr], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    /**
-     * Override the native WebSocket with our custom analyzer.
-     */
+    // Custom WebSocket class that overrides the native WebSocket
     const OriginalWebSocket = window.WebSocket;
-
     class CustomWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
             super(url, protocols);
-            this.url = url;
-            this.protocols = protocols;
-
             console.log('[CustomWebSocket] Connecting to:', url);
 
+            // Listen for incoming messages and process binary data
             this.addEventListener('message', (event) => {
                 if (event.data instanceof ArrayBuffer) {
                     processBinaryData(event.data);
@@ -220,30 +115,61 @@ console.log("[WebSocket Debug] Initializing Enhanced WebSocket Analyzer...");
                 }
             });
 
+            // Attempt to reconnect on close
             this.addEventListener('close', (event) => {
                 console.warn('[CustomWebSocket] Connection closed:', event);
-                // Attempt reconnect after a delay
                 setTimeout(() => {
                     console.log('[CustomWebSocket] Attempting to reconnect...');
-                    window.WebSocket = new CustomWebSocket(this.url, this.protocols);
+                    window.WebSocket = new CustomWebSocket(url, protocols);
                 }, 3000);
             });
         }
     }
 
-    // Apply override after a short delay
+    // Export the opcode registry data as a JSON file
+    function exportToJSON() {
+        const dataStr = JSON.stringify(opcodeRegistry, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "opcode_data.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // Export the opcode registry data as a CSV file
+    function exportToCSV() {
+        let csvContent = "Opcode,Count,StrongestSignal,MessageSizes,SampleData\n";
+        for (let opcode in opcodeRegistry) {
+            const record = opcodeRegistry[opcode];
+            const messageSizes = record.messageSizes.join('|'); // Use a delimiter for sizes
+            const sampleData = JSON.stringify(record.sampleData).replace(/,/g, ';'); // Replace commas to avoid CSV conflicts
+            csvContent += `${opcode},${record.count},${record.strongestSignal},"${messageSizes}","${sampleData}"\n`;
+        }
+        const blob = new Blob([csvContent], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "opcode_data.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // Override the native WebSocket after a short delay
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] WebSocket Override Applied');
     }, 1000);
 
-    // Expose helper functions globally for convenience
+    // Expose helper functions to the global scope for later analysis/export
     window.analyzeOpcodes = function () {
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
     };
-
-    window.exportOpcodesAsJSON = exportOpcodesAsJSON;
-    window.exportOpcodesAsCSV = exportOpcodesAsCSV;
+    window.exportOpcodeDataJSON = exportToJSON;
+    window.exportOpcodeDataCSV = exportToCSV;
 
 })();
