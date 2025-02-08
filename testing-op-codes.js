@@ -57,9 +57,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         if (data.rawMessage) {
             try {
                 let messageText = new TextDecoder("utf-8").decode(data.rawMessage);
-
                 console.log(`[Message Sent] ${messageText}`);
-
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
             }
@@ -93,28 +91,32 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
 
         send(data) {
+            let modifiedData = data;
+
+            // If the message is a string, modify it directly
             if (typeof data === "string") {
                 if (data.includes("UJ")) {
-                    const modifiedMessage = data.replace(/UJ/g, "up here!");
-                    console.log(`[Outgoing Message Modified] ${modifiedMessage}`);
-                    super.send(modifiedMessage);
-                    return;
+                    modifiedData = data.replace(/UJ/g, "up here!");
+                    console.log(`[Outgoing Message Modified] ${modifiedData}`);
                 }
-            } else if (data instanceof ArrayBuffer) {
+            }
+
+            // If the message is binary, decode -> modify -> re-encode
+            else if (data instanceof ArrayBuffer) {
                 try {
                     let messageText = new TextDecoder("utf-8").decode(data);
                     if (messageText.includes("UJ")) {
-                        const modifiedMessage = messageText.replace(/UJ/g, "up here!");
-                        console.log(`[Outgoing Binary Message Modified] ${modifiedMessage}`);
-                        const modifiedBuffer = new TextEncoder().encode(modifiedMessage).buffer;
-                        super.send(modifiedBuffer);
-                        return;
+                        messageText = messageText.replace(/UJ/g, "up here!");
+                        console.log(`[Outgoing Binary Message Modified] ${messageText}`);
+                        modifiedData = new TextEncoder().encode(messageText).buffer;
                     }
                 } catch (e) {
                     console.warn("[Binary Message Processing Error]", e);
                 }
             }
-            super.send(data);
+
+            // **Send only the modified message**
+            super.send(modifiedData);
         }
     }
 
