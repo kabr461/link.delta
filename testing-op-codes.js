@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI (World Coordinates)
+// @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI (World-Based)
 // @namespace    http://your-namespace-here.com
 // @version      1.5
-// @description  Broadcasts team clicks using game world coordinates so that every spectator sees a wave at the same map position.
+// @description  Broadcasts team clicks using world coordinates so that circular waves appear at the same static map location for every spectator.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -10,12 +10,6 @@
 
 (function() {
     'use strict';
-
-    /***************************************************************
-     * Configuration: Define your game world size (in world units).
-     * Adjust this value to match the actual game world dimensions.
-     ***************************************************************/
-    const WORLD_SIZE = 2000; // Example: world is 2000x2000 units.
 
     /***************************************************************
      * Monkey-patch removeChild to suppress NotFoundError exceptions.
@@ -121,7 +115,7 @@
         document.head.appendChild(script);
     }
     
-    // Firebase configuration (updated with your credentials)
+    // Use your Firebase credentials.
     const firebaseConfig = {
         apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
         authDomain: "agario-bb5ea.firebaseapp.com",
@@ -151,16 +145,17 @@
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
-            // Expect broadcast messages to include world map coordinates: mapX and mapY.
+            // Expect broadcast messages to include world coordinates as mapX and mapY.
             if (data.type === 'cool') {
                 console.log("Received cinematic animation message:", data);
                 if (window.coolWaveRenderer && typeof data.mapX === 'number' && typeof data.mapY === 'number') {
                     // Convert world coordinates to canvas coordinates.
                     const canvasCoords = mapToCanvas(data.mapX, data.mapY);
-                    // Compute scale based on distance from spectator's view center.
+                    // Use world size in scaling.
+                    const worldSize = getWorldSize();
                     const viewer = getSpectatorMapCenter();
                     const d = Math.sqrt((data.mapX - viewer.x) ** 2 + (data.mapY - viewer.y) ** 2);
-                    const scale = 1 / (0.5 + d / 500);
+                    const scale = 1 / (0.5 + d / (worldSize / 3));
                     window.coolWaveRenderer.createWave(canvasCoords.x, canvasCoords.y, scale);
                 }
             } else if (data.type === 'help') {
@@ -177,56 +172,67 @@
     }
     
     /***************************************************************
-     * Helper Functions: World ↔ Canvas Conversion (Using World Size)
+     * Helper: World & Spectator Coordinate Conversions
      ***************************************************************/
-    // Get the spectator's current map center in world coordinates.
-    // In a real game, this might come from the game camera.
-    // Here we try to use a global variable, or default to the world center.
-    function getSpectatorMapCenter() {
-        if (window.spectatorViewCenter) {
-            return window.spectatorViewCenter;
-        }
-        return { x: WORLD_SIZE / 2, y: WORLD_SIZE / 2 };
+    // Retrieve the world size (game map size) from the game or use a default.
+    function getWorldSize() {
+        // If the game (agar.io or Delta) exposes the world size, use it.
+        return window.worldSize || 1414; // adjust default as needed
     }
     
-    // Convert world coordinates (mapX, mapY) into canvas coordinates.
-    function mapToCanvas(mapX, mapY) {
+    // Get the spectator's view center in world coordinates.
+    function getSpectatorMapCenter() {
         const canvas = document.querySelector('canvas');
-        if (!canvas) return { x: mapX, y: mapY };
-        // Assume a uniform scale factor where the full world width maps to canvas width.
-        const scaleFactor = canvas.width / WORLD_SIZE;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx.getTransform) {
+                const transform = ctx.getTransform();
+                // We assume transform.e and transform.f are the top-left world offsets.
+                return { x: transform.e + canvas.width / 2, y: transform.f + canvas.height / 2 };
+            }
+            return { x: canvas.width / 2, y: canvas.height / 2 };
+        }
+        return { x: 0, y: 0 };
+    }
+    
+    // Convert canvas coordinates to world coordinates using current transform.
+    function canvasToWorld(canvasX, canvasY) {
+        const canvas = document.querySelector('canvas');
+        if (!canvas) return { x: canvasX, y: canvasY };
+        const ctx = canvas.getContext('2d');
+        const transform = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1, e: 0, f: 0 };
         const viewer = getSpectatorMapCenter();
-        // The canvas center corresponds to the viewer's map center.
-        return { 
-            x: canvas.width / 2 + (mapX - viewer.x) * scaleFactor,
-            y: canvas.height / 2 + (mapY - viewer.y) * scaleFactor
+        return {
+            x: viewer.x + (canvasX - canvas.width / 2) / transform.a,
+            y: viewer.y + (canvasY - canvas.height / 2) / transform.d
         };
     }
     
-    // Convert canvas coordinates into world coordinates.
-    function canvasToMap(canvasX, canvasY) {
+    // Convert world (map) coordinates to canvas coordinates for the spectator.
+    function mapToCanvas(mapX, mapY) {
         const canvas = document.querySelector('canvas');
-        if (!canvas) return { x: canvasX, y: canvasY };
-        const scaleFactor = canvas.width / WORLD_SIZE;
+        if (!canvas) return { x: mapX, y: mapY };
+        const ctx = canvas.getContext('2d');
+        const transform = ctx.getTransform ? ctx.getTransform() : { a: 1, d: 1 };
         const viewer = getSpectatorMapCenter();
-        return { 
-            x: viewer.x + (canvasX - canvas.width / 2) / scaleFactor,
-            y: viewer.y + (canvasY - canvas.height / 2) / scaleFactor
+        return {
+            x: (mapX - viewer.x) * transform.a + canvas.width / 2,
+            y: (mapY - viewer.y) * transform.d + canvas.height / 2
         };
     }
     
     /***************************************************************
-     * 4. Cinematic Circular Wave Animation Effect (Using World Coordinates)
+     * 4. Cinematic Circular Wave Animation Effect (World-Based)
      ***************************************************************/
-    // CircularWave: an expanding, fading circle.
+    // CircularWave creates an expanding, fading circle.
     class CircularWave {
         constructor(x, y, scale) {
             this.x = x;
             this.y = y;
             this.radius = 0;
-            this.expansionRate = 2; // Adjust as needed.
+            this.expansionRate = 2; // Adjust expansion speed as needed.
             this.alpha = 1;
-            this.maxRadius = 100 * scale; // Maximum radius scaled.
+            this.maxRadius = 100 * scale; // Scale maximum radius using provided scale.
         }
         update() {
             this.radius += this.expansionRate;
@@ -246,7 +252,7 @@
         }
     }
     
-    // CoolWaveRenderer: manages and animates waves on the canvas.
+    // CoolWaveRenderer manages and animates the circular waves.
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -255,22 +261,24 @@
             this.init();
         }
         init() {
-            // When a team player clicks, convert canvas coordinates to world coordinates and broadcast them.
+            // When a team player clicks on the canvas, convert the click into world coordinates.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const canvasX = e.clientX - rect.left;
                 const canvasY = e.clientY - rect.top;
-                // Convert the canvas click to a world coordinate.
-                const mapCoords = canvasToMap(canvasX, canvasY);
-                console.log("Team player clicked at (world coordinates):", mapCoords);
-                // For local display, convert back to canvas coordinates.
-                const canvasCoords = mapToCanvas(mapCoords.x, mapCoords.y);
+                // Convert canvas click to world coordinates.
+                const worldCoords = canvasToWorld(canvasX, canvasY);
+                console.log("Team player clicked at world coordinates:", worldCoords);
+                // For local display, convert world coordinates back to canvas coordinates.
+                const canvasCoords = mapToCanvas(worldCoords.x, worldCoords.y);
+                // Calculate scale based on distance from spectator’s view center and world size.
+                const worldSize = getWorldSize();
                 const viewer = getSpectatorMapCenter();
-                const d = Math.sqrt((mapCoords.x - viewer.x) ** 2 + (mapCoords.y - viewer.y) ** 2);
-                const scale = 1 / (0.5 + d / 500);
+                const d = Math.sqrt((worldCoords.x - viewer.x) ** 2 + (worldCoords.y - viewer.y) ** 2);
+                const scale = 1 / (0.5 + d / (worldSize / 3));
                 this.createWave(canvasCoords.x, canvasCoords.y, scale);
-                // Broadcast the world map coordinates.
-                broadcastTeamMessage({ type: 'cool', mapX: mapCoords.x, mapY: mapCoords.y });
+                // Broadcast the world coordinates.
+                broadcastTeamMessage({ type: 'cool', mapX: worldCoords.x, mapY: worldCoords.y });
             });
             this.startAnimation();
         }
@@ -373,11 +381,6 @@
         }
     }
     
-    // For spectator mode, we use a simple check on the URL.
-    function isSpectatorView() {
-        return window.location.href.includes("spectate");
-    }
-    
     function getDeltaSpectators() {
         // Replace with your actual logic or use placeholder data.
         if (window.delta && window.delta.spectators) {
@@ -430,6 +433,11 @@
         });
     }
     
+    function isSpectatorView() {
+        // For this version, we assume that if the URL contains "spectate" the user is a spectator.
+        return window.location.href.includes("spectate");
+    }
+    
     function manageSpectatorUI() {
         if (isSpectatorView()) {
             ensureSpectatorUIExists();
@@ -444,5 +452,5 @@
     
     setInterval(manageSpectatorUI, 2000);
     
-    console.log("Delta script with spectators UI, world-based circular wave animation, and team communication loaded.");
+    console.log("Delta script with world-based spectators UI, circular wave animation, and team communication loaded.");
 })();
