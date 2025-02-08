@@ -44,8 +44,8 @@ console.log("[WebSocket Debug] Initializing...");
     }
 
     // ---------------------------------------------------
-    // 2) Process Incoming Binary Data
-    //    (Assuming byte0=opcode, byte1=signal, rest=message)
+    // 2) Process Incoming Binary Data (unchanged)
+    //    (Assuming byte0 = opcode, byte1 = signal, rest = message)
     // ---------------------------------------------------
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
@@ -76,12 +76,12 @@ console.log("[WebSocket Debug] Initializing...");
             // Check for the sequence [85, 0, 74, 0]
             if (
                 i + 3 < bytes.length &&
-                bytes[i]   === 85 && bytes[i+1] === 0 &&
-                bytes[i+2] === 74 && bytes[i+3] === 0
+                bytes[i]   === 85 && bytes[i + 1] === 0 &&
+                bytes[i + 2] === 74 && bytes[i + 3] === 0
             ) {
                 console.debug("[replaceUTF16_UJ] Found 'UJ' at index", i);
                 output.push(...UP_HERE_UTF16);
-                i += 3; // Skip the next 3 bytes (they are part of "UJ")
+                i += 3; // Skip the next 3 bytes (they form part of "UJ")
             } else {
                 output.push(bytes[i]);
             }
@@ -98,6 +98,7 @@ console.log("[WebSocket Debug] Initializing...");
             super(url, protocols);
             console.log("[CustomWebSocket] Connecting to:", url);
 
+            // Handle incoming messages as before.
             this.addEventListener("message", (event) => {
                 if (event.data instanceof ArrayBuffer) {
                     processBinaryData(event.data);
@@ -116,26 +117,25 @@ console.log("[WebSocket Debug] Initializing...");
         }
 
         send(data) {
-            // Process only binary messages with opcode 25.
+            // Check only for ArrayBuffer messages and use the same opcode detection as processBinaryData.
             if (data instanceof ArrayBuffer) {
-                const originalBytes = new Uint8Array(data);
-                if (originalBytes[0] === 25) {
-                    console.debug("[send opcode 25] Original message bytes:", originalBytes);
-                    const replacedBytes = replaceUTF16_UJ(originalBytes);
-                    console.debug("[send opcode 25] Modified message bytes:", replacedBytes);
-                    super.send(replacedBytes.buffer);
-                    return;
+                const bytes = new Uint8Array(data);
+                if (bytes.length >= 1 && bytes[0] === 25) {
+                    console.log("[Outgoing Opcode 25] Raw bytes before upgrade:", bytes);
+                    const upgradedBytes = replaceUTF16_UJ(bytes);
+                    console.log("[Outgoing Opcode 25] Raw bytes after upgrade:", upgradedBytes);
+                    return super.send(upgradedBytes.buffer);
                 }
             }
-            // For all other messages, simply pass through.
-            super.send(data);
+            // Pass through all other messages unmodified.
+            return super.send(data);
         }
     }
 
-    // Apply the override after a short delay.
+    // Apply the override after a short delay to ensure it runs before any WebSocket is created.
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
-        console.log("[CustomWebSocket] Override Applied. Outgoing binary data with opcode 25 will be upgraded.");
+        console.log("[CustomWebSocket] Override Applied. Outgoing binary messages with opcode 25 will be upgraded.");
     }, 1000);
 
     // Optional helper to analyze opcode data in the console.
