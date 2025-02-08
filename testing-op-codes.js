@@ -34,7 +34,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
 
         // Print summary once per second
-        if (Date.now() - lastSummaryTime > 1000) {
+        if (Date.now() - lastSummaryTime > 10000) {
             console.clear(); // Keep the console clean
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 1s)`);
             console.table(opcodeSummary);
@@ -65,7 +65,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 setTimeout(() => {
                     console.log('[CustomWebSocket] Attempting to reconnect...');
                     window.WebSocket = new CustomWebSocket(this.url, this.protocols);
-                }, 3000);
+                }, 1000);
             });
         }
     }
