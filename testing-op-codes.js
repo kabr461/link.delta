@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI (World-Based)
+// @name         Delta-Style Extension with Minimap, Chat & Animated Skins
 // @namespace    http://your-namespace-here.com
-// @version      1.6
-// @description  Now also detects collisions and significant movement from in-game data to trigger wave animations.
+// @version      2.0
+// @description  Enhanced team help, cinematic waves, spectator UI with minimap and in-game chat. Includes animated GIF skins support (hooked as a placeholder).
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -12,8 +12,9 @@
     'use strict';
 
     /***************************************************************
-     * Monkey-patch removeChild to suppress NotFoundError exceptions.
+     * 0. Utility Patches & CSP Bypass
      ***************************************************************/
+    // Patch removeChild to suppress NotFoundError exceptions.
     (function() {
         const originalRemoveChild = Node.prototype.removeChild;
         Node.prototype.removeChild = function(child) {
@@ -29,9 +30,7 @@
         };
     })();
 
-    /***************************************************************
-     * 1. Remove & Override Content Security Policies (CSP)
-     ***************************************************************/
+    // Remove and override Content Security Policies (CSP)
     const removeCSPMetaTags = () => {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
             try {
@@ -81,9 +80,7 @@
     };
     insertPermissiveCSP();
 
-    /***************************************************************
-     * 2. Patch Worker Creation and System.import Polyfill
-     ***************************************************************/
+    // Patch Worker creation to allow data URLs.
     (function() {
         const OriginalWorker = window.Worker;
         window.Worker = function(script, options) {
@@ -106,7 +103,7 @@
     }
 
     /***************************************************************
-     * 3. Load Firebase SDK (v8) Dynamically and Initialize (Team Communication)
+     * 1. Firebase Initialization (for team messages and chat)
      ***************************************************************/
     function loadScript(src, onload) {
         const script = document.createElement('script');
@@ -115,7 +112,7 @@
         document.head.appendChild(script);
     }
     
-    // Use your Firebase credentials.
+    // Replace these with your Firebase credentials.
     const firebaseConfig = {
         apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
         authDomain: "agario-bb5ea.firebaseapp.com",
@@ -135,18 +132,21 @@
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
-        console.log("Firebase initialized. (Ensure your domain is allowed in Firebase settings)");
+        console.log("Firebase initialized.");
         listenForTeamMessages();
+        listenForChatMessages();
     }
     
     let teamMessagesRef = null;
+    let chatMessagesRef = null;
+    
     function listenForTeamMessages() {
         teamMessagesRef = firebase.database().ref('team_messages');
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
             if (data.type === 'cool') {
-                console.log("Received cinematic animation message:", data);
+                console.log("Received cinematic wave message:", data);
                 if (window.coolWaveRenderer && typeof data.mapX === 'number' && typeof data.mapY === 'number') {
                     const canvasCoords = mapToCanvas(data.mapX, data.mapY);
                     const worldSize = getWorldSize();
@@ -162,17 +162,33 @@
         });
     }
     
+    function listenForChatMessages() {
+        chatMessagesRef = firebase.database().ref('chat_messages');
+        chatMessagesRef.on('child_added', snapshot => {
+            const data = snapshot.val();
+            if (!data) return;
+            addChatMessage(data.sender, data.message);
+        });
+    }
+    
     function broadcastTeamMessage(messageObj) {
         if (teamMessagesRef) {
             teamMessagesRef.push(messageObj);
         }
     }
-
+    
+    function broadcastChatMessage(sender, message) {
+        if (chatMessagesRef) {
+            chatMessagesRef.push({ sender, message });
+        }
+    }
+    
     /***************************************************************
-     * Helper: World & Spectator Coordinate Conversions
+     * 2. Coordinate Helpers (Canvas & World)
      ***************************************************************/
     function getWorldSize() {
-        return window.worldSize || 1414; // adjust default as needed
+        // Use game-defined world size if available; otherwise, a default.
+        return window.worldSize || 1414;
     }
     
     function getSpectatorMapCenter() {
@@ -213,7 +229,7 @@
     }
     
     /***************************************************************
-     * 4. Cinematic Circular Wave Animation Effect (World-Based)
+     * 3. Cinematic Circular Wave Animation Effect
      ***************************************************************/
     class CircularWave {
         constructor(x, y, scale) {
@@ -242,60 +258,6 @@
         }
     }
     
-    // Global storage for player positions to detect movement.
-    let lastPositions = {};
-
-    // Detect collisions among players.
-    function checkForCollisions() {
-        // Assumes game players are stored in window.players with properties: id, x, y, radius.
-        const players = window.players;
-        if (!players || players.length < 2) return;
-        for (let i = 0; i < players.length; i++) {
-            for (let j = i + 1; j < players.length; j++) {
-                const p1 = players[i];
-                const p2 = players[j];
-                const dx = p1.x - p2.x;
-                const dy = p1.y - p2.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                if (distance < (p1.radius + p2.radius)) {
-                    // Collision detected; trigger a wave effect at the midpoint.
-                    const collisionX = (p1.x + p2.x) / 2;
-                    const collisionY = (p1.y + p2.y) / 2;
-                    const canvasCoords = mapToCanvas(collisionX, collisionY);
-                    if (window.coolWaveRenderer) {
-                        window.coolWaveRenderer.createWave(canvasCoords.x, canvasCoords.y, 1);
-                    }
-                }
-            }
-        }
-    }
-    
-    // Detect significant movement of players.
-    function checkForMovement() {
-        // Assumes game players are stored in window.players with properties: id, x, y.
-        const players = window.players;
-        if (!players) return;
-        const movementThreshold = 10; // adjust this threshold as needed
-        players.forEach(player => {
-            const id = player.id;
-            const currentPos = { x: player.x, y: player.y };
-            if (lastPositions[id]) {
-                const dx = currentPos.x - lastPositions[id].x;
-                const dy = currentPos.y - lastPositions[id].y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist > movementThreshold) {
-                    // Significant movement detected; trigger a wave at the new position.
-                    const canvasCoords = mapToCanvas(currentPos.x, currentPos.y);
-                    if (window.coolWaveRenderer) {
-                        window.coolWaveRenderer.createWave(canvasCoords.x, canvasCoords.y, 0.5);
-                    }
-                }
-            }
-            lastPositions[id] = currentPos;
-        });
-    }
-    
-    // Modified CoolWaveRenderer that now also checks for collisions and movement.
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -304,13 +266,13 @@
             this.init();
         }
         init() {
-            // Retain the click listener for team clicks.
+            // When the canvas is clicked, calculate world coordinates and broadcast a wave.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const canvasX = e.clientX - rect.left;
                 const canvasY = e.clientY - rect.top;
                 const worldCoords = canvasToWorld(canvasX, canvasY);
-                console.log("Team player clicked at world coordinates:", worldCoords);
+                console.log("Player clicked at world coordinates:", worldCoords);
                 const canvasCoords = mapToCanvas(worldCoords.x, worldCoords.y);
                 const worldSize = getWorldSize();
                 const viewer = getSpectatorMapCenter();
@@ -333,9 +295,6 @@
         }
         startAnimation() {
             const animate = () => {
-                // Every frame, check for collisions and movement events.
-                checkForCollisions();
-                checkForMovement();
                 this.renderWaves();
                 requestAnimationFrame(animate);
             };
@@ -343,16 +302,16 @@
         }
     }
     
-    const attachCoolAnimationEffect = () => {
+    function attachCoolAnimationEffect() {
         const canvas = document.querySelector('canvas');
         if (canvas) {
             window.coolWaveRenderer = new CoolWaveRenderer(canvas);
-            console.log("Cinematic circular wave animation effect activated on canvas.");
+            console.log("Cinematic circular wave animation activated.");
         } else {
-            console.warn("Canvas element not found. Ensure the game has rendered its canvas.");
+            console.warn("Canvas element not found. Retrying...");
             setTimeout(attachCoolAnimationEffect, 100);
         }
-    };
+    }
     
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', attachCoolAnimationEffect);
@@ -361,19 +320,19 @@
     }
     
     /***************************************************************
-     * 5. Delta Spectators UI Panel (Spectator View)
+     * 4. Spectator UI Panel (Users List + CMD Chat Toggle)
      ***************************************************************/
     let cmdChatEnabled = false;
     let spectatorListContainer;
     
-    const createSpectatorUI = () => {
+    function createSpectatorUI() {
         const uiWrapper = document.createElement('div');
         uiWrapper.id = 'delta-spectator-ui';
         Object.assign(uiWrapper.style, {
             position: 'fixed',
             right: '10px',
             bottom: '10px',
-            width: '200px',
+            width: '220px',
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             color: '#fff',
             padding: '8px',
@@ -387,12 +346,14 @@
         header.style.fontWeight = 'bold';
         header.style.marginBottom = '6px';
         uiWrapper.appendChild(header);
+        
         const listContainer = document.createElement('div');
         listContainer.id = 'delta-spectator-list';
         listContainer.style.maxHeight = '200px';
         listContainer.style.overflowY = 'auto';
         listContainer.style.marginBottom = '8px';
         uiWrapper.appendChild(listContainer);
+        
         const cmdChatToggle = document.createElement('button');
         cmdChatToggle.textContent = "CMD Chat: OFF";
         cmdChatToggle.style.width = '100%';
@@ -405,7 +366,7 @@
         uiWrapper.appendChild(cmdChatToggle);
         document.body.appendChild(uiWrapper);
         return { uiWrapper, listContainer };
-    };
+    }
     
     function ensureSpectatorUIExists() {
         if (isSpectatorView()) {
@@ -424,6 +385,7 @@
     }
     
     function getDeltaSpectators() {
+        // Replace with real spectator data if available.
         if (window.delta && window.delta.spectators) {
             return window.delta.spectators;
         }
@@ -475,6 +437,7 @@
     }
     
     function isSpectatorView() {
+        // For this version, we assume the URL includes "spectate" for spectator mode.
         return window.location.href.includes("spectate");
     }
     
@@ -484,13 +447,188 @@
             updateSpectatorUI();
         } else {
             const ui = document.getElementById('delta-spectator-ui');
-            if (ui) {
-                ui.remove();
-            }
+            if (ui) ui.remove();
         }
     }
     
     setInterval(manageSpectatorUI, 2000);
     
-    console.log("Delta script with world-based spectators UI, wave animation, and game event detection loaded.");
+    /***************************************************************
+     * 5. In-Game Chat Panel
+     ***************************************************************/
+    function createChatPanel() {
+        const chatWrapper = document.createElement('div');
+        chatWrapper.id = 'delta-chat-ui';
+        Object.assign(chatWrapper.style, {
+            position: 'fixed',
+            left: '10px',
+            bottom: '10px',
+            width: '300px',
+            height: '250px',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            color: '#fff',
+            padding: '8px',
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '14px',
+            zIndex: 99999,
+            borderRadius: '6px',
+            display: 'flex',
+            flexDirection: 'column'
+        });
+        
+        const header = document.createElement('div');
+        header.textContent = "In-Game Chat";
+        header.style.fontWeight = 'bold';
+        header.style.marginBottom = '4px';
+        chatWrapper.appendChild(header);
+        
+        const messagesContainer = document.createElement('div');
+        messagesContainer.id = 'delta-chat-messages';
+        messagesContainer.style.flex = '1';
+        messagesContainer.style.overflowY = 'auto';
+        messagesContainer.style.marginBottom = '4px';
+        chatWrapper.appendChild(messagesContainer);
+        
+        const inputWrapper = document.createElement('div');
+        inputWrapper.style.display = 'flex';
+        const chatInput = document.createElement('input');
+        chatInput.type = 'text';
+        chatInput.placeholder = "Type a message...";
+        chatInput.style.flex = '1';
+        const sendButton = document.createElement('button');
+        sendButton.textContent = "Send";
+        sendButton.style.marginLeft = '4px';
+        sendButton.onclick = () => {
+            const message = chatInput.value.trim();
+            if (message) {
+                broadcastChatMessage("Player", message);
+                chatInput.value = "";
+            }
+        };
+        inputWrapper.appendChild(chatInput);
+        inputWrapper.appendChild(sendButton);
+        chatWrapper.appendChild(inputWrapper);
+        
+        document.body.appendChild(chatWrapper);
+    }
+    
+    function addChatMessage(sender, message) {
+        const messagesContainer = document.getElementById('delta-chat-messages');
+        if (!messagesContainer) return;
+        const msgRow = document.createElement('div');
+        msgRow.textContent = `${sender}: ${message}`;
+        messagesContainer.appendChild(msgRow);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    // Show chat panel only in spectator mode (or modify as needed)
+    function manageChatPanel() {
+        if (isSpectatorView()) {
+            if (!document.getElementById('delta-chat-ui')) {
+                createChatPanel();
+            }
+        } else {
+            const chatUI = document.getElementById('delta-chat-ui');
+            if (chatUI) chatUI.remove();
+        }
+    }
+    
+    setInterval(manageChatPanel, 2000);
+    
+    /***************************************************************
+     * 6. Minimap Integration with Animated GIF Skin Support (Placeholder)
+     ***************************************************************/
+    function createMinimap() {
+        const minimapWrapper = document.createElement('div');
+        minimapWrapper.id = 'delta-minimap-ui';
+        Object.assign(minimapWrapper.style, {
+            position: 'fixed',
+            left: '10px',
+            top: '10px',
+            width: '200px',
+            height: '200px',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            border: '1px solid #fff',
+            zIndex: 99999,
+            borderRadius: '4px'
+        });
+        const minimapCanvas = document.createElement('canvas');
+        minimapCanvas.width = 200;
+        minimapCanvas.height = 200;
+        minimapCanvas.id = 'delta-minimap-canvas';
+        minimapWrapper.appendChild(minimapCanvas);
+        document.body.appendChild(minimapWrapper);
+        return minimapCanvas;
+    }
+    
+    // Dummy function to retrieve players data.
+    function getPlayersData() {
+        // In a real scenario, hook into game state to get actual positions and skin URLs.
+        return [
+            { name: "DeltaAce", x: 200, y: 300, skinUrl: "https://i.imgur.com/YourDeltaSkin1.png" },
+            { name: "DeltaChamp", x: 600, y: 800, skinUrl: "https://i.imgur.com/YourDeltaSkin2.png" }
+        ];
+    }
+    
+    function updateMinimap() {
+        const canvas = document.getElementById('delta-minimap-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        // Clear minimap.
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw background (for example, a simple grid or plain color).
+        ctx.fillStyle = 'rgba(20,20,20,0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Assume world size is known.
+        const worldSize = getWorldSize();
+        const players = getPlayersData();
+        
+        players.forEach(player => {
+            // Map player's world position to minimap coordinates.
+            const miniX = (player.x / worldSize) * canvas.width;
+            const miniY = (player.y / worldSize) * canvas.height;
+            
+            // Draw a circle for the player.
+            ctx.beginPath();
+            ctx.arc(miniX, miniY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#0ff';
+            ctx.fill();
+            
+            // For animated GIF skins: as a placeholder, draw the image.
+            if (player.skinUrl) {
+                const img = new Image();
+                img.src = player.skinUrl;
+                // Draw the skin image on the minimap.
+                img.onload = () => {
+                    ctx.drawImage(img, miniX - 10, miniY - 10, 20, 20);
+                };
+            }
+        });
+    }
+    
+    function manageMinimap() {
+        // Show minimap only in spectator view (or always, as desired).
+        if (isSpectatorView()) {
+            if (!document.getElementById('delta-minimap-ui')) {
+                createMinimap();
+            }
+            updateMinimap();
+        } else {
+            const mini = document.getElementById('delta-minimap-ui');
+            if (mini) mini.remove();
+        }
+    }
+    
+    setInterval(manageMinimap, 2000);
+    
+    /***************************************************************
+     * 7. Helper: Show Help Message
+     ***************************************************************/
+    function showHelpMessage(message) {
+        alert(message);
+    }
+    
+    console.log("Delta-style extension loaded with cinematic waves, spectator UI, chat and minimap.");
 })();
