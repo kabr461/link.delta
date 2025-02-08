@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta-Style Extension with Minimap, Chat & Animated Skins
+// @name         Delta Extension Enhanced Script
 // @namespace    http://your-namespace-here.com
-// @version      2.0
-// @description  Enhanced team help, cinematic waves, spectator UI with minimap and in-game chat. Includes animated GIF skins support (hooked as a placeholder).
+// @version      1.6
+// @description  Combines team help, cinematic particle broadcast, animated GIF skins, customizable settings, minimap, in-game chat, multi-launcher, and touch gamepad features for Agar.io-like games.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -12,7 +12,7 @@
     'use strict';
 
     /***************************************************************
-     * 0. Utility Patches & CSP Bypass
+     * 0. Core Utility & Polyfills
      ***************************************************************/
     // Patch removeChild to suppress NotFoundError exceptions.
     (function() {
@@ -30,14 +30,10 @@
         };
     })();
 
-    // Remove and override Content Security Policies (CSP)
+    // Remove any Content Security Policy meta tags and insert an extremely permissive one.
     const removeCSPMetaTags = () => {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
-            try {
-                tag.remove();
-            } catch (e) {
-                console.error("Error removing meta tag:", e);
-            }
+            try { tag.remove(); } catch (e) { console.error("Error removing meta tag:", e); }
         });
     };
     removeCSPMetaTags();
@@ -47,11 +43,7 @@
                 if (node.nodeType === Node.ELEMENT_NODE &&
                     node.tagName === 'META' &&
                     node.getAttribute('http-equiv') === 'Content-Security-Policy') {
-                    try {
-                        node.remove();
-                    } catch (e) {
-                        console.error("Error in MutationObserver removing CSP meta tag:", e);
-                    }
+                    try { node.remove(); } catch (e) { console.error("CSP observer error:", e); }
                 }
             });
         });
@@ -80,7 +72,7 @@
     };
     insertPermissiveCSP();
 
-    // Patch Worker creation to allow data URLs.
+    // Patch Worker creation for data URL scripts.
     (function() {
         const OriginalWorker = window.Worker;
         window.Worker = function(script, options) {
@@ -98,21 +90,18 @@
             return new OriginalWorker(script, options);
         };
     })();
-    if (!window.System) {
-        window.System = { import: src => import(src) };
-    }
+    if (!window.System) { window.System = { import: src => import(src) }; }
 
     /***************************************************************
-     * 1. Firebase Initialization (for team messages and chat)
+     * 1. Firebase Team Communication & Cinematic Wave Animation
      ***************************************************************/
+    // Load Firebase SDK and initialize for team messaging.
     function loadScript(src, onload) {
         const script = document.createElement('script');
         script.src = src;
         script.onload = onload;
         document.head.appendChild(script);
     }
-    
-    // Replace these with your Firebase credentials.
     const firebaseConfig = {
         apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
         authDomain: "agario-bb5ea.firebaseapp.com",
@@ -123,30 +112,22 @@
         appId: "1:306389211380:web:3c1eb559078b05734be6a1",
         measurementId: "G-5NTSETJHM9"
     };
-    
     loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js", () => {
         loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
     });
-    
     function initializeFirebase() {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         console.log("Firebase initialized.");
         listenForTeamMessages();
-        listenForChatMessages();
     }
-    
     let teamMessagesRef = null;
-    let chatMessagesRef = null;
-    
     function listenForTeamMessages() {
         teamMessagesRef = firebase.database().ref('team_messages');
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
             if (data.type === 'cool') {
-                console.log("Received cinematic wave message:", data);
+                console.log("Received cinematic animation message:", data);
                 if (window.coolWaveRenderer && typeof data.mapX === 'number' && typeof data.mapY === 'number') {
                     const canvasCoords = mapToCanvas(data.mapX, data.mapY);
                     const worldSize = getWorldSize();
@@ -161,36 +142,11 @@
             }
         });
     }
-    
-    function listenForChatMessages() {
-        chatMessagesRef = firebase.database().ref('chat_messages');
-        chatMessagesRef.on('child_added', snapshot => {
-            const data = snapshot.val();
-            if (!data) return;
-            addChatMessage(data.sender, data.message);
-        });
-    }
-    
     function broadcastTeamMessage(messageObj) {
-        if (teamMessagesRef) {
-            teamMessagesRef.push(messageObj);
-        }
+        if (teamMessagesRef) { teamMessagesRef.push(messageObj); }
     }
-    
-    function broadcastChatMessage(sender, message) {
-        if (chatMessagesRef) {
-            chatMessagesRef.push({ sender, message });
-        }
-    }
-    
-    /***************************************************************
-     * 2. Coordinate Helpers (Canvas & World)
-     ***************************************************************/
-    function getWorldSize() {
-        // Use game-defined world size if available; otherwise, a default.
-        return window.worldSize || 1414;
-    }
-    
+    // Helper functions to map coordinates.
+    function getWorldSize() { return window.worldSize || 1414; }
     function getSpectatorMapCenter() {
         const canvas = document.querySelector('canvas');
         if (canvas) {
@@ -203,7 +159,6 @@
         }
         return { x: 0, y: 0 };
     }
-    
     function canvasToWorld(canvasX, canvasY) {
         const canvas = document.querySelector('canvas');
         if (!canvas) return { x: canvasX, y: canvasY };
@@ -215,7 +170,6 @@
             y: viewer.y + (canvasY - canvas.height / 2) / transform.d
         };
     }
-    
     function mapToCanvas(mapX, mapY) {
         const canvas = document.querySelector('canvas');
         if (!canvas) return { x: mapX, y: mapY };
@@ -227,16 +181,13 @@
             y: (mapY - viewer.y) * transform.d + canvas.height / 2
         };
     }
-    
-    /***************************************************************
-     * 3. Cinematic Circular Wave Animation Effect
-     ***************************************************************/
+    // Circular wave animation (as before).
     class CircularWave {
         constructor(x, y, scale) {
             this.x = x;
             this.y = y;
             this.radius = 0;
-            this.expansionRate = 2;
+            this.expansionRate = settings.waveExpansionRate || 2;
             this.alpha = 1;
             this.maxRadius = 100 * scale;
         }
@@ -253,11 +204,8 @@
             ctx.stroke();
             ctx.restore();
         }
-        isFinished() {
-            return this.alpha <= 0;
-        }
+        isFinished() { return this.alpha <= 0; }
     }
-    
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -266,13 +214,12 @@
             this.init();
         }
         init() {
-            // When the canvas is clicked, calculate world coordinates and broadcast a wave.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const canvasX = e.clientX - rect.left;
                 const canvasY = e.clientY - rect.top;
                 const worldCoords = canvasToWorld(canvasX, canvasY);
-                console.log("Player clicked at world coordinates:", worldCoords);
+                console.log("Team player clicked at world coordinates:", worldCoords);
                 const canvasCoords = mapToCanvas(worldCoords.x, worldCoords.y);
                 const worldSize = getWorldSize();
                 const viewer = getSpectatorMapCenter();
@@ -283,352 +230,232 @@
             });
             this.startAnimation();
         }
-        createWave(x, y, scale) {
-            this.waves.push(new CircularWave(x, y, scale));
-        }
+        createWave(x, y, scale) { this.waves.push(new CircularWave(x, y, scale)); }
         renderWaves() {
-            this.waves = this.waves.filter(wave => {
-                wave.update();
-                wave.draw(this.ctx);
-                return !wave.isFinished();
-            });
+            this.waves = this.waves.filter(wave => { wave.update(); wave.draw(this.ctx); return !wave.isFinished(); });
         }
-        startAnimation() {
-            const animate = () => {
-                this.renderWaves();
-                requestAnimationFrame(animate);
-            };
-            animate();
-        }
+        startAnimation() { const animate = () => { this.renderWaves(); requestAnimationFrame(animate); }; animate(); }
     }
-    
-    function attachCoolAnimationEffect() {
+    const attachCoolAnimationEffect = () => {
         const canvas = document.querySelector('canvas');
         if (canvas) {
             window.coolWaveRenderer = new CoolWaveRenderer(canvas);
-            console.log("Cinematic circular wave animation activated.");
+            console.log("Cinematic circular wave animation effect activated on canvas.");
         } else {
             console.warn("Canvas element not found. Retrying...");
             setTimeout(attachCoolAnimationEffect, 100);
         }
-    }
-    
+    };
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', attachCoolAnimationEffect);
     } else {
         attachCoolAnimationEffect();
     }
-    
+
     /***************************************************************
-     * 4. Spectator UI Panel (Users List + CMD Chat Toggle)
+     * 2. Delta Extension Additional Features
      ***************************************************************/
-    let cmdChatEnabled = false;
-    let spectatorListContainer;
-    
-    function createSpectatorUI() {
-        const uiWrapper = document.createElement('div');
-        uiWrapper.id = 'delta-spectator-ui';
-        Object.assign(uiWrapper.style, {
+    // Settings & Customization
+    let settings = {
+        gameColor: "#FFFFFF",
+        waveExpansionRate: 2,
+        minimapEnabled: true,
+        chatEnabled: true,
+        touchGamepadEnabled: false
+    };
+    function createSettingsUI() {
+        const settingsUI = document.createElement('div');
+        settingsUI.id = 'delta-settings';
+        Object.assign(settingsUI.style, {
             position: 'fixed',
+            top: '10px',
             right: '10px',
-            bottom: '10px',
-            width: '220px',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            width: '250px',
+            backgroundColor: 'rgba(0,0,0,0.7)',
             color: '#fff',
-            padding: '8px',
+            padding: '10px',
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
-            zIndex: 99999,
+            zIndex: 100000,
             borderRadius: '6px'
         });
-        const header = document.createElement('div');
-        header.textContent = "Users (Delta)";
-        header.style.fontWeight = 'bold';
-        header.style.marginBottom = '6px';
-        uiWrapper.appendChild(header);
-        
-        const listContainer = document.createElement('div');
-        listContainer.id = 'delta-spectator-list';
-        listContainer.style.maxHeight = '200px';
-        listContainer.style.overflowY = 'auto';
-        listContainer.style.marginBottom = '8px';
-        uiWrapper.appendChild(listContainer);
-        
-        const cmdChatToggle = document.createElement('button');
-        cmdChatToggle.textContent = "CMD Chat: OFF";
-        cmdChatToggle.style.width = '100%';
-        cmdChatToggle.style.marginTop = '4px';
-        cmdChatToggle.onclick = () => {
-            cmdChatEnabled = !cmdChatEnabled;
-            cmdChatToggle.textContent = "CMD Chat: " + (cmdChatEnabled ? "ON" : "OFF");
-            console.log("CMD Chat toggled:", cmdChatEnabled);
-        };
-        uiWrapper.appendChild(cmdChatToggle);
-        document.body.appendChild(uiWrapper);
-        return { uiWrapper, listContainer };
-    }
-    
-    function ensureSpectatorUIExists() {
-        if (isSpectatorView()) {
-            if (!document.getElementById('delta-spectator-ui')) {
-                console.log("Spectator view active: Creating UI panel.");
-                const uiElements = createSpectatorUI();
-                spectatorListContainer = uiElements.listContainer;
-            }
-        } else {
-            const ui = document.getElementById('delta-spectator-ui');
-            if (ui) {
-                console.log("Not in spectator view: Removing UI panel.");
-                ui.remove();
-            }
-        }
-    }
-    
-    function getDeltaSpectators() {
-        // Replace with real spectator data if available.
-        if (window.delta && window.delta.spectators) {
-            return window.delta.spectators;
-        }
-        return [
-            { name: "DeltaAce", skinUrl: "https://i.imgur.com/YourDeltaSkin1.png", waveCount: 5 },
-            { name: "DeltaChamp", skinUrl: "https://i.imgur.com/YourDeltaSkin2.png", waveCount: 3 }
-        ];
-    }
-    
-    function updateSpectatorUI() {
-        if (!isSpectatorView() || !spectatorListContainer) return;
-        const specs = getDeltaSpectators();
-        spectatorListContainer.innerHTML = "";
-        specs.forEach(player => {
-            const row = document.createElement('div');
-            row.style.display = 'flex';
-            row.style.alignItems = 'center';
-            row.style.marginBottom = '5px';
-            const skinImg = document.createElement('img');
-            skinImg.src = player.skinUrl;
-            skinImg.alt = "skin";
-            skinImg.width = 24;
-            skinImg.height = 24;
-            skinImg.style.cursor = 'pointer';
-            skinImg.style.marginRight = '5px';
-            skinImg.addEventListener('click', () => copyToClipboard(player.skinUrl));
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = player.name;
-            nameSpan.style.cursor = 'pointer';
-            nameSpan.style.flex = '1';
-            nameSpan.addEventListener('click', () => copyToClipboard(player.name));
-            const waveSpan = document.createElement('span');
-            waveSpan.textContent = `(${player.waveCount})`;
-            waveSpan.style.marginLeft = '5px';
-            waveSpan.style.color = '#0ff';
-            row.appendChild(skinImg);
-            row.appendChild(nameSpan);
-            row.appendChild(waveSpan);
-            spectatorListContainer.appendChild(row);
+        settingsUI.innerHTML = `<h3>Delta Settings</h3>
+            <label>Game Color: <input type="color" id="delta-game-color" value="${settings.gameColor}"></label><br/>
+            <label>Wave Speed: <input type="range" id="delta-wave-speed" min="1" max="5" value="${settings.waveExpansionRate}"></label><br/>
+            <label><input type="checkbox" id="delta-minimap" ${settings.minimapEnabled ? "checked" : ""}> Minimap</label><br/>
+            <label><input type="checkbox" id="delta-chat" ${settings.chatEnabled ? "checked" : ""}> In-Game Chat</label><br/>
+            <label><input type="checkbox" id="delta-touch-gamepad" ${settings.touchGamepadEnabled ? "checked" : ""}> Touch Gamepad</label><br/>
+            <button id="delta-save-settings">Save Settings</button>`;
+        document.body.appendChild(settingsUI);
+        document.getElementById('delta-save-settings').addEventListener('click', () => {
+            settings.gameColor = document.getElementById('delta-game-color').value;
+            settings.waveExpansionRate = parseInt(document.getElementById('delta-wave-speed').value);
+            settings.minimapEnabled = document.getElementById('delta-minimap').checked;
+            settings.chatEnabled = document.getElementById('delta-chat').checked;
+            settings.touchGamepadEnabled = document.getElementById('delta-touch-gamepad').checked;
+            console.log("Settings updated:", settings);
         });
     }
-    
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            console.log("Copied to clipboard:", text);
-        }).catch(err => {
-            console.error("Failed to copy:", err);
-        });
-    }
-    
-    function isSpectatorView() {
-        // For this version, we assume the URL includes "spectate" for spectator mode.
-        return window.location.href.includes("spectate");
-    }
-    
-    function manageSpectatorUI() {
-        if (isSpectatorView()) {
-            ensureSpectatorUIExists();
-            updateSpectatorUI();
-        } else {
-            const ui = document.getElementById('delta-spectator-ui');
-            if (ui) ui.remove();
-        }
-    }
-    
-    setInterval(manageSpectatorUI, 2000);
-    
-    /***************************************************************
-     * 5. In-Game Chat Panel
-     ***************************************************************/
-    function createChatPanel() {
-        const chatWrapper = document.createElement('div');
-        chatWrapper.id = 'delta-chat-ui';
-        Object.assign(chatWrapper.style, {
+
+    // Multi-launcher: Quick links to sub-extensions.
+    function createMultiLauncherUI() {
+        const launcherUI = document.createElement('div');
+        launcherUI.id = 'delta-multi-launcher';
+        Object.assign(launcherUI.style, {
             position: 'fixed',
+            top: '10px',
             left: '10px',
-            bottom: '10px',
-            width: '300px',
-            height: '250px',
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            width: '250px',
+            backgroundColor: 'rgba(0,0,0,0.7)',
             color: '#fff',
-            padding: '8px',
+            padding: '10px',
             fontFamily: 'Arial, sans-serif',
             fontSize: '14px',
-            zIndex: 99999,
-            borderRadius: '6px',
-            display: 'flex',
-            flexDirection: 'column'
+            zIndex: 100000,
+            borderRadius: '6px'
         });
-        
-        const header = document.createElement('div');
-        header.textContent = "In-Game Chat";
-        header.style.fontWeight = 'bold';
-        header.style.marginBottom = '4px';
-        chatWrapper.appendChild(header);
-        
-        const messagesContainer = document.createElement('div');
-        messagesContainer.id = 'delta-chat-messages';
-        messagesContainer.style.flex = '1';
-        messagesContainer.style.overflowY = 'auto';
-        messagesContainer.style.marginBottom = '4px';
-        chatWrapper.appendChild(messagesContainer);
-        
-        const inputWrapper = document.createElement('div');
-        inputWrapper.style.display = 'flex';
-        const chatInput = document.createElement('input');
-        chatInput.type = 'text';
-        chatInput.placeholder = "Type a message...";
-        chatInput.style.flex = '1';
-        const sendButton = document.createElement('button');
-        sendButton.textContent = "Send";
-        sendButton.style.marginLeft = '4px';
-        sendButton.onclick = () => {
-            const message = chatInput.value.trim();
-            if (message) {
-                broadcastChatMessage("Player", message);
-                chatInput.value = "";
-            }
-        };
-        inputWrapper.appendChild(chatInput);
-        inputWrapper.appendChild(sendButton);
-        chatWrapper.appendChild(inputWrapper);
-        
-        document.body.appendChild(chatWrapper);
+        launcherUI.innerHTML = `<h3>Delta Launcher</h3>
+            <button id="launch-agarix">Launch AGARIX</button>
+            <button id="launch-legendmod">Launch LegendMod</button>
+            <button id="launch-hslo">Launch HSLO</button>
+            <button id="launch-agartool">Launch Agartool</button>`;
+        document.body.appendChild(launcherUI);
+        document.getElementById('launch-agarix').addEventListener('click', () => { window.location.href = "https://agar.io/ix"; });
+        document.getElementById('launch-legendmod').addEventListener('click', () => { window.location.href = "https://agar.io/lm"; });
+        document.getElementById('launch-hslo').addEventListener('click', () => { window.location.href = "https://agar.io/hslo"; });
+        document.getElementById('launch-agartool').addEventListener('click', () => { window.location.href = "https://agar.io/at"; });
     }
-    
-    function addChatMessage(sender, message) {
-        const messagesContainer = document.getElementById('delta-chat-messages');
-        if (!messagesContainer) return;
-        const msgRow = document.createElement('div');
-        msgRow.textContent = `${sender}: ${message}`;
-        messagesContainer.appendChild(msgRow);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Animated GIF Skins: Toggle and render an animated skin.
+    let gifSkinEnabled = false;
+    let animatedGifImg = new Image();
+    let animatedGifUrl = "https://i.imgur.com/YourAnimatedSkin.gif"; // Replace with a valid GIF URL.
+    animatedGifImg.src = animatedGifUrl;
+    function toggleGifSkin() {
+        gifSkinEnabled = !gifSkinEnabled;
+        console.log("Animated GIF skin", gifSkinEnabled ? "enabled" : "disabled");
     }
-    
-    // Show chat panel only in spectator mode (or modify as needed)
-    function manageChatPanel() {
-        if (isSpectatorView()) {
-            if (!document.getElementById('delta-chat-ui')) {
-                createChatPanel();
-            }
-        } else {
-            const chatUI = document.getElementById('delta-chat-ui');
-            if (chatUI) chatUI.remove();
+    function renderGifSkin(ctx, x, y, width, height) {
+        if (gifSkinEnabled && animatedGifImg.complete) {
+            ctx.drawImage(animatedGifImg, x, y, width, height);
         }
     }
-    
-    setInterval(manageChatPanel, 2000);
-    
-    /***************************************************************
-     * 6. Minimap Integration with Animated GIF Skin Support (Placeholder)
-     ***************************************************************/
+    // Hook into the render loop (this is a simplified integration).
+    const originalRAF = window.requestAnimationFrame;
+    window.requestAnimationFrame = function(callback) {
+        return originalRAF.call(window, function(time) {
+            const canvas = document.querySelector('canvas');
+            if (canvas && gifSkinEnabled) {
+                const ctx = canvas.getContext('2d');
+                // Render at a fixed position as an example.
+                renderGifSkin(ctx, canvas.width / 2 - 50, canvas.height / 2 - 50, 100, 100);
+            }
+            callback(time);
+        });
+    };
+
+    // Minimap: A simple canvas minimap.
     function createMinimap() {
-        const minimapWrapper = document.createElement('div');
-        minimapWrapper.id = 'delta-minimap-ui';
-        Object.assign(minimapWrapper.style, {
+        const minimap = document.createElement('canvas');
+        minimap.id = 'delta-minimap';
+        minimap.width = 200;
+        minimap.height = 200;
+        Object.assign(minimap.style, {
             position: 'fixed',
-            left: '10px',
-            top: '10px',
-            width: '200px',
-            height: '200px',
-            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            bottom: '10px',
+            right: '10px',
             border: '1px solid #fff',
-            zIndex: 99999,
-            borderRadius: '4px'
+            zIndex: 100000,
+            backgroundColor: '#000'
         });
-        const minimapCanvas = document.createElement('canvas');
-        minimapCanvas.width = 200;
-        minimapCanvas.height = 200;
-        minimapCanvas.id = 'delta-minimap-canvas';
-        minimapWrapper.appendChild(minimapCanvas);
-        document.body.appendChild(minimapWrapper);
-        return minimapCanvas;
+        document.body.appendChild(minimap);
+        const ctx = minimap.getContext('2d');
+        ctx.fillStyle = "#222";
+        ctx.fillRect(0, 0, minimap.width, minimap.height);
+        // In a full implementation, draw game world details and player positions.
     }
-    
-    // Dummy function to retrieve players data.
-    function getPlayersData() {
-        // In a real scenario, hook into game state to get actual positions and skin URLs.
-        return [
-            { name: "DeltaAce", x: 200, y: 300, skinUrl: "https://i.imgur.com/YourDeltaSkin1.png" },
-            { name: "DeltaChamp", x: 600, y: 800, skinUrl: "https://i.imgur.com/YourDeltaSkin2.png" }
-        ];
-    }
-    
-    function updateMinimap() {
-        const canvas = document.getElementById('delta-minimap-canvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        // Clear minimap.
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw background (for example, a simple grid or plain color).
-        ctx.fillStyle = 'rgba(20,20,20,0.7)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Assume world size is known.
-        const worldSize = getWorldSize();
-        const players = getPlayersData();
-        
-        players.forEach(player => {
-            // Map player's world position to minimap coordinates.
-            const miniX = (player.x / worldSize) * canvas.width;
-            const miniY = (player.y / worldSize) * canvas.height;
-            
-            // Draw a circle for the player.
-            ctx.beginPath();
-            ctx.arc(miniX, miniY, 5, 0, 2 * Math.PI);
-            ctx.fillStyle = '#0ff';
-            ctx.fill();
-            
-            // For animated GIF skins: as a placeholder, draw the image.
-            if (player.skinUrl) {
-                const img = new Image();
-                img.src = player.skinUrl;
-                // Draw the skin image on the minimap.
-                img.onload = () => {
-                    ctx.drawImage(img, miniX - 10, miniY - 10, 20, 20);
-                };
+
+    // In-Game Chat: A basic chat UI.
+    function createChatUI() {
+        const chatUI = document.createElement('div');
+        chatUI.id = 'delta-chat-ui';
+        Object.assign(chatUI.style, {
+            position: 'fixed',
+            bottom: '220px',
+            right: '10px',
+            width: '250px',
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: '#fff',
+            padding: '10px',
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '14px',
+            zIndex: 100000,
+            borderRadius: '6px'
+        });
+        chatUI.innerHTML = `<h3>In-Game Chat</h3>
+            <div id="delta-chat-messages" style="height:150px; overflow-y:auto; background:#111; padding:5px; margin-bottom:5px;"></div>
+            <input type="text" id="delta-chat-input" placeholder="Type a message" style="width:80%;">
+            <button id="delta-chat-send">Send</button>`;
+        document.body.appendChild(chatUI);
+        document.getElementById('delta-chat-send').addEventListener('click', () => {
+            const msgInput = document.getElementById('delta-chat-input');
+            const message = msgInput.value;
+            if (message) {
+                const chatMessages = document.getElementById('delta-chat-messages');
+                const msgDiv = document.createElement('div');
+                msgDiv.textContent = "You: " + message;
+                chatMessages.appendChild(msgDiv);
+                msgInput.value = "";
+                // Optionally, broadcast this chat message.
             }
         });
     }
-    
-    function manageMinimap() {
-        // Show minimap only in spectator view (or always, as desired).
-        if (isSpectatorView()) {
-            if (!document.getElementById('delta-minimap-ui')) {
-                createMinimap();
-            }
-            updateMinimap();
-        } else {
-            const mini = document.getElementById('delta-minimap-ui');
-            if (mini) mini.remove();
-        }
+
+    // Touch Gamepad: A simple touch control for Android devices.
+    function createTouchGamepad() {
+        const gamepad = document.createElement('div');
+        gamepad.id = 'delta-touch-gamepad';
+        Object.assign(gamepad.style, {
+            position: 'fixed',
+            bottom: '10px',
+            left: '10px',
+            width: '100px',
+            height: '100px',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            borderRadius: '50%',
+            zIndex: 100000,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+        });
+        gamepad.innerHTML = `<div style="color:#fff;">Gamepad</div>`;
+        document.body.appendChild(gamepad);
+        gamepad.addEventListener('touchstart', (e) => { e.preventDefault(); console.log("Touch gamepad activated"); });
+        gamepad.addEventListener('touchmove', (e) => { e.preventDefault(); /* Translate touch to movement */ });
+        gamepad.addEventListener('touchend', (e) => { e.preventDefault(); /* End movement */ });
     }
-    
-    setInterval(manageMinimap, 2000);
-    
-    /***************************************************************
-     * 7. Helper: Show Help Message
-     ***************************************************************/
-    function showHelpMessage(message) {
-        alert(message);
+
+    // Initialize all Delta extension modules.
+    function initDeltaExtension() {
+        createMultiLauncherUI();
+        createSettingsUI();
+        if (settings.minimapEnabled) { createMinimap(); }
+        if (settings.chatEnabled) { createChatUI(); }
+        if ('ontouchstart' in window && settings.touchGamepadEnabled) { createTouchGamepad(); }
+        // A simple button to toggle animated GIF skins.
+        const skinToggle = document.createElement('button');
+        skinToggle.textContent = "Toggle GIF Skin";
+        Object.assign(skinToggle.style, {
+            position: 'fixed',
+            top: '320px',
+            left: '10px',
+            zIndex: 100000
+        });
+        skinToggle.addEventListener('click', toggleGifSkin);
+        document.body.appendChild(skinToggle);
     }
-    
-    console.log("Delta-style extension loaded with cinematic waves, spectator UI, chat and minimap.");
+    // Delay initialization to allow the game to load.
+    setTimeout(initDeltaExtension, 3000);
+
+    console.log("Delta Extension Enhanced Script Loaded.");
 })();
