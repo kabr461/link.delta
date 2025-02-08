@@ -6,13 +6,11 @@ console.log("[WebSocket Debug] Initializing...");
     // ---------------------------------------------------
     // 1) Tracking Incoming Opcodes
     // ---------------------------------------------------
-    const opcodeRegistry = {};  // { opcode: { count, strongestSignal, messageSizes: [] } }
-    let opcodeSummary = {};     // for a 10s summary
+    const opcodeRegistry = {};
+    let opcodeSummary = {};
     let lastSummaryTime = Date.now();
 
-    // Simple function to record opcode usage
     function trackOpcode(opcode, signalStrength, messageSize) {
-        // Update opcode registry
         if (!opcodeRegistry[opcode]) {
             opcodeRegistry[opcode] = {
                 count: 1,
@@ -30,15 +28,13 @@ console.log("[WebSocket Debug] Initializing...");
             }
         }
 
-        // Update per-10s summary
         if (!opcodeSummary[opcode]) {
             opcodeSummary[opcode] = 1;
         } else {
             opcodeSummary[opcode]++;
         }
 
-        // Every 10s, print summary & reset
-        if (Date.now() - lastSummaryTime > 20000) {
+        if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
             console.log("[CustomWebSocket] Opcode Frequency Summary (Last 10s):");
             console.table(opcodeSummary);
@@ -49,7 +45,6 @@ console.log("[WebSocket Debug] Initializing...");
 
     // ---------------------------------------------------
     // 2) Process Incoming Binary Data
-    //    (Assuming byte0=opcode, byte1=signal, rest=message)
     // ---------------------------------------------------
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
@@ -61,7 +56,7 @@ console.log("[WebSocket Debug] Initializing...");
             // Track usage
             trackOpcode(opcode, signalStrength, dataArray.length);
 
-            // Log raw bytes if it’s opcode 25 (optional)
+            // Log raw bytes if opcode 25
             if (opcode === 25) {
                 console.log("[Incoming Opcode 25] Raw bytes:", new Uint8Array(rawMessage));
             }
@@ -69,44 +64,53 @@ console.log("[WebSocket Debug] Initializing...");
     }
 
     // ---------------------------------------------------
-    // 3) Replace "UJ" (UTF-16 LE) with "up here!" (UTF-16 LE)
+    // 3) Replace "UJ" (UTF-16 LE) with "up here!" (UTF-16 LE) - with debug
     // ---------------------------------------------------
-    // "UJ" in UTF-16 LE = [85, 0, 74, 0]
-    const UJ_UTF16 = [85, 0, 74, 0];
-    // "up here!" in UTF-16 LE = [117,0,112,0,32,0,104,0,101,0,114,0,101,0,33,0]
-    const UP_HERE_UTF16 = [117,0,112,0,32,0,104,0,101,0,114,0,101,0,33,0];
+    const UJ_UTF16 = [85, 0, 74, 0]; // 'U'(85,0) 'J'(74,0)
+    const UP_HERE_UTF16 = [117,0,112,0,32,0,104,0,101,0,114,0,101,0,33,0]; // "up here!"
 
     function replaceUTF16_UJ(bytes) {
         const output = [];
+        let replacedSomething = false;
+
         for (let i = 0; i < bytes.length; i++) {
-            // Check for [85,0,74,0]
+            // Debug: show each 4-byte chunk we check
+            if (i + 3 < bytes.length) {
+                const chunk = [bytes[i], bytes[i+1], bytes[i+2], bytes[i+3]];
+                // e.g. [85,0,74,0] ...
+                // console.log("[Debug] Checking 4-byte chunk at index", i, chunk);
+            }
+
             if (
                 i + 3 < bytes.length &&
-                bytes[i]   === 85 && bytes[i+1] === 0 &&
-                bytes[i+2] === 74 && bytes[i+3] === 0
+                bytes[i]   === 85 && bytes[i+1] === 0 &&  // 'U'
+                bytes[i+2] === 74 && bytes[i+3] === 0      // 'J'
             ) {
-                // Push "up here!" in UTF-16
+                console.log("[Debug] Found 'UJ' at index", i, "Replacing with 'up here!'...");
                 output.push(...UP_HERE_UTF16);
-                i += 3; // Skip next 3 bytes
+                i += 3; 
+                replacedSomething = true;
             } else {
                 output.push(bytes[i]);
             }
         }
-        return new Uint8Array(output);
+
+        return {
+            replacedBytes: new Uint8Array(output),
+            replaced: replacedSomething
+        };
     }
 
-    // Keep original WebSocket reference
+    // ---------------------------------------------------
+    // Original WebSocket and override
+    // ---------------------------------------------------
     const OriginalWebSocket = window.WebSocket;
 
-    // ---------------------------------------------------
-    // 4) Custom WebSocket Override
-    // ---------------------------------------------------
     class CustomWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
             super(url, protocols);
             console.log("[CustomWebSocket] Connecting to:", url);
 
-            // Listen for incoming messages
             this.addEventListener("message", (event) => {
                 if (event.data instanceof ArrayBuffer) {
                     processBinaryData(event.data);
@@ -115,7 +119,6 @@ console.log("[WebSocket Debug] Initializing...");
                 }
             });
 
-            // Auto-reconnect on close
             this.addEventListener("close", (evt) => {
                 console.warn("[CustomWebSocket] Connection closed:", evt);
                 setTimeout(() => {
@@ -125,37 +128,39 @@ console.log("[WebSocket Debug] Initializing...");
             });
         }
 
-        // Intercept and modify outgoing messages
         send(data) {
-            // If it's binary, do a raw byte-level replacement
+            console.log("[send()] Called with:", data);
             if (data instanceof ArrayBuffer) {
                 const originalBytes = new Uint8Array(data);
-                const replacedBytes = replaceUTF16_UJ(originalBytes);
+                console.log("[send()] Outgoing raw bytes:", originalBytes);
 
-                // Log if the data changed
-                if (
-                    replacedBytes.length !== originalBytes.length ||
-                    !replacedBytes.every((val, idx) => val === originalBytes[idx])
-                ) {
+                // Perform replacement
+                const { replacedBytes, replaced } = replaceUTF16_UJ(originalBytes);
+
+                if (replaced) {
                     console.log("[send()] Replaced 'UJ' -> 'up here!':", replacedBytes);
+                } else {
+                    console.log("[send()] No 'UJ' found, sending as-is.");
                 }
 
-                // Send the modified data
                 super.send(replacedBytes.buffer);
             } else {
-                // Otherwise, send as normal (e.g., string data)
+                // If it's a string or something else
+                console.log("[send()] Non-binary data, sending as-is.");
                 super.send(data);
             }
         }
     }
 
-    // Apply the override after a short delay
+    // ---------------------------------------------------
+    // Override global WebSocket
+    // ---------------------------------------------------
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
-        console.log("[CustomWebSocket] Override Applied. UTF-16 'UJ' → 'up here!' in outgoing data.");
+        console.log("[CustomWebSocket] Override Applied. Tracking opcodes + replacing 'UJ' in UTF-16 LE.");
     }, 1000);
 
-    // Optional helper to analyze opcode data in console
+    // Optional helper
     window.analyzeOpcodes = function () {
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
