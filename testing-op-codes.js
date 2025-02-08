@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Delta.io Spectator & Team Overlay Enhanced
 // @namespace    http://tampermonkey.net/
-// @version      1.2
-// @description  Enhanced spectator overlay for Delta.io with team member detection and extra chat commands.
+// @version      1.3
+// @description  Enhanced spectator overlay for Delta.io with team member detection, extra chat commands, and console logs showing search results for team members.
 // @author       YourName
 // @match        *://agar.io/*
 // @grant        none
@@ -104,13 +104,17 @@
     });
     document.body.appendChild(teamOverlay);
 
-    // A function that searches for team member information.
+    // Function to search for team member information.
     function searchForTeamMembers() {
-        // First, try known references:
+        console.log("Searching for team member data...");
+
+        // First, try known references.
         if (window.Delta?.player?.team?.members && Array.isArray(window.Delta.player.team.members)) {
+            console.log("Found team members at window.Delta.player.team.members");
             return window.Delta.player.team.members;
         }
         if (window.Delta?.team?.members && Array.isArray(window.Delta.team.members)) {
+            console.log("Found team members at window.Delta.team.members");
             return window.Delta.team.members;
         }
 
@@ -127,14 +131,15 @@
                     if (val && typeof val === 'object') {
                         // Check if the key name hints at team info and contains a members array.
                         if (key.toLowerCase().includes('team') && val.members && Array.isArray(val.members)) {
-                            // Check if the first element appears to have a name property.
                             if (val.members.length > 0 && typeof val.members[0].name === 'string') {
+                                console.log(`Found team members at property "${key}" with ${val.members.length} member(s).`);
                                 return val.members;
                             }
                         }
                         // Also, if the value itself is an array that might be team members.
                         if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && 'name' in val[0]) {
                             if (key.toLowerCase().includes('member') || key.toLowerCase().includes('team')) {
+                                console.log(`Found team member array at property "${key}" with ${val.length} member(s).`);
                                 return val;
                             }
                         }
@@ -148,34 +153,40 @@
             }
             return null;
         }
-        return recursiveSearch(window.Delta);
+        const result = recursiveSearch(window.Delta);
+        if (result) {
+            console.log(`Team member data found using recursive search: ${result.length} member(s) found.`);
+        } else {
+            console.log("No team member data found in Delta.");
+        }
+        return result;
     }
 
     function updateTeamMembers() {
         teamOverlay.innerHTML = '<h3 style="margin-top: 0;">Team Members:</h3>';
 
-        // Try to get team members data via our search function.
+        // Get team member data via the search function.
         const teamMembers = searchForTeamMembers() || [];
         if (teamMembers.length === 0) {
             teamOverlay.innerHTML += '<div>No team members found.</div>';
-            return;
-        }
+        } else {
+            console.log(`There are ${teamMembers.length} team member(s) joined.`);
+            teamMembers.forEach(member => {
+                const memberElement = document.createElement('div');
+                memberElement.style.margin = '5px 0';
+                memberElement.style.cursor = 'pointer';
+                memberElement.textContent = member.name || 'Unnamed';
 
-        teamMembers.forEach(member => {
-            const memberElement = document.createElement('div');
-            memberElement.style.margin = '5px 0';
-            memberElement.style.cursor = 'pointer';
-            memberElement.textContent = member.name || 'Unnamed';
-
-            // Clicking on the name copies it to clipboard.
-            memberElement.title = 'Click to copy team member name';
-            memberElement.addEventListener('click', () => {
-                navigator.clipboard.writeText(member.name)
-                    .then(() => console.log('Team member name copied to clipboard.'))
-                    .catch(err => console.error('Failed to copy team member name:', err));
+                // Clicking on the name copies it to clipboard.
+                memberElement.title = 'Click to copy team member name';
+                memberElement.addEventListener('click', () => {
+                    navigator.clipboard.writeText(member.name)
+                        .then(() => console.log('Team member name copied to clipboard.'))
+                        .catch(err => console.error('Failed to copy team member name:', err));
+                });
+                teamOverlay.appendChild(memberElement);
             });
-            teamOverlay.appendChild(memberElement);
-        });
+        }
     }
 
     // ---------------------------
