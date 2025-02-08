@@ -8,10 +8,24 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     let opcodeSummary = {};  // Temporary summary to show per second
     let lastSummaryTime = Date.now();
 
+    // Set to track logged opcodes (only log once)
+    const loggedOpcodes = new Set();
+
+    // Function to log an opcode only once
+    function logOpcodeOnce(opcode) {
+        if (!loggedOpcodes.has(opcode)) {
+            console.log(`Opcode ${opcode} logged for the first time.`);
+            loggedOpcodes.add(opcode);
+        }
+    }
+
     function processSignal(data) {
         if (!data || data.opcode === undefined) return;
 
         const opcode = data.opcode;
+        // Log each opcode only once
+        logOpcodeOnce(opcode);
+
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
 
@@ -33,13 +47,13 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             opcodeSummary[opcode] += 1;
         }
 
-        // Print summary once per second
+        // Print summary every 10 seconds
         if (Date.now() - lastSummaryTime > 10000) {
             console.clear(); // Keep the console clean
-            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 1s)`);
+            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
             console.table(opcodeSummary);
 
-            // Reset counters for the next second
+            // Reset counters for the next interval
             opcodeSummary = {};
             lastSummaryTime = Date.now();
         }
@@ -80,7 +94,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // Apply override
+    // Apply override after 1 second
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] WebSocket Override Applied');
