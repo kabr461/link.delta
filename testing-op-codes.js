@@ -2,7 +2,7 @@
 // @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI
 // @namespace    http://your-namespace-here.com
 // @version      1.4
-// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel (with added debugging).
+// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -117,15 +117,14 @@
     
     // NOTE: Replace these placeholders with your real Firebase config.
     const firebaseConfig = {
-  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-  authDomain: "agario-bb5ea.firebaseapp.com",
-  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-  projectId: "agario-bb5ea",
-  storageBucket: "agario-bb5ea.firebasestorage.app",
-  messagingSenderId: "306389211380",
-  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-  measurementId: "G-5NTSETJHM9"
-};
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
     
     loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js", () => {
         loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
@@ -145,11 +144,17 @@
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
-            
+            // When receiving a "cool" message, compute the scale based on the receiver's view.
             if (data.type === 'cool') {
                 console.log("Received cinematic animation message:", data);
                 if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
-                    window.coolWaveRenderer.createParticles(data.x, data.y);
+                    const canvas = window.coolWaveRenderer.canvas;
+                    const cx = canvas.width / 2;
+                    const cy = canvas.height / 2;
+                    const d = Math.sqrt((data.x - cx) * (data.x - cx) + (data.y - cy) * (data.y - cy));
+                    // Compute scale: the farther the click from the center, the smaller the wave.
+                    const scale = 1 / (0.5 + d / 500);
+                    window.coolWaveRenderer.createWave(data.x, data.y, scale);
                 }
             } else if (data.type === 'help') {
                 console.log("Received help message:", data.message);
@@ -165,77 +170,82 @@
     }
     
     /***************************************************************
-     * 4. Cinematic Particle Animation Effect (Canvas)
+     * 4. Cinematic Circular Wave Animation Effect (Smart Map-Based)
      ***************************************************************/
-    const CONFIG = {
-        PARTICLE: {
-            PARTICLE_COUNT: 50,
-            SPEED_MIN: 2,
-            SPEED_MAX: 6,
-            SIZE_MIN: 3,
-            SIZE_MAX: 7,
-            FADE: 0.015
+    // A class for the circular wave effect.
+    class CircularWave {
+        constructor(x, y, scale) {
+            this.x = x;
+            this.y = y;
+            this.radius = 0;
+            this.expansionRate = 2; // Adjust the speed of expansion as needed.
+            this.alpha = 1;
+            // The maximum radius is adjusted by the scale factor.
+            this.maxRadius = 100 * scale;
         }
-    };
+        update() {
+            this.radius += this.expansionRate;
+            // Fade out the wave as it expands.
+            this.alpha = Math.max(0, 1 - this.radius / this.maxRadius);
+        }
+        draw(ctx) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+            // The stroke color fades out based on alpha.
+            ctx.strokeStyle = `rgba(255,255,255,${this.alpha})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
+        isFinished() {
+            return this.alpha <= 0;
+        }
+    }
     
+    // Modified renderer that uses CircularWave objects.
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
             this.ctx = canvas.getContext('2d');
-            this.particles = [];
+            this.waves = [];
             this.init();
         }
-    
         init() {
-            // Listen for clicks on the canvas.
+            // When the canvas is clicked, compute the scale based on distance from canvas center.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
                 console.log("Canvas clicked at:", { x, y });
-                this.createParticles(x, y);
+                // Assume viewer is at canvas center.
+                const cx = this.canvas.width / 2;
+                const cy = this.canvas.height / 2;
+                const d = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                // The farther the click, the smaller the animation.
+                const scale = 1 / (0.5 + d / 500);
+                console.log("Calculated scale:", scale);
+                this.createWave(x, y, scale);
+                // Broadcast the event with click coordinates.
                 broadcastTeamMessage({ type: 'cool', x, y });
             });
             this.startAnimation();
         }
-    
-        createParticles(x, y) {
-            const colorPalette = [
-                "255, 100, 100", "255, 150, 50", "255, 255, 100",
-                "100, 255, 100", "100, 200, 255", "200, 100, 255"
-            ];
-            const baseColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-            for (let i = 0; i < CONFIG.PARTICLE.PARTICLE_COUNT; i++) {
-                const angle = Math.random() * 2 * Math.PI;
-                const speed = Math.random() * (CONFIG.PARTICLE.SPEED_MAX - CONFIG.PARTICLE.SPEED_MIN) + CONFIG.PARTICLE.SPEED_MIN;
-                const dx = Math.cos(angle) * speed;
-                const dy = Math.sin(angle) * speed;
-                const size = Math.random() * (CONFIG.PARTICLE.SIZE_MAX - CONFIG.PARTICLE.SIZE_MIN) + CONFIG.PARTICLE.SIZE_MIN;
-                this.particles.push({ x, y, dx, dy, size, alpha: 1, color: baseColor });
-            }
+        createWave(x, y, scale) {
+            this.waves.push(new CircularWave(x, y, scale));
         }
-    
-        renderParticles() {
-            this.particles = this.particles.filter(p => {
-                p.x += p.dx;
-                p.y += p.dy;
-                p.alpha -= CONFIG.PARTICLE.FADE;
-                if (p.alpha <= 0) return false;
-                const gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
-                gradient.addColorStop(0, `rgba(${p.color}, ${p.alpha})`);
-                gradient.addColorStop(1, `rgba(${p.color}, 0)`);
-                this.ctx.fillStyle = gradient;
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, p.size, 0, 2 * Math.PI);
-                this.ctx.fill();
-                return true;
+        renderWaves() {
+            // Optionally clear the canvas if needed; here we overlay on the game.
+            // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.waves = this.waves.filter(wave => {
+                wave.update();
+                wave.draw(this.ctx);
+                return !wave.isFinished();
             });
         }
-    
         startAnimation() {
             const animate = () => {
-                // Overlay effect without clearing the entire canvas.
-                this.renderParticles();
+                this.renderWaves();
                 requestAnimationFrame(animate);
             };
             animate();
@@ -246,7 +256,7 @@
         const canvas = document.querySelector('canvas');
         if (canvas) {
             window.coolWaveRenderer = new CoolWaveRenderer(canvas);
-            console.log("Cinematic particle animation effect activated on canvas.");
+            console.log("Cinematic circular wave animation effect activated on canvas.");
         } else {
             console.warn("Canvas element not found. Ensure the game has rendered its canvas.");
             setTimeout(attachCoolAnimationEffect, 100);
@@ -396,5 +406,5 @@
     
     setInterval(manageSpectatorUI, 2000);
     
-    console.log("Delta script with spectators UI, cinematic effect, and team communication loaded.");
+    console.log("Delta script with spectators UI, circular wave animation, and team communication loaded.");
 })();
