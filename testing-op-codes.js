@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Extension Enhanced Script with Spectator UI
+// @name         Delta Extension Enhanced Script with Spectator UI and Firebase Clear
 // @namespace    http://your-namespace-here.com
-// @version      1.7
-// @description  Combines team help, cinematic particle broadcast, animated GIF skins, customizable settings, minimap, in-game chat, multi-launcher, touch gamepad, and a delta spectator UI for Agar.io-like games.
+// @version      1.8
+// @description  Combines team help, cinematic particle broadcast, animated GIF skins, customizable settings, minimap, in-game chat, multi-launcher, touch gamepad, and a delta spectator UI for Agar.io-like games. Clears Firebase team messages on reload.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -14,7 +14,6 @@
     /***************************************************************
      * 0. Core Utilities & Security Overrides
      ***************************************************************/
-    // Patch removeChild to suppress NotFoundError exceptions.
     (function() {
         const originalRemoveChild = Node.prototype.removeChild;
         Node.prototype.removeChild = function(child) {
@@ -30,7 +29,6 @@
         };
     })();
 
-    // Remove & override Content Security Policy meta tags.
     const removeCSPMetaTags = () => {
         document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]').forEach(tag => {
             try { tag.remove(); } catch (e) { console.error("Error removing meta tag:", e); }
@@ -72,7 +70,6 @@
     };
     insertPermissiveCSP();
 
-    // Patch Worker creation to handle data URL scripts.
     (function() {
         const OriginalWorker = window.Worker;
         window.Worker = function(script, options) {
@@ -117,7 +114,16 @@
     function initializeFirebase() {
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         console.log("Firebase initialized.");
-        listenForTeamMessages();
+        // Clear previous data from the "team_messages" node.
+        firebase.database().ref('team_messages').remove()
+            .then(() => {
+                console.log("Previous Firebase team_messages data cleared.");
+                listenForTeamMessages();
+            })
+            .catch(error => {
+                console.error("Error clearing Firebase team_messages data:", error);
+                listenForTeamMessages();
+            });
     }
     let teamMessagesRef = null;
     function listenForTeamMessages() {
@@ -429,12 +435,9 @@
 
     /***************************************************************
      * 3. Delta Spectator UI Module
-     *    (Displays delta players with name, skin, and wave count.
-     *     Clicking a spectator row toggles a detailed view with extra info.)
      ***************************************************************/
     let spectatorListContainer = null;
     function createDeltaSpectatorUI() {
-        // Only create if in spectator view.
         if (!isSpectatorView()) return;
         const uiWrapper = document.createElement('div');
         uiWrapper.id = 'delta-spectator-ui';
@@ -467,7 +470,6 @@
     }
     function updateDeltaSpectatorUI() {
         if (!spectatorListContainer) return;
-        // Use window.delta.spectators if available, else fallback sample data.
         const specs = (window.delta && window.delta.spectators) || [
             { name: "DeltaAce", skinUrl: "https://i.imgur.com/YourDeltaSkin1.png", waveCount: 5 },
             { name: "DeltaChamp", skinUrl: "https://i.imgur.com/YourDeltaSkin2.png", waveCount: 3 }
@@ -483,7 +485,6 @@
             row.style.padding = "5px";
             row.style.borderRadius = "4px";
             
-            // Skin image (click to copy URL)
             const skinImg = document.createElement('img');
             skinImg.src = player.skinUrl;
             skinImg.alt = "skin";
@@ -497,7 +498,6 @@
                     .catch(err => console.error("Copy failed:", err));
             });
             
-            // Name (click to copy name)
             const nameSpan = document.createElement('span');
             nameSpan.textContent = player.name;
             nameSpan.style.flex = '1';
@@ -509,18 +509,15 @@
                     .catch(err => console.error("Copy failed:", err));
             });
             
-            // Wave count
             const waveSpan = document.createElement('span');
             waveSpan.textContent = `(${player.waveCount})`;
             waveSpan.style.color = '#0ff';
             waveSpan.style.marginRight = '5px';
             
-            // Append basic elements.
             row.appendChild(skinImg);
             row.appendChild(nameSpan);
             row.appendChild(waveSpan);
             
-            // Create a hidden detailed panel.
             const detailsPanel = document.createElement('div');
             detailsPanel.style.display = 'none';
             detailsPanel.style.marginTop = '5px';
@@ -529,7 +526,6 @@
             detailsPanel.style.borderRadius = '4px';
             detailsPanel.textContent = `Detailed info for ${player.name} (CMD chat settings, etc.)`;
             
-            // Toggle details on row click.
             row.addEventListener('click', () => {
                 detailsPanel.style.display = detailsPanel.style.display === 'none' ? 'block' : 'none';
             });
@@ -539,10 +535,8 @@
         });
     }
     function isSpectatorView() {
-        // Here, we check if the URL includes "spectate".
         return window.location.href.includes("spectate");
     }
-    // Refresh spectator UI periodically if in spectator view.
     setInterval(() => {
         if (isSpectatorView()) {
             if (!spectatorListContainer) {
@@ -566,7 +560,6 @@
         if (settings.minimapEnabled) { createMinimap(); }
         if (settings.chatEnabled) { createChatUI(); }
         if ('ontouchstart' in window && settings.touchGamepadEnabled) { createTouchGamepad(); }
-        // Button to toggle animated GIF skin.
         const skinToggle = document.createElement('button');
         skinToggle.textContent = "Toggle GIF Skin";
         Object.assign(skinToggle.style, {
@@ -577,12 +570,11 @@
         });
         skinToggle.addEventListener('click', toggleGifSkin);
         document.body.appendChild(skinToggle);
-        // Create Delta Spectator UI if in spectator view.
         if (isSpectatorView()) {
             createDeltaSpectatorUI();
         }
     }
     setTimeout(initDeltaExtension, 3000);
 
-    console.log("Delta Extension Enhanced Script with Spectator UI Loaded.");
+    console.log("Delta Extension Enhanced Script with Spectator UI and Firebase Clear Loaded.");
 })();
