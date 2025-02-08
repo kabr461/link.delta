@@ -115,17 +115,17 @@
         document.head.appendChild(script);
     }
     
-    // NOTE: Replace these placeholders with your real Firebase config.
+    // Firebase configuration updated with your credentials.
     const firebaseConfig = {
-  apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-  authDomain: "agario-bb5ea.firebaseapp.com",
-  databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-  projectId: "agario-bb5ea",
-  storageBucket: "agario-bb5ea.firebasestorage.app",
-  messagingSenderId: "306389211380",
-  appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-  measurementId: "G-5NTSETJHM9"
-};
+        apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
+        authDomain: "agario-bb5ea.firebaseapp.com",
+        databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
+        projectId: "agario-bb5ea",
+        storageBucket: "agario-bb5ea.firebasestorage.app",
+        messagingSenderId: "306389211380",
+        appId: "1:306389211380:web:3c1eb559078b05734be6a1",
+        measurementId: "G-5NTSETJHM9"
+    };
     
     loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js", () => {
         loadScript("https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js", initializeFirebase);
@@ -135,7 +135,7 @@
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
-        console.log("Firebase initialized. (Ensure your config is correct and your domain is allowed)");
+        console.log("Firebase initialized. (Ensure your domain is allowed in Firebase settings)");
         listenForTeamMessages();
     }
     
@@ -152,7 +152,7 @@
                     const canvas = window.coolWaveRenderer.canvas;
                     const cx = canvas.width / 2;
                     const cy = canvas.height / 2;
-                    const d = Math.sqrt((data.x - cx) * (data.x - cx) + (data.y - cy) * (data.y - cy));
+                    const d = Math.sqrt((data.x - cx) ** 2 + (data.y - cy) ** 2);
                     // Compute scale: the farther the click from the center, the smaller the wave.
                     const scale = 1 / (0.5 + d / 500);
                     window.coolWaveRenderer.createWave(data.x, data.y, scale);
@@ -173,27 +173,24 @@
     /***************************************************************
      * 4. Cinematic Circular Wave Animation Effect (Smart Map-Based)
      ***************************************************************/
-    // A class for the circular wave effect.
+    // CircularWave creates an expanding circular wave at given coordinates.
     class CircularWave {
         constructor(x, y, scale) {
             this.x = x;
             this.y = y;
             this.radius = 0;
-            this.expansionRate = 2; // Adjust the speed of expansion as needed.
+            this.expansionRate = 2; // Adjust speed of expansion as needed.
             this.alpha = 1;
-            // The maximum radius is adjusted by the scale factor.
-            this.maxRadius = 100 * scale;
+            this.maxRadius = 100 * scale; // Maximum radius adjusted by the scale factor.
         }
         update() {
             this.radius += this.expansionRate;
-            // Fade out the wave as it expands.
             this.alpha = Math.max(0, 1 - this.radius / this.maxRadius);
         }
         draw(ctx) {
             ctx.save();
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
-            // The stroke color fades out based on alpha.
             ctx.strokeStyle = `rgba(255,255,255,${this.alpha})`;
             ctx.lineWidth = 2;
             ctx.stroke();
@@ -204,7 +201,7 @@
         }
     }
     
-    // Modified renderer that uses CircularWave objects.
+    // CoolWaveRenderer manages and animates circular waves.
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -213,17 +210,15 @@
             this.init();
         }
         init() {
-            // When the canvas is clicked, compute the scale based on distance from canvas center.
+            // When the canvas is clicked, calculate the scale based on the click's distance from the center.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
                 console.log("Canvas clicked at:", { x, y });
-                // Assume viewer is at canvas center.
                 const cx = this.canvas.width / 2;
                 const cy = this.canvas.height / 2;
                 const d = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-                // The farther the click, the smaller the animation.
                 const scale = 1 / (0.5 + d / 500);
                 console.log("Calculated scale:", scale);
                 this.createWave(x, y, scale);
@@ -236,8 +231,6 @@
             this.waves.push(new CircularWave(x, y, scale));
         }
         renderWaves() {
-            // Optionally clear the canvas if needed; here we overlay on the game.
-            // this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.waves = this.waves.filter(wave => {
                 wave.update();
                 wave.draw(this.ctx);
@@ -317,9 +310,8 @@
         return { uiWrapper, listContainer };
     };
     
-    // Adjust this function to match how your game determines spectator mode.
+    // Adjust this function to match your game's spectator mode detection.
     function isSpectatorView() {
-        // For example, check if a global flag exists or a specific DOM element is present.
         const spectatorFlag = window.spectator === true;
         const spectateElem = document.getElementById('spectate');
         return spectatorFlag || (spectateElem !== null);
