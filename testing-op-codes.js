@@ -145,15 +145,14 @@
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
-            // When receiving a "cool" message, compute the scale based on the receiver's view.
+            // When receiving a "cool" message, use map-based coordinates.
             if (data.type === 'cool') {
                 console.log("Received cinematic animation message:", data);
                 if (window.coolWaveRenderer && typeof data.x === 'number' && typeof data.y === 'number') {
-                    const canvas = window.coolWaveRenderer.canvas;
-                    const cx = canvas.width / 2;
-                    const cy = canvas.height / 2;
-                    const d = Math.sqrt((data.x - cx) ** 2 + (data.y - cy) ** 2);
-                    // Compute scale: the farther the click from the center, the smaller the wave.
+                    // Instead of canvas center, get the spectator's map center.
+                    const viewer = getSpectatorMapCenter();
+                    const d = Math.sqrt((data.x - viewer.x) ** 2 + (data.y - viewer.y) ** 2);
+                    // Compute scale based on distance from the spectator's view.
                     const scale = 1 / (0.5 + d / 500);
                     window.coolWaveRenderer.createWave(data.x, data.y, scale);
                 }
@@ -171,17 +170,34 @@
     }
     
     /***************************************************************
+     * Helper: Get Spectator Map Center
+     ***************************************************************/
+    function getSpectatorMapCenter() {
+        // TODO: Replace this with your actual logic to retrieve the spectator's current map center.
+        // For example, if your game exposes the current camera or view coordinates, return those.
+        // Here we check for a global variable; otherwise, fall back to canvas center.
+        if (window.viewerMapCenter) {
+            return window.viewerMapCenter;
+        }
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+            return { x: canvas.width / 2, y: canvas.height / 2 };
+        }
+        return { x: 0, y: 0 };
+    }
+    
+    /***************************************************************
      * 4. Cinematic Circular Wave Animation Effect (Smart Map-Based)
      ***************************************************************/
-    // CircularWave creates an expanding circular wave at given coordinates.
+    // CircularWave creates an expanding circular wave at given map coordinates.
     class CircularWave {
         constructor(x, y, scale) {
             this.x = x;
             this.y = y;
             this.radius = 0;
-            this.expansionRate = 2; // Adjust speed of expansion as needed.
+            this.expansionRate = 2; // Adjust speed as needed.
             this.alpha = 1;
-            this.maxRadius = 100 * scale; // Maximum radius adjusted by the scale factor.
+            this.maxRadius = 100 * scale; // Maximum radius scaled.
         }
         update() {
             this.radius += this.expansionRate;
@@ -210,19 +226,18 @@
             this.init();
         }
         init() {
-            // When the canvas is clicked, calculate the scale based on the click's distance from the center.
+            // When the canvas is clicked, calculate the scale using the spectator's map center.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
                 console.log("Canvas clicked at:", { x, y });
-                const cx = this.canvas.width / 2;
-                const cy = this.canvas.height / 2;
-                const d = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                const viewer = getSpectatorMapCenter();
+                const d = Math.sqrt((x - viewer.x) ** 2 + (y - viewer.y) ** 2);
                 const scale = 1 / (0.5 + d / 500);
-                console.log("Calculated scale:", scale);
+                console.log("Calculated scale based on spectator view:", scale);
                 this.createWave(x, y, scale);
-                // Broadcast the event with click coordinates.
+                // Broadcast the event with map coordinates.
                 broadcastTeamMessage({ type: 'cool', x, y });
             });
             this.startAnimation();
@@ -267,7 +282,7 @@
      * 5. Delta Spectators UI Panel (Spectator View)
      ***************************************************************/
     let cmdChatEnabled = false;
-    let spectatorListContainer; // Reference for updating UI list
+    let spectatorListContainer; // Reference for updating the UI list
     
     const createSpectatorUI = () => {
         const uiWrapper = document.createElement('div');
