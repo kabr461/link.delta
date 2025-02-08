@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI
+// @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI (World Coordinates)
 // @namespace    http://your-namespace-here.com
-// @version      1.4
-// @description  Adds team-shared cinematic effect, help broadcast, and a Delta spectators UI panel that uses game map coordinates.
+// @version      1.5
+// @description  Broadcasts team clicks using game world coordinates so that every spectator sees a wave at the same map position.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -10,6 +10,12 @@
 
 (function() {
     'use strict';
+
+    /***************************************************************
+     * Configuration: Define your game world size (in world units).
+     * Adjust this value to match the actual game world dimensions.
+     ***************************************************************/
+    const WORLD_SIZE = 2000; // Example: world is 2000x2000 units.
 
     /***************************************************************
      * Monkey-patch removeChild to suppress NotFoundError exceptions.
@@ -115,7 +121,7 @@
         document.head.appendChild(script);
     }
     
-    // Firebase configuration updated with your credentials.
+    // Firebase configuration (updated with your credentials)
     const firebaseConfig = {
         apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
         authDomain: "agario-bb5ea.firebaseapp.com",
@@ -145,13 +151,13 @@
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
-            // Expect broadcast messages to include mapX and mapY.
+            // Expect broadcast messages to include world map coordinates: mapX and mapY.
             if (data.type === 'cool') {
                 console.log("Received cinematic animation message:", data);
                 if (window.coolWaveRenderer && typeof data.mapX === 'number' && typeof data.mapY === 'number') {
-                    // Convert the game map coordinates into canvas coordinates for the spectator.
+                    // Convert world coordinates to canvas coordinates.
                     const canvasCoords = mapToCanvas(data.mapX, data.mapY);
-                    // Compute a scale factor based on distance from spectator's view center.
+                    // Compute scale based on distance from spectator's view center.
                     const viewer = getSpectatorMapCenter();
                     const d = Math.sqrt((data.mapX - viewer.x) ** 2 + (data.mapY - viewer.y) ** 2);
                     const scale = 1 / (0.5 + d / 500);
@@ -171,43 +177,46 @@
     }
     
     /***************************************************************
-     * Helper: Spectator View Conversion Functions
+     * Helper Functions: World ↔ Canvas Conversion (Using World Size)
      ***************************************************************/
-    // Determine if we're in spectator mode by checking for "spectate" in the URL.
-    function isSpectatorView() {
-        return window.location.href.includes("spectate");
-    }
-    
-    // Get the spectator's map center in game coordinates.
-    // Here we try to use the canvas transform if available; otherwise, assume the canvas center is the map center.
+    // Get the spectator's current map center in world coordinates.
+    // In a real game, this might come from the game camera.
+    // Here we try to use a global variable, or default to the world center.
     function getSpectatorMapCenter() {
-        const canvas = document.querySelector('canvas');
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            if (ctx.getTransform) {
-                const transform = ctx.getTransform();
-                // Assume transform.e and transform.f are the top-left map offsets.
-                return { x: transform.e + canvas.width / 2, y: transform.f + canvas.height / 2 };
-            }
-            return { x: canvas.width / 2, y: canvas.height / 2 };
+        if (window.spectatorViewCenter) {
+            return window.spectatorViewCenter;
         }
-        return { x: 0, y: 0 };
+        return { x: WORLD_SIZE / 2, y: WORLD_SIZE / 2 };
     }
     
-    // Convert game map coordinates (mapX, mapY) into canvas coordinates for the spectator.
+    // Convert world coordinates (mapX, mapY) into canvas coordinates.
     function mapToCanvas(mapX, mapY) {
         const canvas = document.querySelector('canvas');
         if (!canvas) return { x: mapX, y: mapY };
-        const viewer = getSpectatorMapCenter(); // The map coordinate at the center of spectator's view.
-        // The offset from the viewer's center.
-        const offsetX = mapX - viewer.x;
-        const offsetY = mapY - viewer.y;
-        // Place the coordinate relative to the canvas center.
-        return { x: canvas.width / 2 + offsetX, y: canvas.height / 2 + offsetY };
+        // Assume a uniform scale factor where the full world width maps to canvas width.
+        const scaleFactor = canvas.width / WORLD_SIZE;
+        const viewer = getSpectatorMapCenter();
+        // The canvas center corresponds to the viewer's map center.
+        return { 
+            x: canvas.width / 2 + (mapX - viewer.x) * scaleFactor,
+            y: canvas.height / 2 + (mapY - viewer.y) * scaleFactor
+        };
+    }
+    
+    // Convert canvas coordinates into world coordinates.
+    function canvasToMap(canvasX, canvasY) {
+        const canvas = document.querySelector('canvas');
+        if (!canvas) return { x: canvasX, y: canvasY };
+        const scaleFactor = canvas.width / WORLD_SIZE;
+        const viewer = getSpectatorMapCenter();
+        return { 
+            x: viewer.x + (canvasX - canvas.width / 2) / scaleFactor,
+            y: viewer.y + (canvasY - canvas.height / 2) / scaleFactor
+        };
     }
     
     /***************************************************************
-     * 4. Cinematic Circular Wave Animation Effect (Using Game Map Coordinates)
+     * 4. Cinematic Circular Wave Animation Effect (Using World Coordinates)
      ***************************************************************/
     // CircularWave: an expanding, fading circle.
     class CircularWave {
@@ -217,7 +226,7 @@
             this.radius = 0;
             this.expansionRate = 2; // Adjust as needed.
             this.alpha = 1;
-            this.maxRadius = 100 * scale; // Scale the maximum radius.
+            this.maxRadius = 100 * scale; // Maximum radius scaled.
         }
         update() {
             this.radius += this.expansionRate;
@@ -237,7 +246,7 @@
         }
     }
     
-    // CoolWaveRenderer manages and animates waves on the canvas.
+    // CoolWaveRenderer: manages and animates waves on the canvas.
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -246,21 +255,22 @@
             this.init();
         }
         init() {
-            // When a team player clicks, assume they are playing and broadcast game map coordinates.
-            // Here we assume the player's canvas click coordinates are equivalent to game map coordinates.
+            // When a team player clicks, convert canvas coordinates to world coordinates and broadcast them.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
-                const mapX = e.clientX - rect.left; // In a real game, convert to game map coordinate.
-                const mapY = e.clientY - rect.top;
-                console.log("Team player clicked at (map coordinates):", { mapX, mapY });
-                // For the team player, also show the wave locally.
-                const canvasCoords = mapToCanvas(mapX, mapY);
+                const canvasX = e.clientX - rect.left;
+                const canvasY = e.clientY - rect.top;
+                // Convert the canvas click to a world coordinate.
+                const mapCoords = canvasToMap(canvasX, canvasY);
+                console.log("Team player clicked at (world coordinates):", mapCoords);
+                // For local display, convert back to canvas coordinates.
+                const canvasCoords = mapToCanvas(mapCoords.x, mapCoords.y);
                 const viewer = getSpectatorMapCenter();
-                const d = Math.sqrt((mapX - viewer.x) ** 2 + (mapY - viewer.y) ** 2);
+                const d = Math.sqrt((mapCoords.x - viewer.x) ** 2 + (mapCoords.y - viewer.y) ** 2);
                 const scale = 1 / (0.5 + d / 500);
                 this.createWave(canvasCoords.x, canvasCoords.y, scale);
-                // Broadcast the game map coordinates.
-                broadcastTeamMessage({ type: 'cool', mapX: mapX, mapY: mapY });
+                // Broadcast the world map coordinates.
+                broadcastTeamMessage({ type: 'cool', mapX: mapCoords.x, mapY: mapCoords.y });
             });
             this.startAnimation();
         }
@@ -363,6 +373,11 @@
         }
     }
     
+    // For spectator mode, we use a simple check on the URL.
+    function isSpectatorView() {
+        return window.location.href.includes("spectate");
+    }
+    
     function getDeltaSpectators() {
         // Replace with your actual logic or use placeholder data.
         if (window.delta && window.delta.spectators) {
@@ -429,5 +444,5 @@
     
     setInterval(manageSpectatorUI, 2000);
     
-    console.log("Delta script with spectators UI, map-based circular wave animation, and team communication loaded.");
+    console.log("Delta script with spectators UI, world-based circular wave animation, and team communication loaded.");
 })();
