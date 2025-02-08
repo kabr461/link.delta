@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta.io Spectator Overlay Enhanced
+// @name         Delta.io Spectator & Team Overlay Enhanced
 // @namespace    http://tampermonkey.net/
-// @version      1.1
-// @description  Enhanced spectator overlay for Delta.io with extra chat commands and improved error handling
+// @version      1.2
+// @description  Enhanced spectator overlay for Delta.io with team member detection and extra chat commands.
 // @author       YourName
 // @match        *://agar.io/*
 // @grant        none
@@ -15,10 +15,12 @@
     // Maps to store spectator-related data.
     const waveCounts = new Map();
 
-    // Create and style the overlay container.
-    const overlay = document.createElement('div');
-    overlay.id = 'delta-spectator-overlay';
-    Object.assign(overlay.style, {
+    // ---------------------------
+    // Overlay for Spectators
+    // ---------------------------
+    const spectatorOverlay = document.createElement('div');
+    spectatorOverlay.id = 'delta-spectator-overlay';
+    Object.assign(spectatorOverlay.style, {
         position: 'fixed',
         top: '20px',
         right: '20px',
@@ -30,21 +32,19 @@
         overflowY: 'auto',
         fontFamily: 'Arial, sans-serif'
     });
-    document.body.appendChild(overlay);
+    document.body.appendChild(spectatorOverlay);
 
-    // Update the spectator display.
     function updateSpectators() {
-        // Clear current content.
-        overlay.innerHTML = '<h3 style="margin-top: 0;">Spectators:</h3>';
-        
-        // Read the spectator list from Delta.io’s internals.
+        spectatorOverlay.innerHTML = '<h3 style="margin-top: 0;">Spectators:</h3>';
+
+        // Access Delta.io's internal spectator list.
         // Adjust the reference if needed.
         const deltaSpectators = window.Delta?.spectators?.list || [];
 
         deltaSpectators.forEach(spec => {
             const specId = spec.id;
             const waveCount = waveCounts.get(specId) || 0;
-            
+
             // Create a container for each spectator.
             const specElement = document.createElement('div');
             specElement.style.margin = '5px 0';
@@ -83,23 +83,115 @@
 
             // Assemble the spectator element.
             specElement.append(nameElement, imgElement, waveElement);
-            overlay.appendChild(specElement);
+            spectatorOverlay.appendChild(specElement);
         });
     }
 
-    // Hook into Delta.io's ping/wave events for tracking.
+    // ---------------------------
+    // Overlay for Team Members
+    // ---------------------------
+    const teamOverlay = document.createElement('div');
+    teamOverlay.id = 'delta-team-overlay';
+    Object.assign(teamOverlay.style, {
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        background: 'rgba(0,0,0,0.7)',
+        color: 'white',
+        padding: '10px',
+        zIndex: '9999',
+        fontFamily: 'Arial, sans-serif'
+    });
+    document.body.appendChild(teamOverlay);
+
+    // A function that searches for team member information.
+    function searchForTeamMembers() {
+        // First, try known references:
+        if (window.Delta?.player?.team?.members && Array.isArray(window.Delta.player.team.members)) {
+            return window.Delta.player.team.members;
+        }
+        if (window.Delta?.team?.members && Array.isArray(window.Delta.team.members)) {
+            return window.Delta.team.members;
+        }
+
+        // If not found, perform a recursive search.
+        const seen = new Set();
+
+        function recursiveSearch(obj) {
+            if (!obj || typeof obj !== 'object' || seen.has(obj)) return null;
+            seen.add(obj);
+            for (const key in obj) {
+                if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+                try {
+                    const val = obj[key];
+                    if (val && typeof val === 'object') {
+                        // Check if the key name hints at team info and contains a members array.
+                        if (key.toLowerCase().includes('team') && val.members && Array.isArray(val.members)) {
+                            // Check if the first element appears to have a name property.
+                            if (val.members.length > 0 && typeof val.members[0].name === 'string') {
+                                return val.members;
+                            }
+                        }
+                        // Also, if the value itself is an array that might be team members.
+                        if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && 'name' in val[0]) {
+                            if (key.toLowerCase().includes('member') || key.toLowerCase().includes('team')) {
+                                return val;
+                            }
+                        }
+                        // Recursive search deeper.
+                        const result = recursiveSearch(val);
+                        if (result) return result;
+                    }
+                } catch (error) {
+                    console.error('Error searching key:', key, error);
+                }
+            }
+            return null;
+        }
+        return recursiveSearch(window.Delta);
+    }
+
+    function updateTeamMembers() {
+        teamOverlay.innerHTML = '<h3 style="margin-top: 0;">Team Members:</h3>';
+
+        // Try to get team members data via our search function.
+        const teamMembers = searchForTeamMembers() || [];
+        if (teamMembers.length === 0) {
+            teamOverlay.innerHTML += '<div>No team members found.</div>';
+            return;
+        }
+
+        teamMembers.forEach(member => {
+            const memberElement = document.createElement('div');
+            memberElement.style.margin = '5px 0';
+            memberElement.style.cursor = 'pointer';
+            memberElement.textContent = member.name || 'Unnamed';
+
+            // Clicking on the name copies it to clipboard.
+            memberElement.title = 'Click to copy team member name';
+            memberElement.addEventListener('click', () => {
+                navigator.clipboard.writeText(member.name)
+                    .then(() => console.log('Team member name copied to clipboard.'))
+                    .catch(err => console.error('Failed to copy team member name:', err));
+            });
+            teamOverlay.appendChild(memberElement);
+        });
+    }
+
+    // ---------------------------
+    // Hooking into Delta.io events
+    // ---------------------------
     function hookDeltaPingEvents() {
         try {
             const originalPing = window.Delta?.map?.ping;
             if (typeof originalPing === 'function') {
                 window.Delta.map.ping = function(...args) {
                     // Update wave count for the current player/spectator.
-                    // Adjust the spectator identification logic as needed.
                     const specId = window.Delta?.player?.id;
                     if (specId) {
                         waveCounts.set(specId, (waveCounts.get(specId) || 0) + 1);
                     }
-                    // Refresh the overlay.
+                    // Refresh the spectator overlay.
                     updateSpectators();
                     return originalPing.apply(this, args);
                 };
@@ -112,13 +204,15 @@
         }
     }
 
-    // Enhance the chat command system.
+    // ---------------------------
+    // Chat command enhancements
+    // ---------------------------
     function setupChatCommands() {
         try {
             const originalSend = window.Delta?.chat?.sendMessage;
             if (typeof originalSend === 'function') {
                 window.Delta.chat.sendMessage = function(message) {
-                    // Map of chat commands to their replacements.
+                    // Chat command mapping.
                     const commands = {
                         '/cmd1': 'Predefined text 1',
                         '/cmd2': 'Predefined text 2',
@@ -127,7 +221,6 @@
                         '/status': 'Spectator overlay is active!'
                     };
 
-                    // Replace the message if it matches a command.
                     for (const [cmd, replacement] of Object.entries(commands)) {
                         if (message.startsWith(cmd)) {
                             message = replacement;
@@ -145,15 +238,23 @@
         }
     }
 
-    // Main initialization.
+    // ---------------------------
+    // Initialization
+    // ---------------------------
     function init() {
-        // Refresh the spectator list every second.
-        setInterval(updateSpectators, 1000);
-        // Hook event listeners and chat commands.
+        // Update overlays every second.
+        setInterval(() => {
+            updateSpectators();
+            updateTeamMembers();
+        }, 1000);
+
+        // Hook into events.
         hookDeltaPingEvents();
         setupChatCommands();
-        // Initial update.
+
+        // Initial overlay updates.
         updateSpectators();
+        updateTeamMembers();
     }
 
     // Wait for Delta.io to load before initializing.
@@ -164,5 +265,5 @@
         }
     }, 1000);
 
-    console.log('Delta.io Spectator Overlay Enhanced script loaded.');
+    console.log('Delta.io Spectator & Team Overlay Enhanced script loaded.');
 })();
