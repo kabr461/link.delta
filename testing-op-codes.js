@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Delta Team Help & Cinematic Particle Broadcast + Spectator UI (World-Based)
 // @namespace    http://your-namespace-here.com
-// @version      1.5
-// @description  Broadcasts team clicks using world coordinates so that circular waves appear at the same static map location for every spectator.
+// @version      1.6
+// @description  Now also detects collisions and significant movement from in-game data to trigger wave animations.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -145,13 +145,10 @@
         teamMessagesRef.on('child_added', snapshot => {
             const data = snapshot.val();
             if (!data) return;
-            // Expect broadcast messages to include world coordinates as mapX and mapY.
             if (data.type === 'cool') {
                 console.log("Received cinematic animation message:", data);
                 if (window.coolWaveRenderer && typeof data.mapX === 'number' && typeof data.mapY === 'number') {
-                    // Convert world coordinates to canvas coordinates.
                     const canvasCoords = mapToCanvas(data.mapX, data.mapY);
-                    // Use world size in scaling.
                     const worldSize = getWorldSize();
                     const viewer = getSpectatorMapCenter();
                     const d = Math.sqrt((data.mapX - viewer.x) ** 2 + (data.mapY - viewer.y) ** 2);
@@ -170,24 +167,20 @@
             teamMessagesRef.push(messageObj);
         }
     }
-    
+
     /***************************************************************
      * Helper: World & Spectator Coordinate Conversions
      ***************************************************************/
-    // Retrieve the world size (game map size) from the game or use a default.
     function getWorldSize() {
-        // If the game (agar.io or Delta) exposes the world size, use it.
         return window.worldSize || 1414; // adjust default as needed
     }
     
-    // Get the spectator's view center in world coordinates.
     function getSpectatorMapCenter() {
         const canvas = document.querySelector('canvas');
         if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx.getTransform) {
                 const transform = ctx.getTransform();
-                // We assume transform.e and transform.f are the top-left world offsets.
                 return { x: transform.e + canvas.width / 2, y: transform.f + canvas.height / 2 };
             }
             return { x: canvas.width / 2, y: canvas.height / 2 };
@@ -195,7 +188,6 @@
         return { x: 0, y: 0 };
     }
     
-    // Convert canvas coordinates to world coordinates using current transform.
     function canvasToWorld(canvasX, canvasY) {
         const canvas = document.querySelector('canvas');
         if (!canvas) return { x: canvasX, y: canvasY };
@@ -208,7 +200,6 @@
         };
     }
     
-    // Convert world (map) coordinates to canvas coordinates for the spectator.
     function mapToCanvas(mapX, mapY) {
         const canvas = document.querySelector('canvas');
         if (!canvas) return { x: mapX, y: mapY };
@@ -224,15 +215,14 @@
     /***************************************************************
      * 4. Cinematic Circular Wave Animation Effect (World-Based)
      ***************************************************************/
-    // CircularWave creates an expanding, fading circle.
     class CircularWave {
         constructor(x, y, scale) {
             this.x = x;
             this.y = y;
             this.radius = 0;
-            this.expansionRate = 2; // Adjust expansion speed as needed.
+            this.expansionRate = 2;
             this.alpha = 1;
-            this.maxRadius = 100 * scale; // Scale maximum radius using provided scale.
+            this.maxRadius = 100 * scale;
         }
         update() {
             this.radius += this.expansionRate;
@@ -252,7 +242,60 @@
         }
     }
     
-    // CoolWaveRenderer manages and animates the circular waves.
+    // Global storage for player positions to detect movement.
+    let lastPositions = {};
+
+    // Detect collisions among players.
+    function checkForCollisions() {
+        // Assumes game players are stored in window.players with properties: id, x, y, radius.
+        const players = window.players;
+        if (!players || players.length < 2) return;
+        for (let i = 0; i < players.length; i++) {
+            for (let j = i + 1; j < players.length; j++) {
+                const p1 = players[i];
+                const p2 = players[j];
+                const dx = p1.x - p2.x;
+                const dy = p1.y - p2.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < (p1.radius + p2.radius)) {
+                    // Collision detected; trigger a wave effect at the midpoint.
+                    const collisionX = (p1.x + p2.x) / 2;
+                    const collisionY = (p1.y + p2.y) / 2;
+                    const canvasCoords = mapToCanvas(collisionX, collisionY);
+                    if (window.coolWaveRenderer) {
+                        window.coolWaveRenderer.createWave(canvasCoords.x, canvasCoords.y, 1);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Detect significant movement of players.
+    function checkForMovement() {
+        // Assumes game players are stored in window.players with properties: id, x, y.
+        const players = window.players;
+        if (!players) return;
+        const movementThreshold = 10; // adjust this threshold as needed
+        players.forEach(player => {
+            const id = player.id;
+            const currentPos = { x: player.x, y: player.y };
+            if (lastPositions[id]) {
+                const dx = currentPos.x - lastPositions[id].x;
+                const dy = currentPos.y - lastPositions[id].y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > movementThreshold) {
+                    // Significant movement detected; trigger a wave at the new position.
+                    const canvasCoords = mapToCanvas(currentPos.x, currentPos.y);
+                    if (window.coolWaveRenderer) {
+                        window.coolWaveRenderer.createWave(canvasCoords.x, canvasCoords.y, 0.5);
+                    }
+                }
+            }
+            lastPositions[id] = currentPos;
+        });
+    }
+    
+    // Modified CoolWaveRenderer that now also checks for collisions and movement.
     class CoolWaveRenderer {
         constructor(canvas) {
             this.canvas = canvas;
@@ -261,23 +304,19 @@
             this.init();
         }
         init() {
-            // When a team player clicks on the canvas, convert the click into world coordinates.
+            // Retain the click listener for team clicks.
             this.canvas.addEventListener('click', e => {
                 const rect = this.canvas.getBoundingClientRect();
                 const canvasX = e.clientX - rect.left;
                 const canvasY = e.clientY - rect.top;
-                // Convert canvas click to world coordinates.
                 const worldCoords = canvasToWorld(canvasX, canvasY);
                 console.log("Team player clicked at world coordinates:", worldCoords);
-                // For local display, convert world coordinates back to canvas coordinates.
                 const canvasCoords = mapToCanvas(worldCoords.x, worldCoords.y);
-                // Calculate scale based on distance from spectator’s view center and world size.
                 const worldSize = getWorldSize();
                 const viewer = getSpectatorMapCenter();
                 const d = Math.sqrt((worldCoords.x - viewer.x) ** 2 + (worldCoords.y - viewer.y) ** 2);
                 const scale = 1 / (0.5 + d / (worldSize / 3));
                 this.createWave(canvasCoords.x, canvasCoords.y, scale);
-                // Broadcast the world coordinates.
                 broadcastTeamMessage({ type: 'cool', mapX: worldCoords.x, mapY: worldCoords.y });
             });
             this.startAnimation();
@@ -294,6 +333,9 @@
         }
         startAnimation() {
             const animate = () => {
+                // Every frame, check for collisions and movement events.
+                checkForCollisions();
+                checkForMovement();
                 this.renderWaves();
                 requestAnimationFrame(animate);
             };
@@ -322,7 +364,7 @@
      * 5. Delta Spectators UI Panel (Spectator View)
      ***************************************************************/
     let cmdChatEnabled = false;
-    let spectatorListContainer; // For updating the UI list
+    let spectatorListContainer;
     
     const createSpectatorUI = () => {
         const uiWrapper = document.createElement('div');
@@ -382,7 +424,6 @@
     }
     
     function getDeltaSpectators() {
-        // Replace with your actual logic or use placeholder data.
         if (window.delta && window.delta.spectators) {
             return window.delta.spectators;
         }
@@ -434,7 +475,6 @@
     }
     
     function isSpectatorView() {
-        // For this version, we assume that if the URL contains "spectate" the user is a spectator.
         return window.location.href.includes("spectate");
     }
     
@@ -452,5 +492,5 @@
     
     setInterval(manageSpectatorUI, 2000);
     
-    console.log("Delta script with world-based spectators UI, circular wave animation, and team communication loaded.");
+    console.log("Delta script with world-based spectators UI, wave animation, and game event detection loaded.");
 })();
