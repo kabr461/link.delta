@@ -67,8 +67,8 @@ console.log("[WebSocket Debug] Initializing...");
     // ---------------------------------------------------
     // "UJ" in UTF-16 LE = [85, 0, 74, 0]
     const UJ_UTF16 = [85, 0, 74, 0];
-    // "up here!" in UTF-16 LE = [117,0,112,0,32,0,104,0,101,0,114,0,101,0,33,0]
-    const UP_HERE_UTF16 = [117,0,112,0,32,0,104,0,101,0,114,0,101,0,33,0];
+    // "up here!" in UTF-16 LE = [117, 0, 112, 0, 32, 0, 104, 0, 101, 0, 114, 0, 101, 0, 33, 0]
+    const UP_HERE_UTF16 = [117, 0, 112, 0, 32, 0, 104, 0, 101, 0, 114, 0, 101, 0, 33, 0];
 
     function replaceUTF16_UJ(bytes) {
         const output = [];
@@ -81,7 +81,7 @@ console.log("[WebSocket Debug] Initializing...");
             ) {
                 console.debug("[replaceUTF16_UJ] Found 'UJ' at index", i);
                 output.push(...UP_HERE_UTF16);
-                i += 3; // Skip the next 3 bytes as they form part of "UJ"
+                i += 3; // Skip the next 3 bytes (they are part of "UJ")
             } else {
                 output.push(bytes[i]);
             }
@@ -116,43 +116,26 @@ console.log("[WebSocket Debug] Initializing...");
         }
 
         send(data) {
-            // Process binary data to perform byte-level replacement.
+            // Process only binary messages with opcode 25.
             if (data instanceof ArrayBuffer) {
                 const originalBytes = new Uint8Array(data);
-                
-                // If the opcode (first byte) is 25, log the outgoing data before replacement.
                 if (originalBytes[0] === 25) {
                     console.debug("[send opcode 25] Original message bytes:", originalBytes);
-                }
-
-                const replacedBytes = replaceUTF16_UJ(originalBytes);
-                
-                // Log the replaced bytes for opcode 25 messages.
-                if (originalBytes[0] === 25) {
+                    const replacedBytes = replaceUTF16_UJ(originalBytes);
                     console.debug("[send opcode 25] Modified message bytes:", replacedBytes);
+                    super.send(replacedBytes.buffer);
+                    return;
                 }
-                
-                // Log if any replacement has occurred.
-                if (
-                    replacedBytes.length !== originalBytes.length ||
-                    !replacedBytes.every((val, idx) => val === originalBytes[idx])
-                ) {
-                    console.log("[send()] Replaced 'UJ' -> 'up here!':", replacedBytes);
-                }
-                
-                super.send(replacedBytes.buffer);
-            } else {
-                // Warn if the data is not binary (i.e., a string), since the replacement won't be applied.
-                console.warn("[send()] Outgoing data is not binary. No replacement performed.");
-                super.send(data);
             }
+            // For all other messages, simply pass through.
+            super.send(data);
         }
     }
 
     // Apply the override after a short delay.
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
-        console.log("[CustomWebSocket] Override Applied. Outgoing binary data will have UTF-16 'UJ' replaced with 'up here!'.");
+        console.log("[CustomWebSocket] Override Applied. Outgoing binary data with opcode 25 will be upgraded.");
     }, 1000);
 
     // Optional helper to analyze opcode data in the console.
