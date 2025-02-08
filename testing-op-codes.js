@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Delta Extension Enhanced Script with Spectator UI (Teammates List) & Firebase Clear
+// @name         Delta Extension Enhanced Script with Team Members List & Firebase Clear
 // @namespace    http://your-namespace-here.com
 // @version      1.9
-// @description  Combines team help, cinematic particle broadcast, animated GIF skins, customizable settings, minimap, in-game chat, multi-launcher, touch gamepad, and a teammates UI for Agar.io-like games. Clears Firebase team messages on reload and toggles teammates list with V key.
+// @description  Combines team help, cinematic particle broadcast, animated GIF skins, customizable settings, minimap, in-game chat, multi-launcher, touch gamepad, and a team members UI for Delta players. Clears Firebase team messages on reload.
 // @match        *://agar.io/*
 // @grant        none
 // @run-at       document-start
@@ -114,7 +114,7 @@
     function initializeFirebase() {
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         console.log("Firebase initialized.");
-        // Clear previous data from the "team_messages" node.
+        // Clear previous data from "team_messages"
         firebase.database().ref('team_messages').remove()
             .then(() => {
                 console.log("Previous Firebase team_messages data cleared.");
@@ -434,17 +434,15 @@
     }
 
     /***************************************************************
-     * 3. Delta Spectator (Teammates) UI Module
-     *    (Displays delta players with name, skin, and wave count.
-     *     Clicking a row toggles a detailed view.)
-     *    Note: The container's id is set to "team-members-list" so that
-     *    it can be toggled via the V key.
+     * 3. Team Members UI Module
+     *    (Displays Delta team players with name, skin, and wave count.
+     *     Clicking a team member row toggles a detailed view with extra info.)
      ***************************************************************/
-    let spectatorListContainer = null;
-    function createDeltaSpectatorUI() {
-        if (!isSpectatorView()) return;
+    let teamListContainer = null;
+    function createTeamMembersUI() {
+        // Create a fixed UI panel for team members.
         const uiWrapper = document.createElement('div');
-        uiWrapper.id = 'team-members-list'; // Changed from delta-spectator-ui
+        uiWrapper.id = 'team-members-ui';
         Object.assign(uiWrapper.style, {
             position: 'fixed',
             right: '10px',
@@ -459,27 +457,28 @@
             borderRadius: '6px'
         });
         const header = document.createElement('div');
-        header.textContent = "Delta Spectators";
+        header.textContent = "Team Members";
         header.style.fontWeight = 'bold';
         header.style.marginBottom = '6px';
         uiWrapper.appendChild(header);
         const listContainer = document.createElement('div');
-        listContainer.id = 'delta-spectator-list';
+        listContainer.id = 'team-members-list';
         listContainer.style.maxHeight = '200px';
         listContainer.style.overflowY = 'auto';
         uiWrapper.appendChild(listContainer);
         document.body.appendChild(uiWrapper);
-        spectatorListContainer = listContainer;
-        updateDeltaSpectatorUI();
+        teamListContainer = listContainer;
+        updateTeamMembersUI();
     }
-    function updateDeltaSpectatorUI() {
-        if (!spectatorListContainer) return;
-        const specs = (window.delta && window.delta.spectators) || [
+    function updateTeamMembersUI() {
+        if (!teamListContainer) return;
+        // Use Delta's team data if available; fallback sample data is used otherwise.
+        const teamMembers = (window.delta && window.delta.spectators) || [
             { name: "DeltaAce", skinUrl: "https://i.imgur.com/YourDeltaSkin1.png", waveCount: 5 },
             { name: "DeltaChamp", skinUrl: "https://i.imgur.com/YourDeltaSkin2.png", waveCount: 3 }
         ];
-        spectatorListContainer.innerHTML = "";
-        specs.forEach(player => {
+        teamListContainer.innerHTML = "";
+        teamMembers.forEach(member => {
             const row = document.createElement('div');
             row.style.display = 'flex';
             row.style.alignItems = 'center';
@@ -489,32 +488,35 @@
             row.style.padding = "5px";
             row.style.borderRadius = "4px";
             
+            // Skin image: click to copy skin URL.
             const skinImg = document.createElement('img');
-            skinImg.src = player.skinUrl;
+            skinImg.src = member.skinUrl;
             skinImg.alt = "skin";
             skinImg.width = 24;
             skinImg.height = 24;
             skinImg.style.marginRight = '5px';
             skinImg.addEventListener('click', e => {
                 e.stopPropagation();
-                navigator.clipboard.writeText(player.skinUrl)
-                    .then(() => console.log("Copied skin URL:", player.skinUrl))
+                navigator.clipboard.writeText(member.skinUrl)
+                    .then(() => console.log("Copied skin URL:", member.skinUrl))
                     .catch(err => console.error("Copy failed:", err));
             });
             
+            // Name: click to copy name.
             const nameSpan = document.createElement('span');
-            nameSpan.textContent = player.name;
+            nameSpan.textContent = member.name;
             nameSpan.style.flex = '1';
             nameSpan.style.marginRight = '5px';
             nameSpan.addEventListener('click', e => {
                 e.stopPropagation();
-                navigator.clipboard.writeText(player.name)
-                    .then(() => console.log("Copied name:", player.name))
+                navigator.clipboard.writeText(member.name)
+                    .then(() => console.log("Copied name:", member.name))
                     .catch(err => console.error("Copy failed:", err));
             });
             
+            // Wave count.
             const waveSpan = document.createElement('span');
-            waveSpan.textContent = `(${player.waveCount})`;
+            waveSpan.textContent = `(${member.waveCount})`;
             waveSpan.style.color = '#0ff';
             waveSpan.style.marginRight = '5px';
             
@@ -522,36 +524,38 @@
             row.appendChild(nameSpan);
             row.appendChild(waveSpan);
             
+            // Create a hidden detailed panel.
             const detailsPanel = document.createElement('div');
             detailsPanel.style.display = 'none';
             detailsPanel.style.marginTop = '5px';
             detailsPanel.style.padding = '5px';
             detailsPanel.style.backgroundColor = 'rgba(0,0,0,0.5)';
             detailsPanel.style.borderRadius = '4px';
-            detailsPanel.textContent = `Detailed info for ${player.name} (CMD chat settings, etc.)`;
+            detailsPanel.textContent = `Detailed info for ${member.name} (CMD chat settings, etc.)`;
             
+            // Toggle detailed view on row click.
             row.addEventListener('click', () => {
                 detailsPanel.style.display = detailsPanel.style.display === 'none' ? 'block' : 'none';
             });
             
             row.appendChild(detailsPanel);
-            spectatorListContainer.appendChild(row);
+            teamListContainer.appendChild(row);
         });
     }
-    function isSpectatorView() {
-        return window.location.href.includes("spectate");
-    }
+    // (Optional sample code: you might use a keydown event to toggle display of the team list.)
+    // document.addEventListener("keydown", function(event) {
+    //     if (event.code === "KeyV") {
+    //         const teamList = document.getElementById("team-members-list");
+    //         if (teamList) {
+    //             teamList.style.display = teamList.style.display === "none" ? "block" : "none";
+    //         }
+    //     }
+    // });
+
+    // Refresh the team list periodically.
     setInterval(() => {
-        if (isSpectatorView()) {
-            if (!spectatorListContainer) {
-                createDeltaSpectatorUI();
-            } else {
-                updateDeltaSpectatorUI();
-            }
-        } else {
-            const ui = document.getElementById('team-members-list');
-            if (ui) ui.remove();
-            spectatorListContainer = null;
+        if (teamListContainer) {
+            updateTeamMembersUI();
         }
     }, 2000);
 
@@ -574,23 +578,10 @@
         });
         skinToggle.addEventListener('click', toggleGifSkin);
         document.body.appendChild(skinToggle);
-        if (isSpectatorView()) {
-            createDeltaSpectatorUI();
-        }
+        // Create the team members list UI.
+        createTeamMembersUI();
     }
     setTimeout(initDeltaExtension, 3000);
 
-    /***************************************************************
-     * 5. Teammates List Toggle via V Key
-     ***************************************************************/
-    document.addEventListener("keydown", function(event) {
-        if (event.code === "KeyV") {
-            const teamList = document.getElementById("team-members-list");
-            if (teamList) {
-                teamList.style.display = teamList.style.display === "none" ? "block" : "none";
-            }
-        }
-    });
-
-    console.log("Delta Extension Enhanced Script with Spectator UI and Firebase Clear Loaded.");
+    console.log("Delta Extension Enhanced Script with Team Members List and Firebase Clear Loaded.");
 })();
