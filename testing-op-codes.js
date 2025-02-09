@@ -65,45 +65,37 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     // ------------------------------------------------
     // 3. Process Opcode 25 (Message Sending) – Decoding
     // ------------------------------------------------
-    function processMessageOpcode(data) {
-        if (data.rawMessage) {
-            // Create a full Uint8Array view of the received data.
-            const fullBytes = new Uint8Array(data.rawMessage);
-            console.log("Full received bytes:", 
-                Array.from(fullBytes)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join(" "));
+  function processMessageOpcode(data) {
+    if (data.rawMessage) {
+        const fullBytes = new Uint8Array(data.rawMessage);
+        console.log("Full received bytes:", 
+            Array.from(fullBytes)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join(" "));
 
-            // Create a view for the payload by skipping the first 2 header bytes.
-            const payloadBytes = fullBytes.subarray(2);
-            console.log("Payload bytes (skipping first 2 bytes):", 
-                Array.from(payloadBytes)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join(" "));
+        const payloadBytes = fullBytes.subarray(2);
+        console.log("Payload bytes (skipping first 2 bytes):", 
+            Array.from(payloadBytes)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join(" "));
 
-            try {
-                // --- Option 1: Decode using UTF-8 (default) ---
-                let messageText = new TextDecoder("utf-8").decode(payloadBytes);
-                console.log(`[Message Sent decoded as UTF-8] ${messageText}`);
+        try {
+            let messageText = new TextDecoder("utf-8").decode(payloadBytes);
+            let cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
 
-                // --- Optional: If UTF-8 produces garbled text, try UTF-16LE ---
-                /*
-                let messageTextUTF16 = new TextDecoder("utf-16le").decode(payloadBytes);
-                console.log(`[Message Sent decoded as UTF-16LE] ${messageTextUTF16}`);
-                */
-
-                // (Optional) Clean the decoded message to remove non-printable ASCII.
-                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
-                if (cleanedMessage.includes("UJ")) {
-                    console.log("UJ detected in cleaned message!");
-                }
-            } catch (e) {
-                console.warn("[Message Parsing Error]", e);
+            if (cleanedMessage.includes("UJ")) {
+                console.log("UJ detected in cleaned message!");
+                cleanedMessage = cleanedMessage.replace(/UJ/g, "up there!");
             }
-        } else {
-            console.warn("[Opcode 25] No message data found.");
+
+            console.log(`[Message Sent decoded as UTF-8] ${cleanedMessage}`);
+        } catch (e) {
+            console.warn("[Message Parsing Error]", e);
         }
+    } else {
+        console.warn("[Opcode 25] No message data found.");
     }
+}
 
     // ------------------------------------------------
     // 4. Custom WebSocket Class to Intercept Messages
