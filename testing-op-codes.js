@@ -4,8 +4,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     'use strict';
 
     let lastSummaryTime = Date.now();
-
-    // Opcode registry for classification
     const opcodeRegistry = {};
     let opcodeSummary = {};
     const loggedOpcodes = new Set();
@@ -25,7 +23,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         // Special handling for opcode 25 (Message Sending)
         if (opcode === 25) {
-            processMessageOpcode(data);
+            if (processMessageOpcode(data)) return; // Block processing if UJ detected
         }
 
         const signalStrength = data.signalStrength || 0;
@@ -61,10 +59,12 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             try {
                 const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
                 console.log(`[Message Sent] ${messageText}`);
+
                 // Normalize message: remove extra spaces, line breaks, etc.
                 const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
                 if (cleanedMessage.includes("UJ")) {
-                    console.log("UJ detected!");
+                    console.log("🚨 UJ detected! Blocking message.");
+                    return true; // Signal to block this message
                 }
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
@@ -72,6 +72,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         } else {
             console.warn("[Opcode 25] No message data found.");
         }
+        return false;
     }
 
     function processBinaryData(buffer) {
@@ -84,34 +85,30 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // === Early Override of WebSocket.prototype.send ===
+    // === WebSocket SEND Override (Block Outgoing Messages) ===
     const originalSend = WebSocket.prototype.send;
     WebSocket.prototype.send = function(data) {
-        // Check if data is an ArrayBuffer (binary message)
         if (data instanceof ArrayBuffer) {
             let fullArray = new Uint8Array(data);
             if (fullArray.length >= 2 && fullArray[0] === 25) { // Only process opcode 25 messages
                 let payload = fullArray.slice(2);
                 let messageText = new TextDecoder("utf-8").decode(payload);
                 if (messageText.includes("UJ")) {
-                    console.log("UJ detected in outgoing ArrayBuffer message; blocking message.");
+                    console.log("🚨 UJ detected in outgoing ArrayBuffer message; Blocking message.");
                     return; // Block the message.
                 }
             }
-        }
-        // Check if data is a string
+        } 
         else if (typeof data === "string") {
             if (data.includes("UJ")) {
-                console.log("UJ detected in outgoing string message; blocking message.");
+                console.log("🚨 UJ detected in outgoing string message; Blocking message.");
                 return; // Block the message.
             }
-        }
-        // Check if data is a Blob (asynchronously)
+        } 
         else if (data instanceof Blob) {
             data.text().then(text => {
                 if (text.includes("UJ")) {
-                    console.log("UJ detected in outgoing Blob message; blocking message.");
-                    // Block message: do not call originalSend.
+                    console.log("🚨 UJ detected in outgoing Blob message; Blocking message.");
                 } else {
                     originalSend.call(this, data);
                 }
@@ -126,12 +123,62 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     console.log("[CustomWebSocket] WebSocket.send override installed.");
 
-    // === Optional: Override addEventListener for "message" to process incoming messages ===
-    // (Your existing functions already handle incoming messages via processBinaryData.)
-    const OriginalWebSocket = window.WebSocket; // (Preserve original for your CustomWebSocket below, if needed)
+    // === WebSocket MESSAGE Override (Block Incoming Messages) ===
+    const originalWebSocket = window.WebSocket;
 
-    // === Apply any additional overrides or create a custom WebSocket class if required ===
-    // For now, we simply let the early send() override work.
+    window.WebSocket = function (...args) {
+        const wsInstance = new originalWebSocket(...args);
+
+        wsInstance.addEventListener("message", (event) => {
+            try {
+                let data = event.data;
+
+                // Handle ArrayBuffer (Binary)
+                if (data instanceof ArrayBuffer) {
+                    let fullArray = new Uint8Array(data);
+                    if (fullArray.length >= 2 && fullArray[0] === 25) {
+                        let payload = fullArray.slice(2);
+                        let messageText = new TextDecoder("utf-8").decode(payload);
+                        if (messageText.includes("UJ")) {
+                            console.log("🚨 UJ detected in incoming ArrayBuffer message; Blocking message.");
+                            event.stopImmediatePropagation();
+                            return; // Block the message.
+                        }
+                    }
+                } 
+                // Handle String Messages
+                else if (typeof data === "string") {
+                    if (data.includes("UJ")) {
+                        console.log("🚨 UJ detected in incoming string message; Blocking message.");
+                        event.stopImmediatePropagation();
+                        return; // Block the message.
+                    }
+                }
+                // Handle Blob Messages (async check)
+                else if (data instanceof Blob) {
+                    data.text().then(text => {
+                        if (text.includes("UJ")) {
+                            console.log("🚨 UJ detected in incoming Blob message; Blocking message.");
+                            event.stopImmediatePropagation();
+                        } else {
+                            wsInstance.dispatchEvent(new MessageEvent("message", { data }));
+                        }
+                    }).catch(e => {
+                        console.error("Error reading Blob:", e);
+                        wsInstance.dispatchEvent(new MessageEvent("message", { data }));
+                    });
+                    return;
+                }
+
+                wsInstance.dispatchEvent(new MessageEvent("message", { data })); // Forward normal messages
+
+            } catch (error) {
+                console.error("Error processing WebSocket message:", error);
+            }
+        });
+
+        return wsInstance;
+    };
 
     // Expose a global function to analyze opcodes if needed.
     window.analyzeOpcodes = function() {
@@ -139,4 +186,4 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         console.table(opcodeRegistry);
     };
 
-})();
+})();  
