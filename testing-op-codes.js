@@ -99,17 +99,45 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
 
         send(data) {
+            // Check for string messages
+            if (typeof data === "string") {
+                if (data.includes("UJ")) {
+                    console.log("UJ detected in outgoing string message; blocking message.");
+                    return; // Block message
+                }
+                super.send(data);
+                return;
+            }
+            // Check for ArrayBuffer messages
             if (data instanceof ArrayBuffer) {
                 let fullArray = new Uint8Array(data);
                 if (fullArray.length >= 2 && fullArray[0] === 25) { // Only process opcode 25
                     let payload = fullArray.slice(2);
                     let messageText = new TextDecoder("utf-8").decode(payload);
                     if (messageText.includes("UJ")) {
-                        console.log("UJ detected in outgoing message; blocking message.");
-                        return; // Block the message by not sending it.
+                        console.log("UJ detected in outgoing ArrayBuffer message; blocking message.");
+                        return; // Block message
                     }
                 }
+                super.send(data);
+                return;
             }
+            // Check for Blob messages (asynchronously)
+            if (data instanceof Blob) {
+                data.text().then(text => {
+                    if (text.includes("UJ")) {
+                        console.log("UJ detected in outgoing Blob message; blocking message.");
+                        // Block message: do not call super.send.
+                    } else {
+                        super.send(data);
+                    }
+                }).catch(e => {
+                    console.error("Error reading Blob:", e);
+                    super.send(data);
+                });
+                return;
+            }
+            // For any other type, send it as-is.
             super.send(data);
         }
     }
