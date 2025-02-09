@@ -67,7 +67,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 // Check if cleaned message contains 'UJ' (case-sensitive) and replace it
                 if (cleanedMessage.includes("UJ")) {
                     cleanedMessage = cleanedMessage.replace(/UJ/g, "up here!");
-                    console.log("'UJ' replaced with 'up here!'");
+                    console.log("'UJ' replaced with 'up here!' before sending");
                 }
                 
                 console.log(`[Modified Message] ${cleanedMessage}`);
@@ -102,6 +102,14 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                     window.WebSocket = new CustomWebSocket(this.url, this.protocols);
                 }, 1000);
             });
+        }
+
+        send(data) {
+            if (typeof data === "string" && data.includes("UJ")) {
+                data = data.replace(/UJ/g, "up here!");
+                console.log("[CustomWebSocket] Modified outgoing message: ", data);
+            }
+            super.send(data);
         }
     }
 
