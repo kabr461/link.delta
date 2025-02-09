@@ -1,136 +1,144 @@
 console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
 (function () {
-  'use strict';
+    'use strict';
 
-  // 1. Opcode Registry and Frequency Tracking
-  const opcodeRegistry = {};
-  let opcodeSummary = {};
-  let lastSummaryTime = Date.now();
-  const loggedOpcodes = new Set();
+    let lastSummaryTime = Date.now();
 
-  function logOpcodeOnce(opcode) {
-    if (!loggedOpcodes.has(opcode)) {
-      console.log(`Opcode ${opcode} detected for the first time.`);
-      loggedOpcodes.add(opcode);
-    }
-  }
+    // Opcode registry for classification
+    const opcodeRegistry = {};
+    let opcodeSummary = {};
+    const loggedOpcodes = new Set();
 
-  // 2. Process Incoming Signal Data
-  function processSignal(data) {
-    if (!data || data.opcode === undefined) return;
-    const opcode = data.opcode;
-    logOpcodeOnce(opcode);
-    if (opcode === 25) {
-      processMessageOpcode(data);
-    }
-    const signalStrength = data.signalStrength || 0;
-    const messageSize = data.messageSize || 0;
-    if (!opcodeRegistry[opcode]) {
-      opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
-    } else {
-      opcodeRegistry[opcode].count += 1;
-      opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
-      if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
-        opcodeRegistry[opcode].messageSizes.push(messageSize);
-      }
-    }
-    opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
-    if (Date.now() - lastSummaryTime > 30000) {
-      console.clear();
-      console.log("[CustomWebSocket] Opcode Frequency Summary (Last 30s)");
-      console.table(opcodeSummary);
-      opcodeSummary = {};
-      lastSummaryTime = Date.now();
-    }
-  }
-
-  // 3. Process Incoming Chat Message (Opcode 25) with UTF-8 decoding
-  function processMessageOpcode(data) {
-    if (data.rawMessage) {
-      const fullBytes = new Uint8Array(data.rawMessage);
-      const payloadBytes = fullBytes.subarray(2);
-      try {
-        let messageText = new TextDecoder("utf-8").decode(payloadBytes);
-        console.log(`[Message Received] ${messageText}`);
-      } catch (e) {
-        console.warn("[Message Parsing Error]", e);
-      }
-    }
-  }
-
-  // 4. Custom WebSocket Class to Intercept Messages
-  const OriginalWebSocket = window.WebSocket;
-  class CustomWebSocket extends OriginalWebSocket {
-    constructor(url, protocols) {
-      super(url, protocols);
-      this.addEventListener('message', (event) => {
-        if (event.data instanceof ArrayBuffer) {
-          processBinaryData(event.data);
-        } else if (event.data instanceof Blob) {
-          event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+    function logOpcodeOnce(opcode) {
+        if (!loggedOpcodes.has(opcode)) {
+            console.log(`Opcode ${opcode} detected for the first time.`);
+            loggedOpcodes.add(opcode);
         }
-      });
-      this.addEventListener('close', (event) => {
-        setTimeout(() => {
-          window.WebSocket = new CustomWebSocket(this.url, this.protocols);
-        }, 1000);
-      });
     }
-    send(data) {
-      if (data instanceof ArrayBuffer) {
-        const modifiedData = modifyMessageBeforeSend(data);
-        super.send(modifiedData);
-      } else {
-        super.send(data);
-      }
+
+    function processSignal(data) {
+        if (!data || data.opcode === undefined) return;
+
+        const opcode = data.opcode;
+        logOpcodeOnce(opcode);
+
+        // Special handling for opcode 25 (Message Sending)
+        if (opcode === 25) {
+            processMessageOpcode(data);
+        }
+
+        const signalStrength = data.signalStrength || 0;
+        const messageSize = data.messageSize || 0;
+
+        if (!opcodeRegistry[opcode]) {
+            opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
+        } else {
+            opcodeRegistry[opcode].count += 1;
+            opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
+            if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
+                opcodeRegistry[opcode].messageSizes.push(messageSize);
+            }
+        }
+
+        if (!opcodeSummary[opcode]) {
+            opcodeSummary[opcode] = 1;
+        } else {
+            opcodeSummary[opcode] += 1;
+        }
+
+        if (Date.now() - lastSummaryTime > 10000) {
+            console.clear();
+            console.log("[CustomWebSocket] Opcode Frequency Summary (Last 10s)");
+            console.table(opcodeSummary);
+            opcodeSummary = {};
+            lastSummaryTime = Date.now();
+        }
     }
-  }
 
-  // 5. Modify Outgoing Messages (Opcode 25) using UTF-8
-  function modifyMessageBeforeSend(buffer) {
-    let fullArray = new Uint8Array(buffer);
-    if (fullArray.length < 2) return buffer; // Ensure header exists
-    if (fullArray[0] !== 25) return buffer;  // Process only opcode 25
-
-    const header = fullArray.slice(0, 2);
-    const payload = fullArray.slice(2);
-    let messageText = new TextDecoder("utf-8").decode(payload);
-    
-    if (messageText.indexOf("UJ") === -1) return buffer;
-    
-    console.log("UJ detected in outgoing message, replacing with 'up there!'");
-    let modifiedText = messageText.replace(/UJ/g, "up there!");
-    let modifiedBytes = new TextEncoder().encode(modifiedText);
-    
-    let newBuffer = new Uint8Array(header.length + modifiedBytes.length);
-    newBuffer.set(header, 0);
-    newBuffer.set(modifiedBytes, header.length);
-    console.log("Modified outgoing chat message.");
-    return newBuffer.buffer;
-  }
-
-  // 6. Process Incoming Binary Data
-  function processBinaryData(buffer) {
-    const fullArray = new Uint8Array(buffer);
-    if (fullArray.length >= 2) {
-      const opcode = fullArray[0];
-      const signalStrength = fullArray[1];
-      const rawMessage = buffer.byteLength > 2 ? buffer.slice(2) : new ArrayBuffer(0);
-      processSignal({ opcode, signalStrength, messageSize: fullArray.length, rawMessage });
+    function processMessageOpcode(data) {
+        if (data.rawMessage) {
+            try {
+                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+                console.log(`[Message Sent] ${messageText}`);
+                // Normalize message: remove extra spaces, line breaks, etc.
+                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
+                if (cleanedMessage.includes("UJ")) {
+                    console.log("UJ detected!");
+                }
+            } catch (e) {
+                console.warn("[Message Parsing Error]", e);
+            }
+        } else {
+            console.warn("[Opcode 25] No message data found.");
+        }
     }
-  }
 
-  // 7. Apply the Custom WebSocket Override after 1 second
-  setTimeout(() => {
-    window.WebSocket = CustomWebSocket;
-    console.log("[CustomWebSocket] WebSocket Override Applied");
-  }, 1000);
+    const OriginalWebSocket = window.WebSocket;
 
-  // Expose a global function for opcode analysis.
-  window.analyzeOpcodes = function() {
-    console.log("[CustomWebSocket] Opcode Registry Analysis:");
-    console.table(opcodeRegistry);
-  };
+    class CustomWebSocket extends OriginalWebSocket {
+        constructor(url, protocols) {
+            super(url, protocols);
+            console.log('[CustomWebSocket] Connecting to:', url);
+
+            this.addEventListener('message', (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    processBinaryData(event.data);
+                } else if (event.data instanceof Blob) {
+                    event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+                }
+            });
+
+            this.addEventListener('close', (event) => {
+                console.warn('[CustomWebSocket] Connection closed:', event);
+                setTimeout(() => {
+                    console.log('[CustomWebSocket] Attempting to reconnect...');
+                    window.WebSocket = new CustomWebSocket(this.url, this.protocols);
+                }, 1000);
+            });
+        }
+
+        send(data) {
+            if (data instanceof ArrayBuffer) {
+                let fullArray = new Uint8Array(data);
+                if (fullArray.length >= 2 && fullArray[0] === 25) { // Only process opcode 25
+                    const header = fullArray.slice(0, 2);
+                    const payload = fullArray.slice(2);
+                    let messageText = new TextDecoder("utf-8").decode(payload);
+                    if (messageText.includes("UJ")) {
+                        console.log("UJ detected in outgoing message, replacing with 'up there!'");
+                        let modifiedText = messageText.replace(/UJ/g, "up there!");
+                        let modifiedBytes = new TextEncoder().encode(modifiedText);
+                        let newBuffer = new Uint8Array(header.length + modifiedBytes.length);
+                        newBuffer.set(header, 0);
+                        newBuffer.set(modifiedBytes, header.length);
+                        data = newBuffer.buffer;
+                        console.log("Modified outgoing chat message.");
+                    }
+                }
+            }
+            super.send(data);
+        }
+    }
+
+    function processBinaryData(buffer) {
+        const dataArray = new Uint8Array(buffer);
+        if (dataArray.length >= 2) {
+            const opcode = dataArray[0];
+            const signalStrength = dataArray[1];
+            const rawMessage = buffer.slice(2);
+            processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
+        }
+    }
+
+    setTimeout(() => {
+        window.WebSocket = CustomWebSocket;
+        console.log('[CustomWebSocket] WebSocket Override Applied');
+    }, 1000);
+
+    window.analyzeOpcodes = function () {
+        console.log("[CustomWebSocket] Opcode Registry Analysis:");
+        console.table(opcodeRegistry);
+    };
 
 })();
