@@ -6,10 +6,10 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     // ------------------------------------------------
     // 1. Opcode Registry and Frequency Tracking
     // ------------------------------------------------
-    const opcodeRegistry = {};       // Detailed info per opcode
-    let opcodeSummary = {};          // Frequency summary for a time window
+    const opcodeRegistry = {};       
+    let opcodeSummary = {};          
     let lastSummaryTime = Date.now();
-    const loggedOpcodes = new Set(); // To log a new opcode only once
+    const loggedOpcodes = new Set(); 
 
     function logOpcodeOnce(opcode) {
         if (!loggedOpcodes.has(opcode)) {
@@ -27,12 +27,10 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         const opcode = data.opcode;
         logOpcodeOnce(opcode);
 
-        // Special handling for opcode 25 (Message Sending)
         if (opcode === 25) {
             processMessageOpcode(data);
         }
 
-        // Record signal strength and message size
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
 
@@ -52,7 +50,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
 
-        // Every 10 seconds, clear and print an opcode summary.
         if (Date.now() - lastSummaryTime > 30000) {
             console.clear();
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
@@ -63,7 +60,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
 
     // ------------------------------------------------
-    // 3. Process Opcode 25 (Message Sending) – Decoding
+    // 3. Process Opcode 25 (Message Sending)
     // ------------------------------------------------
     function processMessageOpcode(data) {
         if (data.rawMessage) {
@@ -81,13 +78,12 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
             try {
                 let messageText = new TextDecoder("utf-8").decode(payloadBytes);
-                let cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
 
-                if (cleanedMessage.includes("UJ")) {
-                    console.log("UJ detected in cleaned message!");
+                if (messageText.includes("UJ")) {
+                    console.log("UJ detected in message!");
                 }
 
-                console.log(`[Message Sent decoded as UTF-8] ${cleanedMessage}`);
+                console.log(`[Message Sent decoded as UTF-8] ${messageText}`);
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
             }
@@ -133,29 +129,29 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
 
     // ------------------------------------------------
-    // 5. Modify Outgoing Messages Before Sending
+    // 5. Modify Outgoing Messages Before Sending (Only UJ)
     // ------------------------------------------------
     function modifyMessageBeforeSend(buffer) {
         let fullArray = new Uint8Array(buffer);
 
         if (fullArray.length >= 2) {
-            let payloadBytes = fullArray.subarray(2);
+            let payloadBytes = fullArray.slice(2); 
             let messageText = new TextDecoder("utf-8").decode(payloadBytes);
             
             if (messageText.includes("UJ")) {
                 console.log("Modifying outgoing message: Replacing 'UJ' with 'up there!'");
                 let modifiedText = messageText.replace(/UJ/g, "up there!");
                 let modifiedBytes = new TextEncoder().encode(modifiedText);
-                
+
                 let newBuffer = new Uint8Array(2 + modifiedBytes.length);
-                newBuffer.set(fullArray.subarray(0, 2), 0); // Keep header bytes
-                newBuffer.set(modifiedBytes, 2); // Replace payload
-                
+                newBuffer.set(fullArray.subarray(0, 2), 0); 
+                newBuffer.set(modifiedBytes, 2); 
+
                 return newBuffer.buffer;
             }
         }
         
-        return buffer;
+        return buffer; 
     }
 
     // ------------------------------------------------
