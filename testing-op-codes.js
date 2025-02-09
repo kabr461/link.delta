@@ -65,37 +65,36 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     // ------------------------------------------------
     // 3. Process Opcode 25 (Message Sending) – Decoding
     // ------------------------------------------------
-  function processMessageOpcode(data) {
-    if (data.rawMessage) {
-        const fullBytes = new Uint8Array(data.rawMessage);
-        console.log("Full received bytes:", 
-            Array.from(fullBytes)
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join(" "));
+    function processMessageOpcode(data) {
+        if (data.rawMessage) {
+            const fullBytes = new Uint8Array(data.rawMessage);
+            console.log("Full received bytes:", 
+                Array.from(fullBytes)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join(" "));
 
-        const payloadBytes = fullBytes.subarray(2);
-        console.log("Payload bytes (skipping first 2 bytes):", 
-            Array.from(payloadBytes)
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join(" "));
+            const payloadBytes = fullBytes.subarray(2);
+            console.log("Payload bytes (skipping first 2 bytes):", 
+                Array.from(payloadBytes)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join(" "));
 
-        try {
-            let messageText = new TextDecoder("utf-8").decode(payloadBytes);
-            let cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
+            try {
+                let messageText = new TextDecoder("utf-8").decode(payloadBytes);
+                let cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
 
-            if (cleanedMessage.includes("UJ")) {
-                console.log("UJ detected in cleaned message!");
-                cleanedMessage = cleanedMessage.replace(/UJ/g, "up there!");
+                if (cleanedMessage.includes("UJ")) {
+                    console.log("UJ detected in cleaned message!");
+                }
+
+                console.log(`[Message Sent decoded as UTF-8] ${cleanedMessage}`);
+            } catch (e) {
+                console.warn("[Message Parsing Error]", e);
             }
-
-            console.log(`[Message Sent decoded as UTF-8] ${cleanedMessage}`);
-        } catch (e) {
-            console.warn("[Message Parsing Error]", e);
+        } else {
+            console.warn("[Opcode 25] No message data found.");
         }
-    } else {
-        console.warn("[Opcode 25] No message data found.");
     }
-}
 
     // ------------------------------------------------
     // 4. Custom WebSocket Class to Intercept Messages
@@ -122,25 +121,58 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 }, 1000);
             });
         }
+
+        send(data) {
+            if (data instanceof ArrayBuffer) {
+                let modifiedData = modifyMessageBeforeSend(data);
+                super.send(modifiedData);
+            } else {
+                super.send(data);
+            }
+        }
     }
 
     // ------------------------------------------------
-    // 5. Process Incoming Binary Data from the WebSocket
+    // 5. Modify Outgoing Messages Before Sending
+    // ------------------------------------------------
+    function modifyMessageBeforeSend(buffer) {
+        let fullArray = new Uint8Array(buffer);
+
+        if (fullArray.length >= 2) {
+            let payloadBytes = fullArray.subarray(2);
+            let messageText = new TextDecoder("utf-8").decode(payloadBytes);
+            
+            if (messageText.includes("UJ")) {
+                console.log("Modifying outgoing message: Replacing 'UJ' with 'up there!'");
+                let modifiedText = messageText.replace(/UJ/g, "up there!");
+                let modifiedBytes = new TextEncoder().encode(modifiedText);
+                
+                let newBuffer = new Uint8Array(2 + modifiedBytes.length);
+                newBuffer.set(fullArray.subarray(0, 2), 0); // Keep header bytes
+                newBuffer.set(modifiedBytes, 2); // Replace payload
+                
+                return newBuffer.buffer;
+            }
+        }
+        
+        return buffer;
+    }
+
+    // ------------------------------------------------
+    // 6. Process Incoming Binary Data from the WebSocket
     // ------------------------------------------------
     function processBinaryData(buffer) {
         const fullArray = new Uint8Array(buffer);
-        // Ensure there are at least 2 bytes for header info.
         if (fullArray.length >= 2) {
             const opcode = fullArray[0];
             const signalStrength = fullArray[1];
-            // Create a new ArrayBuffer for the payload (skipping the first 2 bytes).
             const rawMessage = buffer.byteLength > 2 ? buffer.slice(2) : new ArrayBuffer(0);
             processSignal({ opcode, signalStrength, messageSize: fullArray.length, rawMessage });
         }
     }
 
     // ------------------------------------------------
-    // 6. Apply the Custom WebSocket Override
+    // 7. Apply the Custom WebSocket Override
     // ------------------------------------------------
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
