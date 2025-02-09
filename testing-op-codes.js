@@ -60,6 +60,12 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             try {
                 const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
                 console.log(`[Message Sent] ${messageText}`);
+                
+                // Check if message contains 'UJ' (case-sensitive)
+                if (messageText.includes("UJ")) {
+                    console.log("UJ detected!");
+                }
+                
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
             }
