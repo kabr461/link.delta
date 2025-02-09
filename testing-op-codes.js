@@ -99,6 +99,8 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
 
         send(data) {
+ console.log("Outgoing message type:", typeof data, data);
+            
             // Check for string messages
             if (typeof data === "string") {
                 if (data.includes("UJ")) {
