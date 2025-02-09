@@ -58,7 +58,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     function processMessageOpcode(data) {
         if (data.rawMessage) {
             try {
-                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+                const messageText = new TextDecoder("utf-16le").decode(data.rawMessage);
                 console.log(`[Message Sent] ${messageText}`);
                 
                 // Normalize message: Remove extra spaces, line breaks, and special characters
