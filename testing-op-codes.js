@@ -98,28 +98,21 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             });
         }
 
-        send(data) {
-            if (data instanceof ArrayBuffer) {
-                let fullArray = new Uint8Array(data);
-                if (fullArray.length >= 2 && fullArray[0] === 25) { // Only process opcode 25
-                    const header = fullArray.slice(0, 2);
-                    const payload = fullArray.slice(2);
-                    let messageText = new TextDecoder("utf-8").decode(payload);
-                    if (messageText.includes("UJ")) {
-                        console.log("UJ detected in outgoing message, replacing with 'up there!'");
-                        let modifiedText = messageText.replace(/UJ/g, "up there!");
-                        let modifiedBytes = new TextEncoder().encode(modifiedText);
-                        let newBuffer = new Uint8Array(header.length + modifiedBytes.length);
-                        newBuffer.set(header, 0);
-                        newBuffer.set(modifiedBytes, header.length);
-                        data = newBuffer.buffer;
-                        console.log("Modified outgoing chat message.");
-                    }
-                }
+     send(data) {
+    if (data instanceof ArrayBuffer) {
+        let fullArray = new Uint8Array(data);
+        if (fullArray.length >= 2 && fullArray[0] === 25) { // Only process opcode 25
+            let payload = fullArray.slice(2);
+            let messageText = new TextDecoder("utf-8").decode(payload);
+            if (messageText.includes("UJ")) {
+                console.log("UJ detected in outgoing message; blocking message.");
+                return; // Block the message by not sending it.
             }
-            super.send(data);
         }
     }
+    super.send(data);
+}
+
 
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
