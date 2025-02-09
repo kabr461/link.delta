@@ -3,13 +3,13 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 (function () {
     'use strict';
 
-    // ------------------------------------------------
+    // --------------------------------------------------
     // 1. Opcode Registry and Frequency Tracking
-    // ------------------------------------------------
+    // --------------------------------------------------
     const opcodeRegistry = {};       // Detailed info per opcode
-    let opcodeSummary = {};          // Frequency summary for a time window
+    let opcodeSummary = {};          // Frequency summary over a time window
     let lastSummaryTime = Date.now();
-    const loggedOpcodes = new Set(); // To log a new opcode only once
+    const loggedOpcodes = new Set(); // To log new opcodes only once
 
     function logOpcodeOnce(opcode) {
         if (!loggedOpcodes.has(opcode)) {
@@ -18,9 +18,9 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // ------------------------------------------------
+    // --------------------------------------------------
     // 2. Process Incoming Signal Data
-    // ------------------------------------------------
+    // --------------------------------------------------
     function processSignal(data) {
         if (!data || data.opcode === undefined) return;
 
@@ -52,7 +52,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
 
-        // Every 10 seconds, clear and print an opcode summary.
+        // Every 10 seconds, print an opcode summary.
         if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
@@ -62,52 +62,80 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // ------------------------------------------------
-    // 3. Process Opcode 25 (Message Sending) – Decoding
-    // ------------------------------------------------
+    // --------------------------------------------------
+    // 3. Process Opcode 25 (Message Sending) – Structured Parsing
+    // --------------------------------------------------
     function processMessageOpcode(data) {
-        if (data.rawMessage) {
-            // Create a full Uint8Array view of the received data.
-            const fullBytes = new Uint8Array(data.rawMessage);
-            console.log("Full received bytes:", 
-                Array.from(fullBytes)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join(" "));
-
-            // Create a view for the payload by skipping the first 2 header bytes.
-            const payloadBytes = fullBytes.subarray(2);
-            console.log("Payload bytes (skipping first 2 bytes):", 
-                Array.from(payloadBytes)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join(" "));
-
-            try {
-                // --- Option 1: Decode using UTF-8 (default) ---
-                let messageText = new TextDecoder("utf-8").decode(payloadBytes);
-                console.log(`[Message Sent decoded as UTF-8] ${messageText}`);
-
-                // --- Optional: If UTF-8 produces garbled text, try UTF-16LE ---
-                /*
-                let messageTextUTF16 = new TextDecoder("utf-16le").decode(payloadBytes);
-                console.log(`[Message Sent decoded as UTF-16LE] ${messageTextUTF16}`);
-                */
-
-                // (Optional) Clean the decoded message to remove non-printable ASCII.
-                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
-                if (cleanedMessage.includes("UJ")) {
-                    console.log("UJ detected in cleaned message!");
-                }
-            } catch (e) {
-                console.warn("[Message Parsing Error]", e);
-            }
-        } else {
+        if (!data.rawMessage) {
             console.warn("[Opcode 25] No message data found.");
+            return;
         }
+
+        // Create a Uint8Array view of the payload (already stripped of the first 2 bytes)
+        const payload = new Uint8Array(data.rawMessage);
+        console.log("Payload bytes (for structured parsing):",
+            Array.from(payload).map(b => b.toString(16).padStart(2, '0')).join(" "));
+
+        let offset = 0;
+
+        // --- 3a. Read a 4-byte header ---
+        if (payload.length < offset + 4) {
+            console.warn("Payload too short for header.");
+            return;
+        }
+        const headerBytes = payload.slice(offset, offset + 4);
+        offset += 4;
+        console.log("Header bytes:", 
+            Array.from(headerBytes).map(b => b.toString(16).padStart(2, '0')).join(" "));
+        // (Optional) You can process the header bytes as needed.
+
+        // --- 3b. Read the name length (1 byte) ---
+        if (payload.length < offset + 1) {
+            console.warn("Payload too short for name length.");
+            return;
+        }
+        const nameLength = payload[offset];
+        offset += 1;
+        console.log("Name length:", nameLength);
+
+        // --- 3c. Read the name field (nameLength characters in UTF-16LE) ---
+        const nameByteLength = nameLength * 2;
+        if (payload.length < offset + nameByteLength) {
+            console.warn("Not enough bytes for the name field.");
+            return;
+        }
+        const nameBytes = payload.slice(offset, offset + nameByteLength);
+        offset += nameByteLength;
+        const name = new TextDecoder("utf-16le").decode(nameBytes);
+        console.log("Name:", name);
+
+        // --- 3d. Read the tag length (1 byte) ---
+        if (payload.length < offset + 1) {
+            console.warn("No bytes left for tag length.");
+            return;
+        }
+        const tagLength = payload[offset];
+        offset += 1;
+        console.log("Tag length:", tagLength);
+
+        // --- 3e. Read the tag field (tagLength characters in UTF-16LE) ---
+        const tagByteLength = tagLength * 2;
+        if (payload.length < offset + tagByteLength) {
+            console.warn("Not enough bytes for tag field.");
+            return;
+        }
+        const tagBytes = payload.slice(offset, offset + tagByteLength);
+        offset += tagByteLength;
+        const tag = new TextDecoder("utf-16le").decode(tagBytes);
+        console.log("Tag:", tag);
+
+        // Final parsed message output
+        console.log(`[Structured Message Parsed] Name: ${name}, Tag: ${tag}`);
     }
 
-    // ------------------------------------------------
-    // 4. Custom WebSocket Class to Intercept Messages
-    // ------------------------------------------------
+    // --------------------------------------------------
+    // 4. Custom WebSocket Override
+    // --------------------------------------------------
     const OriginalWebSocket = window.WebSocket;
     class CustomWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
@@ -115,6 +143,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             console.log('[CustomWebSocket] Connecting to:', url);
 
             this.addEventListener('message', (event) => {
+                // Process ArrayBuffer or Blob messages.
                 if (event.data instanceof ArrayBuffer) {
                     processBinaryData(event.data);
                 } else if (event.data instanceof Blob) {
@@ -132,24 +161,23 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // ------------------------------------------------
-    // 5. Process Incoming Binary Data from the WebSocket
-    // ------------------------------------------------
+    // --------------------------------------------------
+    // 5. Process Incoming Binary Data
+    // --------------------------------------------------
     function processBinaryData(buffer) {
         const fullArray = new Uint8Array(buffer);
-        // Ensure there are at least 2 bytes for header info.
-        if (fullArray.length >= 2) {
-            const opcode = fullArray[0];
-            const signalStrength = fullArray[1];
-            // Create a new ArrayBuffer for the payload (skipping the first 2 bytes).
-            const rawMessage = buffer.byteLength > 2 ? buffer.slice(2) : new ArrayBuffer(0);
-            processSignal({ opcode, signalStrength, messageSize: fullArray.length, rawMessage });
-        }
+        // Ensure at least 2 bytes for opcode and signal strength.
+        if (fullArray.length < 2) return;
+        const opcode = fullArray[0];
+        const signalStrength = fullArray[1];
+        // Strip the first 2 bytes so the remaining buffer is the payload.
+        const rawMessage = buffer.byteLength > 2 ? buffer.slice(2) : new ArrayBuffer(0);
+        processSignal({ opcode, signalStrength, messageSize: fullArray.length, rawMessage });
     }
 
-    // ------------------------------------------------
+    // --------------------------------------------------
     // 6. Apply the Custom WebSocket Override
-    // ------------------------------------------------
+    // --------------------------------------------------
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] WebSocket Override Applied');
