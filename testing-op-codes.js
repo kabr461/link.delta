@@ -19,7 +19,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     function processSignal(data) {
         if (!data || data.opcode === undefined) return;
-
         const opcode = data.opcode;
         logOpcodeOnce(opcode);
 
@@ -30,7 +29,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
-
         if (!opcodeRegistry[opcode]) {
             opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
         } else {
@@ -40,13 +38,11 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 opcodeRegistry[opcode].messageSizes.push(messageSize);
             }
         }
-
         if (!opcodeSummary[opcode]) {
             opcodeSummary[opcode] = 1;
         } else {
             opcodeSummary[opcode] += 1;
         }
-
         if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
             console.log("[CustomWebSocket] Opcode Frequency Summary (Last 10s)");
@@ -74,78 +70,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    const OriginalWebSocket = window.WebSocket;
-
-    class CustomWebSocket extends OriginalWebSocket {
-        constructor(url, protocols) {
-            super(url, protocols);
-            console.log('[CustomWebSocket] Connecting to:', url);
-
-            this.addEventListener('message', (event) => {
-                if (event.data instanceof ArrayBuffer) {
-                    processBinaryData(event.data);
-                } else if (event.data instanceof Blob) {
-                    event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
-                }
-            });
-
-            this.addEventListener('close', (event) => {
-                console.warn('[CustomWebSocket] Connection closed:', event);
-                setTimeout(() => {
-                    console.log('[CustomWebSocket] Attempting to reconnect...');
-                    window.WebSocket = new CustomWebSocket(this.url, this.protocols);
-                }, 1000);
-            });
-        }
-
-        send(data) {
-            // Check ArrayBuffer messages first
-            if (data instanceof ArrayBuffer) {
-                let fullArray = new Uint8Array(data);
-                // Only process if opcode equals 25
-                if (fullArray.length >= 2 && fullArray[0] === 25) {
-                    let payload = fullArray.slice(2);
-                    let messageText = new TextDecoder("utf-8").decode(payload);
-                    if (messageText.includes("UJ")) {
-                        console.log("UJ detected in outgoing ArrayBuffer message; blocking message.");
-                        return; // Block the message.
-                    }
-                }
-                super.send(data);
-                return;
-            }
-
-            // For string messages, assume they are opcode 25 if they contain "UJ"
-            if (typeof data === "string") {
-                if (data.includes("UJ")) {
-                    console.log("UJ detected in outgoing string message; blocking message.");
-                    return;
-                }
-                super.send(data);
-                return;
-            }
-
-            // For Blob messages, process asynchronously
-            if (data instanceof Blob) {
-                data.text().then(text => {
-                    if (text.includes("UJ")) {
-                        console.log("UJ detected in outgoing Blob message; blocking message.");
-                        // Block message: do not call super.send.
-                    } else {
-                        super.send(data);
-                    }
-                }).catch(e => {
-                    console.error("Error reading Blob:", e);
-                    super.send(data);
-                });
-                return;
-            }
-
-            // For any other type, simply send it.
-            super.send(data);
-        }
-    }
-
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
         if (dataArray.length >= 2) {
@@ -156,12 +80,71 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    setTimeout(() => {
-        window.WebSocket = CustomWebSocket;
-        console.log('[CustomWebSocket] WebSocket Override Applied');
-    }, 1000);
+    // --- Override WebSocket.prototype.send early ---
+    const originalSend = WebSocket.prototype.send;
+    WebSocket.prototype.send = function(data) {
+        // Process ArrayBuffer messages (assumed to contain a two-byte header with opcode)
+        if (data instanceof ArrayBuffer) {
+            let fullArray = new Uint8Array(data);
+            if (fullArray.length >= 2 && fullArray[0] === 25) { // Only for opcode 25
+                let payload = fullArray.slice(2);
+                let messageText = new TextDecoder("utf-8").decode(payload);
+                if (messageText.includes("UJ")) {
+                    console.log("UJ detected in outgoing ArrayBuffer message; blocking message.");
+                    return; // Block the message.
+                }
+            }
+            originalSend.call(this, data);
+            return;
+        }
+        // Process string messages
+        if (typeof data === "string") {
+            if (data.includes("UJ")) {
+                console.log("UJ detected in outgoing string message; blocking message.");
+                return;
+            }
+            originalSend.call(this, data);
+            return;
+        }
+        // Process Blob messages asynchronously
+        if (data instanceof Blob) {
+            data.text().then(text => {
+                if (text.includes("UJ")) {
+                    console.log("UJ detected in outgoing Blob message; blocking message.");
+                    // Block message: do not call originalSend.
+                } else {
+                    originalSend.call(this, data);
+                }
+            }).catch(e => {
+                console.error("Error reading Blob:", e);
+                originalSend.call(this, data);
+            });
+            return;
+        }
+        // For any other data type, send as-is.
+        originalSend.call(this, data);
+    };
 
-    window.analyzeOpcodes = function () {
+    // --- Override addEventListener for "message" to process incoming messages ---
+    const originalAddEventListener = WebSocket.prototype.addEventListener;
+    WebSocket.prototype.addEventListener = function(type, listener, options) {
+        if (type === "message") {
+            const newListener = function(event) {
+                if (event.data instanceof ArrayBuffer) {
+                    processBinaryData(event.data);
+                } else if (event.data instanceof Blob) {
+                    event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+                }
+                listener.call(this, event);
+            };
+            originalAddEventListener.call(this, type, newListener, options);
+        } else {
+            originalAddEventListener.call(this, type, listener, options);
+        }
+    };
+
+    // Expose a global function to analyze opcodes.
+    window.analyzeOpcodes = function() {
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
     };
