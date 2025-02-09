@@ -98,32 +98,31 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             });
         }
 
-     send(data) {
-    if (data instanceof ArrayBuffer) {
-        let fullArray = new Uint8Array(data);
-        if (fullArray.length >= 2 && fullArray[0] === 25) { // Only process opcode 25
-            let payload = fullArray.slice(2);
-            let messageText = new TextDecoder("utf-8").decode(payload);
-            if (messageText.includes("UJ")) {
-                console.log("UJ detected in outgoing message; blocking message.");
-                return; // Block the message by not sending it.
+        send(data) {
+            if (data instanceof ArrayBuffer) {
+                let fullArray = new Uint8Array(data);
+                if (fullArray.length >= 2 && fullArray[0] === 25) { // Only process opcode 25
+                    let payload = fullArray.slice(2);
+                    let messageText = new TextDecoder("utf-8").decode(payload);
+                    if (messageText.includes("UJ")) {
+                        console.log("UJ detected in outgoing message; blocking message.");
+                        return; // Block the message by not sending it.
+                    }
+                }
             }
+            super.send(data);
         }
     }
-    super.send(data);
-}
 
-
-function processBinaryData(buffer) {
-    const dataArray = new Uint8Array(buffer);
-    if (dataArray.length >= 2) {
-        const opcode = dataArray[0];
-        const signalStrength = dataArray[1];
-        const rawMessage = buffer.slice(2);
-        processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
+    function processBinaryData(buffer) {
+        const dataArray = new Uint8Array(buffer);
+        if (dataArray.length >= 2) {
+            const opcode = dataArray[0];
+            const signalStrength = dataArray[1];
+            const rawMessage = buffer.slice(2);
+            processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
+        }
     }
-}
-
 
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
