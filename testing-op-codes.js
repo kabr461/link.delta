@@ -3,23 +3,14 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 (function () {
     'use strict';
 
-    // --- Global Variables and Configuration ---
-    // Registry to track opcodes and frequency statistics.
-    const opcodeRegistry = {};
-    let opcodeSummary = {};
+    // ------------------------------------------------
+    // 1. Opcode Registry and Frequency Tracking
+    // ------------------------------------------------
+    const opcodeRegistry = {};       // Detailed info per opcode
+    let opcodeSummary = {};          // Frequency summary for a time window
     let lastSummaryTime = Date.now();
-    const loggedOpcodes = new Set();
+    const loggedOpcodes = new Set(); // To log a new opcode only once
 
-    // Configure the TextDecoder.
-    // By default, we assume UTF-8 encoding.
-    let decoder = new TextDecoder("utf-8");
-
-    // Uncomment one of these lines if you suspect a different encoding:
-    // decoder = new TextDecoder("utf-16le"); // Use if the data is in UTF-16 little-endian.
-    // decoder = new TextDecoder("shift_jis"); // Use if the data is encoded in Shift_JIS.
-
-    // --- Helper Functions ---
-    // Logs each new opcode only once.
     function logOpcodeOnce(opcode) {
         if (!loggedOpcodes.has(opcode)) {
             console.log(`Opcode ${opcode} detected for the first time.`);
@@ -27,22 +18,24 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // Processes a decoded signal object.
+    // ------------------------------------------------
+    // 2. Process Incoming Signal Data
+    // ------------------------------------------------
     function processSignal(data) {
         if (!data || data.opcode === undefined) return;
 
         const opcode = data.opcode;
         logOpcodeOnce(opcode);
 
-        // Special handling for opcode 25: Message Sending.
+        // Special handling for opcode 25 (Message Sending)
         if (opcode === 25) {
             processMessageOpcode(data);
         }
 
+        // Record signal strength and message size
         const signalStrength = data.signalStrength || 0;
         const messageSize = data.messageSize || 0;
 
-        // Update the opcode registry.
         if (!opcodeRegistry[opcode]) {
             opcodeRegistry[opcode] = {
                 count: 1,
@@ -57,46 +50,52 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             }
         }
 
-        // Update the opcode summary.
-        if (!opcodeSummary[opcode]) {
-            opcodeSummary[opcode] = 1;
-        } else {
-            opcodeSummary[opcode] += 1;
-        }
+        opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
 
-        // Every 10 seconds, log a summary of opcode frequencies.
-        if (Date.now() - lastSummaryTime > 30000) {
+        // Every 10 seconds, clear and print an opcode summary.
+        if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
-            console.log("[CustomWebSocket] Opcode Frequency Summary (Last 10s)");
+            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
             console.table(opcodeSummary);
             opcodeSummary = {};
             lastSummaryTime = Date.now();
         }
     }
 
-    // Processes messages for opcode 25.
+    // ------------------------------------------------
+    // 3. Process Opcode 25 (Message Sending) – Decoding
+    // ------------------------------------------------
     function processMessageOpcode(data) {
         if (data.rawMessage) {
-            try {
-                // --- Debugging Step: Log Raw Bytes ---
-                // Convert the raw message into a hexadecimal string for inspection.
-                const byteArray = new Uint8Array(data.rawMessage);
-                const hexBytes = Array.from(byteArray)
+            // Create a full Uint8Array view of the received data.
+            const fullBytes = new Uint8Array(data.rawMessage);
+            console.log("Full received bytes:", 
+                Array.from(fullBytes)
                     .map(b => b.toString(16).padStart(2, '0'))
-                    .join(' ');
-                console.log("Raw Bytes:", hexBytes);
+                    .join(" "));
 
-                // --- Decode the Message ---
-                // Use the configured TextDecoder to decode the raw bytes.
-                const messageText = decoder.decode(data.rawMessage);
-                console.log(`[Message Sent] ${messageText}`);
+            // Create a view for the payload by skipping the first 2 header bytes.
+            const payloadBytes = fullBytes.subarray(2);
+            console.log("Payload bytes (skipping first 2 bytes):", 
+                Array.from(payloadBytes)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join(" "));
 
-                // --- Optional: Clean the Message ---
-                // Remove extra spaces, line breaks, and non-standard ASCII characters.
+            try {
+                // --- Option 1: Decode using UTF-8 (default) ---
+                let messageText = new TextDecoder("utf-8").decode(payloadBytes);
+                console.log(`[Message Sent decoded as UTF-8] ${messageText}`);
+
+                // --- Optional: If UTF-8 produces garbled text, try UTF-16LE ---
+                /*
+                let messageTextUTF16 = new TextDecoder("utf-16le").decode(payloadBytes);
+                console.log(`[Message Sent decoded as UTF-16LE] ${messageTextUTF16}`);
+                */
+
+                // (Optional) Clean the decoded message to remove non-printable ASCII.
                 const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
-                // For instance, check if the cleaned message contains a specific substring.
                 if (cleanedMessage.includes("UJ")) {
-                    console.log("UJ detected!");
+                    console.log("UJ detected in cleaned message!");
                 }
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
@@ -106,17 +105,16 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // --- Custom WebSocket Implementation ---
+    // ------------------------------------------------
+    // 4. Custom WebSocket Class to Intercept Messages
+    // ------------------------------------------------
     const OriginalWebSocket = window.WebSocket;
-
     class CustomWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
             super(url, protocols);
-            console.log("[CustomWebSocket] Connecting to:", url);
+            console.log('[CustomWebSocket] Connecting to:', url);
 
-            // Listen for incoming messages.
             this.addEventListener('message', (event) => {
-                // Process binary data whether it's an ArrayBuffer or a Blob.
                 if (event.data instanceof ArrayBuffer) {
                     processBinaryData(event.data);
                 } else if (event.data instanceof Blob) {
@@ -124,40 +122,43 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 }
             });
 
-            // Automatically try to reconnect on connection close.
             this.addEventListener('close', (event) => {
-                console.warn("[CustomWebSocket] Connection closed:", event);
+                console.warn('[CustomWebSocket] Connection closed:', event);
                 setTimeout(() => {
-                    console.log("[CustomWebSocket] Attempting to reconnect...");
+                    console.log('[CustomWebSocket] Attempting to reconnect...');
                     window.WebSocket = new CustomWebSocket(this.url, this.protocols);
                 }, 1000);
             });
         }
     }
 
-    // Process binary data received over the WebSocket.
-    // Assumes the first byte is the opcode and the second byte is the signal strength.
-    // The remaining bytes constitute the raw message payload.
+    // ------------------------------------------------
+    // 5. Process Incoming Binary Data from the WebSocket
+    // ------------------------------------------------
     function processBinaryData(buffer) {
-        const dataArray = new Uint8Array(buffer);
-        if (dataArray.length >= 2) {
-            const opcode = dataArray[0];
-            const signalStrength = dataArray[1];
-            // Extract message payload starting from the 3rd byte.
-            const rawMessage = buffer.slice(2);
-            processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
+        const fullArray = new Uint8Array(buffer);
+        // Ensure there are at least 2 bytes for header info.
+        if (fullArray.length >= 2) {
+            const opcode = fullArray[0];
+            const signalStrength = fullArray[1];
+            // Create a new ArrayBuffer for the payload (skipping the first 2 bytes).
+            const rawMessage = buffer.byteLength > 2 ? buffer.slice(2) : new ArrayBuffer(0);
+            processSignal({ opcode, signalStrength, messageSize: fullArray.length, rawMessage });
         }
     }
 
-    // Override the native WebSocket after a short delay.
+    // ------------------------------------------------
+    // 6. Apply the Custom WebSocket Override
+    // ------------------------------------------------
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
-        console.log("[CustomWebSocket] WebSocket Override Applied");
+        console.log('[CustomWebSocket] WebSocket Override Applied');
     }, 1000);
 
-    // Expose a function to analyze the opcode registry.
+    // Expose a global function to review the opcode registry.
     window.analyzeOpcodes = function () {
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
     };
+
 })();
