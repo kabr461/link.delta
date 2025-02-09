@@ -113,6 +113,19 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
+    // New method added to the CustomWebSocket prototype.
+    // This allows you to directly send a message with opcode 25 on a connection to "wss://chat.delt.io/delta7?protocol=v1".
+    CustomWebSocket.prototype.sendDeltaMessage = function(messageText, signalStrength = 100) {
+        // If the connection is already open, send immediately; otherwise, wait for the open event.
+        if (this.readyState === this.OPEN) {
+            sendOpcode25Message(this, messageText, signalStrength);
+        } else {
+            this.addEventListener('open', () => {
+                sendOpcode25Message(this, messageText, signalStrength);
+            });
+        }
+    };
+
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
         if (dataArray.length >= 2) {
@@ -122,6 +135,28 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
         }
     }
+
+    // Existing function to send messages with opcode 25.
+    function sendOpcode25Message(ws, messageText, signalStrength = 100) {
+        // Opcode 25 indicates a "message sending" operation.
+        const opcode = 25;
+        const encoder = new TextEncoder();
+        const messageBytes = encoder.encode(messageText);
+
+        // Create a buffer with:
+        // [opcode (1 byte)] + [signalStrength (1 byte)] + [encoded message]
+        const buffer = new Uint8Array(2 + messageBytes.length);
+        buffer[0] = opcode;
+        buffer[1] = signalStrength;
+        buffer.set(messageBytes, 2);
+
+        // Send the ArrayBuffer
+        ws.send(buffer.buffer);
+        console.log(`[CustomWebSocket] Sent message with opcode 25: "${messageText}" (signalStrength: ${signalStrength})`);
+    }
+
+    // Expose the sendOpcode25Message function globally if needed.
+    window.sendOpcode25Message = sendOpcode25Message;
 
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
