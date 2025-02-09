@@ -114,15 +114,16 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 }
 
 
-    function processBinaryData(buffer) {
-        const dataArray = new Uint8Array(buffer);
-        if (dataArray.length >= 2) {
-            const opcode = dataArray[0];
-            const signalStrength = dataArray[1];
-            const rawMessage = buffer.slice(2);
-            processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
-        }
+function processBinaryData(buffer) {
+    const dataArray = new Uint8Array(buffer);
+    if (dataArray.length >= 2) {
+        const opcode = dataArray[0];
+        const signalStrength = dataArray[1];
+        const rawMessage = buffer.slice(2);
+        processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
     }
+}
+
 
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
