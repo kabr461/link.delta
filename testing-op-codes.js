@@ -65,28 +65,19 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     function processMessageOpcode(data) {
         if (data.rawMessage) {
             const fullBytes = new Uint8Array(data.rawMessage);
-            console.log("Full received bytes:", 
+            console.log("Full received bytes:",
                 Array.from(fullBytes)
                     .map(b => b.toString(16).padStart(2, '0'))
                     .join(" "));
-
+                    
             const payloadBytes = fullBytes.subarray(2);
-            console.log("Payload bytes (skipping first 2 bytes):", 
+            console.log("Payload bytes (skipping first 2 bytes):",
                 Array.from(payloadBytes)
                     .map(b => b.toString(16).padStart(2, '0'))
                     .join(" "));
-
-            try {
-                let messageText = new TextDecoder("utf-8").decode(payloadBytes);
-
-                if (messageText.includes("UJ")) {
-                    console.log("UJ detected in message!");
-                }
-
-                console.log(`[Message Sent decoded as UTF-8] ${messageText}`);
-            } catch (e) {
-                console.warn("[Message Parsing Error]", e);
-            }
+            
+            // For debugging, log the raw binary payload
+            console.log("[Message Sent] Payload (binary):", payloadBytes);
         } else {
             console.warn("[Opcode 25] No message data found.");
         }
@@ -129,29 +120,52 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
 
     // ------------------------------------------------
-    // 5. Modify Outgoing Messages Before Sending (Only UJ)
+    // 5. Modify Outgoing Messages Before Sending
+    //    (Compare binary values directly)
     // ------------------------------------------------
     function modifyMessageBeforeSend(buffer) {
         let fullArray = new Uint8Array(buffer);
+        if (fullArray.length < 2) return buffer; // Ensure header exists
 
-        if (fullArray.length >= 2) {
-            let payloadBytes = fullArray.slice(2); 
-            let messageText = new TextDecoder("utf-8").decode(payloadBytes);
-            
-            if (messageText.includes("UJ")) {
-                console.log("Modifying outgoing message: Replacing 'UJ' with 'up there!'");
-                let modifiedText = messageText.replace(/UJ/g, "up there!");
-                let modifiedBytes = new TextEncoder().encode(modifiedText);
+        // Preserve the first 2 header bytes.
+        let header = fullArray.slice(0, 2);
+        let payload = fullArray.slice(2);
+        let found = false;
 
-                let newBuffer = new Uint8Array(2 + modifiedBytes.length);
-                newBuffer.set(fullArray.subarray(0, 2), 0); 
-                newBuffer.set(modifiedBytes, 2); 
-
-                return newBuffer.buffer;
+        // Check for the binary sequence [0x55, 0x4A] ("U" and "J")
+        for (let i = 0; i < payload.length - 1; i++) {
+            if (payload[i] === 0x55 && payload[i + 1] === 0x4A) {
+                console.log("Binary UJ detected at index", i);
+                found = true;
+                // Continue looping to detect all occurrences.
             }
         }
-        
-        return buffer; 
+        if (!found) return buffer;
+
+        // Replacement: binary for "up there!"
+        let replacement = new TextEncoder().encode("up there!");
+
+        // Build new payload by replacing every occurrence of [0x55, 0x4A]
+        let result = [];
+        for (let i = 0; i < payload.length;) {
+            if (i <= payload.length - 2 && payload[i] === 0x55 && payload[i+1] === 0x4A) {
+                // Replace with new bytes.
+                for (let j = 0; j < replacement.length; j++) {
+                    result.push(replacement[j]);
+                }
+                i += 2;
+            } else {
+                result.push(payload[i]);
+                i++;
+            }
+        }
+
+        let newPayload = new Uint8Array(result);
+        let newBuffer = new Uint8Array(header.length + newPayload.length);
+        newBuffer.set(header, 0);
+        newBuffer.set(newPayload, header.length);
+
+        return newBuffer.buffer;
     }
 
     // ------------------------------------------------
@@ -168,7 +182,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
 
     // ------------------------------------------------
-    // 7. Apply the Custom WebSocket Override
+    // 7. Apply the Custom WebSocket Override after 1s
     // ------------------------------------------------
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
