@@ -58,16 +58,19 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     function processMessageOpcode(data) {
         if (data.rawMessage) {
             try {
-                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+                let messageText = new TextDecoder("utf-8").decode(data.rawMessage);
                 console.log(`[Message Sent] ${messageText}`);
                 
                 // Normalize message: Remove extra spaces, line breaks, and special characters
-                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
+                let cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
                 
-                // Check if cleaned message contains 'UJ' (case-sensitive)
+                // Check if cleaned message contains 'UJ' (case-sensitive) and replace it
                 if (cleanedMessage.includes("UJ")) {
-                    console.log("UJ detected!");
+                    cleanedMessage = cleanedMessage.replace(/UJ/g, "up here!");
+                    console.log("'UJ' replaced with 'up here!'");
                 }
+                
+                console.log(`[Modified Message] ${cleanedMessage}`);
                 
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
