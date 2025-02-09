@@ -1,226 +1,125 @@
+console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
-// ===============================
-// WebSocket Override and Handler
-// ===============================
-// WebSocket Connection Setup
-let socket;
-const WS_URL = 'wss://yourserver.com/socket'; // Replace with actual server
+(function () {
+    'use strict';
 
-function connectWebSocket() {
-    socket = new WebSocket(WS_URL);
+    // Opcode registry for classification
+    const opcodeRegistry = {};
+    let opcodeSummary = {};
+    let lastSummaryTime = Date.now();
+    const loggedOpcodes = new Set();
 
-    socket.onopen = () => {
-        console.log('[WebSocket] Connected to server');
+    function logOpcodeOnce(opcode) {
+        if (!loggedOpcodes.has(opcode)) {
+            console.log(`Opcode ${opcode} detected for the first time.`);
+            loggedOpcodes.add(opcode);
+        }
+    }
 
-        // Send handshake message (follows your file's format)
-        socket.send(JSON.stringify({
-            type: 'handshake',
-            client: 'spectator-lister'
-        }));
-    };
+    function processSignal(data) {
+        if (!data || data.opcode === undefined) return;
 
-    socket.onmessage = function (event) {
-        if (event.data instanceof ArrayBuffer) {
-            console.warn('[WebSocket] Received binary data, converting...');
-            const text = new TextDecoder().decode(event.data);
+        const opcode = data.opcode;
+        logOpcodeOnce(opcode);
 
+        // Special handling for opcode 25 (Message Sending)
+        if (opcode === 25) {
+            processMessageOpcode(data);
+        }
+
+        const signalStrength = data.signalStrength || 0;
+        const messageSize = data.messageSize || 0;
+
+        if (!opcodeRegistry[opcode]) {
+            opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
+        } else {
+            opcodeRegistry[opcode].count += 1;
+            opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
+            if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
+                opcodeRegistry[opcode].messageSizes.push(messageSize);
+            }
+        }
+
+        if (!opcodeSummary[opcode]) {
+            opcodeSummary[opcode] = 1;
+        } else {
+            opcodeSummary[opcode] += 1;
+        }
+
+        if (Date.now() - lastSummaryTime > 10000) {
+            console.clear();
+            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
+            console.table(opcodeSummary);
+            opcodeSummary = {};
+            lastSummaryTime = Date.now();
+        }
+    }
+
+    function processMessageOpcode(data) {
+        if (data.rawMessage) {
             try {
-                const json = JSON.parse(text); // Convert to JSON
-                handleWebSocketMessage(json);
-            } catch (error) {
-                console.error('[WebSocket] Failed to parse JSON:', text);
+                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+                console.log(`[Message Sent] ${messageText}`);
+                
+                // Normalize message: Remove extra spaces, line breaks, and special characters
+                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
+                
+                // Check if cleaned message contains 'UJ' (case-sensitive)
+                if (cleanedMessage.includes("UJ")) {
+                    console.log("UJ detected!");
+                }
+                
+            } catch (e) {
+                console.warn("[Message Parsing Error]", e);
             }
         } else {
-            try {
-                const json = JSON.parse(event.data);
-                handleWebSocketMessage(json);
-            } catch (error) {
-                console.error('[WebSocket] Invalid JSON:', event.data);
-            }
+            console.warn("[Opcode 25] No message data found.");
         }
+    }
+
+    const OriginalWebSocket = window.WebSocket;
+
+    class CustomWebSocket extends OriginalWebSocket {
+        constructor(url, protocols) {
+            super(url, protocols);
+            console.log('[CustomWebSocket] Connecting to:', url);
+
+            this.addEventListener('message', (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    processBinaryData(event.data);
+                } else if (event.data instanceof Blob) {
+                    event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+                }
+            });
+
+            this.addEventListener('close', (event) => {
+                console.warn('[CustomWebSocket] Connection closed:', event);
+                setTimeout(() => {
+                    console.log('[CustomWebSocket] Attempting to reconnect...');
+                    window.WebSocket = new CustomWebSocket(this.url, this.protocols);
+                }, 1000);
+            });
+        }
+    }
+
+    function processBinaryData(buffer) {
+        const dataArray = new Uint8Array(buffer);
+        if (dataArray.length >= 2) {
+            const opcode = dataArray[0];
+            const signalStrength = dataArray[1];
+            const rawMessage = buffer.slice(2); // Extract the message part
+            processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
+        }
+    }
+
+    setTimeout(() => {
+        window.WebSocket = CustomWebSocket;
+        console.log('[CustomWebSocket] WebSocket Override Applied');
+    }, 1000);
+
+    window.analyzeOpcodes = function () {
+        console.log("[CustomWebSocket] Opcode Registry Analysis:");
+        console.table(opcodeRegistry);
     };
 
-    socket.onerror = (error) => {
-        console.error('[WebSocket] Error:', error);
-    };
-
-    socket.onclose = (event) => {
-        console.warn('[WebSocket] Connection closed:', event.reason);
-        setTimeout(() => {
-            console.log('[WebSocket] Reconnecting...');
-            connectWebSocket();
-        }, 3000);
-    };
-}
-
-// Function to Handle Incoming Messages (Follows Your Format)
-function handleWebSocketMessage(message) {
-    if (message.type === 'spectator_count') {
-        updateSpectatorList(message.data);
-    } else if (message.type === 'chat') {
-        displayChatMessage(message.data);
-    } else if (message.type === 'wave') {
-        showWaveEffect(message.data);
-    } else {
-        console.warn('[WebSocket] Unknown message type:', message);
-    }
-}
-
-// Function to Send Data (Ensures WebSocket is Open)
-function sendWebSocketMessage(type, data) {
-    if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type, data }));
-    } else {
-        console.warn('[WebSocket] Not connected, message not sent:', type, data);
-    }
-}
-
-// Ensuring UI Elements Exist Before Adding Event Listeners
-function setupUIListeners() {
-    document.addEventListener('DOMContentLoaded', () => {
-        const waveButton = document.getElementById('wave-button');
-
-        if (!waveButton) {
-            console.error('[WavingFeature] Button not found!');
-            return;
-        }
-
-        waveButton.addEventListener('click', (event) => {
-            const position = { x: event.clientX, y: event.clientY };
-            sendWebSocketMessage('wave', position);
-        });
-    });
-}
-
-// Initialize Everything
-connectWebSocket();
-setupUIListeners();
-
-// ===============================
-// Spectator List Management
-// ===============================
-class SpectatorList {
-    constructor(containerId, countId) {
-        this.container = document.getElementById(containerId);
-        this.countContainer = document.getElementById(countId);
-        this.spectators = [];
-    }
-
-    addSpectator(id, nick, skinUrl) {
-        if (!this.spectators.some(s => s.id === id)) {
-            this.spectators.push({ id, nick, skinUrl, waveCount: 0 });
-            this.render();
-            WebSocketHandler.sendSpectatorUpdate(this.spectators.length);
-        }
-    }
-
-    removeSpectator(id) {
-        this.spectators = this.spectators.filter(s => s.id !== id);
-        this.render();
-        WebSocketHandler.sendSpectatorUpdate(this.spectators.length);
-    }
-
-    render() {
-        this.container.innerHTML = "";
-        this.spectators.forEach(s => {
-            const div = document.createElement("div");
-            div.innerHTML = `<strong>${s.nick}</strong> - Waves: ${s.waveCount}`;
-            div.onclick = () => this.wave(s.id);
-            this.container.appendChild(div);
-        });
-        this.updateSpectatorCount(this.spectators.length);
-    }
-
-    wave(id) {
-        const spectator = this.spectators.find(s => s.id === id);
-        if (spectator) {
-            spectator.waveCount++;
-            this.render();
-        }
-    }
-
-    static updateSpectatorCount(count) {
-        document.getElementById("spectator-count").innerText = `Spectators: ${count}`;
-    }
-}
-
-const spectatorList = new SpectatorList("spectator-container", "spectator-count");
-
-// ===============================
-// Waving Feature (Visual Waves)
-// ===============================
-class WavingFeature {
-    static init(mapElement) {
-        mapElement.addEventListener("click", (event) => {
-            WavingFeature.showWave(event.clientX, event.clientY);
-            WebSocketHandler.sendWave(event.clientX, event.clientY);
-        });
-    }
-
-    static showWave(x, y) {
-        const wave = document.createElement("div");
-        wave.className = "wave-effect";
-        wave.style.left = `${x}px`;
-        wave.style.top = `${y}px`;
-        document.body.appendChild(wave);
-
-        setTimeout(() => wave.remove(), 1000);
-    }
-}
-
-const gameMap = document.getElementById("game-map");
-WavingFeature.init(gameMap);
-
-// ===============================
-// CMD Chat Interception & Custom Responses
-// ===============================
-class ChatHandler {
-    static commandResponses = {
-        "hi": "Hello, how are you?",
-        "help": "Available commands: !wave, !tag, !list",
-        "spectators": () => `Spectator count: ${spectatorList.spectators.length}`
-    };
-
-    static processIncomingMessage(message) {
-        const response = ChatHandler.commandResponses[message.toLowerCase()];
-        if (response) {
-            WebSocketHandler.sendChat(typeof response === "function" ? response() : response);
-        }
-    }
-}
-
-document.getElementById("chat-send").addEventListener("click", () => {
-    const msg = document.getElementById("chat-input").value;
-    ChatHandler.processIncomingMessage(msg);
-});
-
-// ===============================
-// Spectator Mode Enhancements
-// ===============================
-class SpectatorMode {
-    static enableSpectator(player) {
-        player.nick = "Spectator";
-        console.log(`[Spectator Mode] ${player.nick} is now spectating.`);
-    }
-
-    static renamePlayer(player, newNick) {
-        player.nick = newNick;
-        console.log(`[Rename] Player renamed to ${newNick}`);
-    }
-}
-
-const player = { nick: "Player1" };
-SpectatorMode.enableSpectator(player);
-SpectatorMode.renamePlayer(player, "Observer");
-
-// ===============================
-// Tags Feature
-// ===============================
-class TagFeature {
-    static assignTag(player, tag) {
-        player.tag = `#${tag}`;
-        console.log(`[Tag] Assigned tag ${player.tag} to ${player.nick}`);
-    }
-}
-
-TagFeature.assignTag(player, "EliteSpectator");
+})();
