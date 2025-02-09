@@ -105,10 +105,27 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
 
         send(data) {
-            if (typeof data === "string" && data.includes("UJ")) {
-                data = data.replace(/UJ/g, "up here!");
-                console.log("[CustomWebSocket] Modified outgoing message: ", data);
+            try {
+                if (typeof data === "string" && data.includes("UJ")) {
+                    data = data.replace(/UJ/g, "up here!");
+                    console.log("[CustomWebSocket] Modified outgoing message: ", data);
+                } else if (data instanceof ArrayBuffer) {
+                    const decoder = new TextDecoder("utf-8");
+                    let decodedMessage = decoder.decode(data);
+
+                    if (decodedMessage.includes("UJ")) {
+                        decodedMessage = decodedMessage.replace(/UJ/g, "up here!");
+                        console.log("[CustomWebSocket] Modified outgoing binary message: ", decodedMessage);
+
+                        // Re-encode the modified message
+                        const encoder = new TextEncoder();
+                        data = encoder.encode(decodedMessage);
+                    }
+                }
+            } catch (e) {
+                console.warn("[CustomWebSocket] Error modifying outgoing message: ", e);
             }
+            
             super.send(data);
         }
     }
