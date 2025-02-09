@@ -1,15 +1,14 @@
 console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
-(function() {
+(function () {
   'use strict';
 
-  // ------------------------------------------------
   // 1. Opcode Registry and Frequency Tracking
-  // ------------------------------------------------
   const opcodeRegistry = {};
   let opcodeSummary = {};
   let lastSummaryTime = Date.now();
   const loggedOpcodes = new Set();
+
   function logOpcodeOnce(opcode) {
     if (!loggedOpcodes.has(opcode)) {
       console.log(`Opcode ${opcode} detected for the first time.`);
@@ -17,21 +16,16 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
   }
 
-  // ------------------------------------------------
   // 2. Process Incoming Signal Data
-  // ------------------------------------------------
   function processSignal(data) {
     if (!data || data.opcode === undefined) return;
     const opcode = data.opcode;
     logOpcodeOnce(opcode);
-
     if (opcode === 25) {
       processMessageOpcode(data);
     }
-
     const signalStrength = data.signalStrength || 0;
     const messageSize = data.messageSize || 0;
-
     if (!opcodeRegistry[opcode]) {
       opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
     } else {
@@ -41,7 +35,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         opcodeRegistry[opcode].messageSizes.push(messageSize);
       }
     }
-
     opcodeSummary[opcode] = (opcodeSummary[opcode] || 0) + 1;
     if (Date.now() - lastSummaryTime > 30000) {
       console.clear();
@@ -52,23 +45,21 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
   }
 
-  // Decode the incoming UTF-16LE payload for display
+  // 3. Process Incoming Chat Message (Opcode 25) with UTF-8 decoding
   function processMessageOpcode(data) {
     if (data.rawMessage) {
       const fullBytes = new Uint8Array(data.rawMessage);
       const payloadBytes = fullBytes.subarray(2);
-      let messageText = "";
-      for (let i = 0; i < payloadBytes.length; i += 2) {
-        const code = payloadBytes[i] + (payloadBytes[i+1] << 8);
-        messageText += String.fromCharCode(code);
+      try {
+        let messageText = new TextDecoder("utf-8").decode(payloadBytes);
+        console.log(`[Message Received] ${messageText}`);
+      } catch (e) {
+        console.warn("[Message Parsing Error]", e);
       }
-      console.log(`[Message Received] ${messageText}`);
     }
   }
 
-  // ------------------------------------------------
-  // 3. Custom WebSocket Class to Intercept Messages
-  // ------------------------------------------------
+  // 4. Custom WebSocket Class to Intercept Messages
   const OriginalWebSocket = window.WebSocket;
   class CustomWebSocket extends OriginalWebSocket {
     constructor(url, protocols) {
@@ -96,46 +87,30 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
   }
 
-  // ------------------------------------------------
-  // 4. Modify Outgoing Messages for opcode 25 (UTF-16LE)
-  // ------------------------------------------------
+  // 5. Modify Outgoing Messages (Opcode 25) using UTF-8
   function modifyMessageBeforeSend(buffer) {
-    const fullArray = new Uint8Array(buffer);
-    if (fullArray.length < 2) return buffer;
-    // Only process if opcode (first byte) equals 25 (0x19)
-    if (fullArray[0] !== 25) return buffer;
+    let fullArray = new Uint8Array(buffer);
+    if (fullArray.length < 2) return buffer; // Ensure header exists
+    if (fullArray[0] !== 25) return buffer;  // Process only opcode 25
+
     const header = fullArray.slice(0, 2);
     const payload = fullArray.slice(2);
-    let found = false;
-    const result = [];
-    // Scan payload in 2-byte steps (UTF-16LE code units)
-    for (let i = 0; i < payload.length;) {
-      if (i <= payload.length - 4 &&
-          payload[i]   === 0x55 && payload[i+1] === 0x00 &&
-          payload[i+2] === 0x4A && payload[i+3] === 0x00) {
-        console.log(`UJ detected at payload index ${i}`);
-        console.log(`Replacing UJ at payload index ${i}`);
-        found = true;
-        // Replacement for "up there!" in UTF-16LE:
-        // "u": 75 00, "p": 70 00, " ": 20 00, "t": 74 00, "h": 68 00,
-        // "e": 65 00, "r": 72 00, "e": 65 00, "!": 21 00
-        const replacement = [0x75,0x00,0x70,0x00,0x20,0x00,0x74,0x00,0x68,0x00,0x65,0x00,0x72,0x00,0x65,0x00,0x21,0x00];
-        result.push(...replacement);
-        i += 4;
-      } else {
-        result.push(payload[i]);
-        i++;
-      }
-    }
-    if (!found) return buffer;
-    const newPayload = new Uint8Array(result);
-    const newBuffer = new Uint8Array(header.length + newPayload.length);
+    let messageText = new TextDecoder("utf-8").decode(payload);
+    
+    if (messageText.indexOf("UJ") === -1) return buffer;
+    
+    console.log("UJ detected in outgoing message, replacing with 'up there!'");
+    let modifiedText = messageText.replace(/UJ/g, "up there!");
+    let modifiedBytes = new TextEncoder().encode(modifiedText);
+    
+    let newBuffer = new Uint8Array(header.length + modifiedBytes.length);
     newBuffer.set(header, 0);
-    newBuffer.set(newPayload, header.length);
+    newBuffer.set(modifiedBytes, header.length);
     console.log("Modified outgoing chat message.");
     return newBuffer.buffer;
   }
 
+  // 6. Process Incoming Binary Data
   function processBinaryData(buffer) {
     const fullArray = new Uint8Array(buffer);
     if (fullArray.length >= 2) {
@@ -146,9 +121,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
   }
 
-  // ------------------------------------------------
-  // 5. Apply the Custom WebSocket Override after 1s
-  // ------------------------------------------------
+  // 7. Apply the Custom WebSocket Override after 1 second
   setTimeout(() => {
     window.WebSocket = CustomWebSocket;
     console.log("[CustomWebSocket] WebSocket Override Applied");
@@ -159,4 +132,5 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     console.log("[CustomWebSocket] Opcode Registry Analysis:");
     console.table(opcodeRegistry);
   };
+
 })();
