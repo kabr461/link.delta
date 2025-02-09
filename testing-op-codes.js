@@ -6,10 +6,10 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     // ------------------------------------------------
     // 1. Opcode Registry and Frequency Tracking
     // ------------------------------------------------
-    const opcodeRegistry = {};       
-    let opcodeSummary = {};          
+    const opcodeRegistry = {};
+    let opcodeSummary = {};
     let lastSummaryTime = Date.now();
-    const loggedOpcodes = new Set(); 
+    const loggedOpcodes = new Set();
 
     function logOpcodeOnce(opcode) {
         if (!loggedOpcodes.has(opcode)) {
@@ -23,7 +23,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     // ------------------------------------------------
     function processSignal(data) {
         if (!data || data.opcode === undefined) return;
-
         const opcode = data.opcode;
         logOpcodeOnce(opcode);
 
@@ -52,7 +51,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         if (Date.now() - lastSummaryTime > 30000) {
             console.clear();
-            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
+            console.log("[CustomWebSocket] Opcode Frequency Summary (Last 30s)");
             console.table(opcodeSummary);
             opcodeSummary = {};
             lastSummaryTime = Date.now();
@@ -60,26 +59,18 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
 
     // ------------------------------------------------
-    // 3. Process Opcode 25 (Message Sending)
+    // 3. Process Opcode 25 (Incoming Chat Message)
     // ------------------------------------------------
     function processMessageOpcode(data) {
         if (data.rawMessage) {
             const fullBytes = new Uint8Array(data.rawMessage);
-            console.log("Full received bytes:",
-                Array.from(fullBytes)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join(" "));
-                    
             const payloadBytes = fullBytes.subarray(2);
-            console.log("Payload bytes (skipping first 2 bytes):",
-                Array.from(payloadBytes)
-                    .map(b => b.toString(16).padStart(2, '0'))
-                    .join(" "));
-            
-            // For debugging, log the raw binary payload
-            console.log("[Message Sent] Payload (binary):", payloadBytes);
-        } else {
-            console.warn("[Opcode 25] No message data found.");
+            try {
+                let messageText = new TextDecoder("utf-8").decode(payloadBytes);
+                console.log(`[Message Received] ${messageText}`);
+            } catch (e) {
+                console.warn("[Message Parsing Error]", e);
+            }
         }
     }
 
@@ -90,8 +81,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     class CustomWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
             super(url, protocols);
-            console.log('[CustomWebSocket] Connecting to:', url);
-
             this.addEventListener('message', (event) => {
                 if (event.data instanceof ArrayBuffer) {
                     processBinaryData(event.data);
@@ -99,11 +88,8 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                     event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
                 }
             });
-
             this.addEventListener('close', (event) => {
-                console.warn('[CustomWebSocket] Connection closed:', event);
                 setTimeout(() => {
-                    console.log('[CustomWebSocket] Attempting to reconnect...');
                     window.WebSocket = new CustomWebSocket(this.url, this.protocols);
                 }, 1000);
             });
@@ -111,7 +97,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         send(data) {
             if (data instanceof ArrayBuffer) {
-                let modifiedData = modifyMessageBeforeSend(data);
+                const modifiedData = modifyMessageBeforeSend(data);
                 super.send(modifiedData);
             } else {
                 super.send(data);
@@ -120,36 +106,38 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
 
     // ------------------------------------------------
-    // 5. Modify Outgoing Messages Before Sending
-    //    (Compare binary values directly)
+    // 5. Modify Outgoing Messages (Only for opcode 25)
+    //    Directly compare payload bytes
     // ------------------------------------------------
     function modifyMessageBeforeSend(buffer) {
-        let fullArray = new Uint8Array(buffer);
-        if (fullArray.length < 2) return buffer; // Ensure header exists
+        const fullArray = new Uint8Array(buffer);
+        if (fullArray.length < 2) return buffer; // Must have header bytes
 
-        // Preserve the first 2 header bytes.
-        let header = fullArray.slice(0, 2);
-        let payload = fullArray.slice(2);
+        // Only process if opcode is 25 (chat message)
+        if (fullArray[0] !== 25) return buffer;
+
+        const header = fullArray.slice(0, 2);
+        const payload = fullArray.slice(2);
         let found = false;
 
-        // Check for the binary sequence [0x55, 0x4A] ("U" and "J")
+        // First, scan payload for the sequence [0x55, 0x4A] (binary for "UJ")
         for (let i = 0; i < payload.length - 1; i++) {
             if (payload[i] === 0x55 && payload[i + 1] === 0x4A) {
-                console.log("Binary UJ detected at index", i);
+                console.log(`UJ detected at payload index ${i}`);
                 found = true;
-                // Continue looping to detect all occurrences.
+                break;
             }
         }
         if (!found) return buffer;
 
         // Replacement: binary for "up there!"
-        let replacement = new TextEncoder().encode("up there!");
+        const replacement = new TextEncoder().encode("up there!");
 
-        // Build new payload by replacing every occurrence of [0x55, 0x4A]
-        let result = [];
+        // Rebuild payload by replacing every occurrence of [0x55, 0x4A]
+        const result = [];
         for (let i = 0; i < payload.length;) {
-            if (i <= payload.length - 2 && payload[i] === 0x55 && payload[i+1] === 0x4A) {
-                // Replace with new bytes.
+            if (i <= payload.length - 2 && payload[i] === 0x55 && payload[i + 1] === 0x4A) {
+                console.log(`Replacing UJ at payload index ${i}`);
                 for (let j = 0; j < replacement.length; j++) {
                     result.push(replacement[j]);
                 }
@@ -159,12 +147,11 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 i++;
             }
         }
-
-        let newPayload = new Uint8Array(result);
-        let newBuffer = new Uint8Array(header.length + newPayload.length);
+        const newPayload = new Uint8Array(result);
+        const newBuffer = new Uint8Array(header.length + newPayload.length);
         newBuffer.set(header, 0);
         newBuffer.set(newPayload, header.length);
-
+        console.log("Modified outgoing chat message.");
         return newBuffer.buffer;
     }
 
@@ -182,14 +169,14 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
 
     // ------------------------------------------------
-    // 7. Apply the Custom WebSocket Override after 1s
+    // 7. Apply the Custom WebSocket Override (after 1 second)
     // ------------------------------------------------
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
-        console.log('[CustomWebSocket] WebSocket Override Applied');
+        console.log("[CustomWebSocket] WebSocket Override Applied");
     }, 1000);
 
-    // Expose a global function to review the opcode registry.
+    // Expose global function for opcode analysis.
     window.analyzeOpcodes = function () {
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
