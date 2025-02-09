@@ -61,7 +61,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             try {
                 const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
                 console.log(`[Message Sent] ${messageText}`);
-                // Normalize message: remove extra spaces, line breaks, etc.
+                // Normalize message (if needed)
                 const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
                 if (cleanedMessage.includes("UJ")) {
                     console.log("UJ detected!");
@@ -99,32 +99,33 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
 
         send(data) {
- console.log("Outgoing message type:", typeof data, data);
-            
-            // Check for string messages
-            if (typeof data === "string") {
-                if (data.includes("UJ")) {
-                    console.log("UJ detected in outgoing string message; blocking message.");
-                    return; // Block message
-                }
-                super.send(data);
-                return;
-            }
-            // Check for ArrayBuffer messages
+            // Check ArrayBuffer messages first
             if (data instanceof ArrayBuffer) {
                 let fullArray = new Uint8Array(data);
-                if (fullArray.length >= 2 && fullArray[0] === 25) { // Only process opcode 25
+                // Only process if opcode equals 25
+                if (fullArray.length >= 2 && fullArray[0] === 25) {
                     let payload = fullArray.slice(2);
                     let messageText = new TextDecoder("utf-8").decode(payload);
                     if (messageText.includes("UJ")) {
                         console.log("UJ detected in outgoing ArrayBuffer message; blocking message.");
-                        return; // Block message
+                        return; // Block the message.
                     }
                 }
                 super.send(data);
                 return;
             }
-            // Check for Blob messages (asynchronously)
+
+            // For string messages, assume they are opcode 25 if they contain "UJ"
+            if (typeof data === "string") {
+                if (data.includes("UJ")) {
+                    console.log("UJ detected in outgoing string message; blocking message.");
+                    return;
+                }
+                super.send(data);
+                return;
+            }
+
+            // For Blob messages, process asynchronously
             if (data instanceof Blob) {
                 data.text().then(text => {
                     if (text.includes("UJ")) {
@@ -139,7 +140,8 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 });
                 return;
             }
-            // For any other type, send it as-is.
+
+            // For any other type, simply send it.
             super.send(data);
         }
     }
