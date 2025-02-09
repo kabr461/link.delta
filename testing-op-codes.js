@@ -65,7 +65,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
 
         // Every 10 seconds, log a summary of opcode frequencies.
-        if (Date.now() - lastSummaryTime > 10000) {
+        if (Date.now() - lastSummaryTime > 30000) {
             console.clear();
             console.log("[CustomWebSocket] Opcode Frequency Summary (Last 10s)");
             console.table(opcodeSummary);
