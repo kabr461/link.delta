@@ -3,24 +3,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 (function () {
     'use strict';
 
-    // Import Firebase SDK (Ensure you include Firebase scripts in your HTML or use module imports)
-const firebaseConfig = {
-    apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-    authDomain: "agario-bb5ea.firebaseapp.com",
-    databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-    projectId: "agario-bb5ea",
-    storageBucket: "agario-bb5ea.firebasestorage.app",
-    messagingSenderId: "306389211380",
-    appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-    measurementId: "G-5NTSETJHM9"
-  };
-
-    // Initialize Firebase
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.firestore();
-    
     // Opcode registry for classification
     const opcodeRegistry = {};
     let opcodeSummary = {};
@@ -31,12 +13,6 @@ const firebaseConfig = {
         if (!loggedOpcodes.has(opcode)) {
             console.log(`Opcode ${opcode} detected for the first time.`);
             loggedOpcodes.add(opcode);
-            
-            // Log to Firebase
-            db.collection("opcode_logs").add({
-                opcode: opcode,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).catch(error => console.error("Error logging opcode:", error));
         }
     }
 
@@ -46,6 +22,7 @@ const firebaseConfig = {
         const opcode = data.opcode;
         logOpcodeOnce(opcode);
 
+        // Special handling for opcode 25 (Message Sending)
         if (opcode === 25) {
             processMessageOpcode(data);
         }
@@ -69,12 +46,6 @@ const firebaseConfig = {
             opcodeSummary[opcode] += 1;
         }
 
-        // Log to Firebase Firestore
-        db.collection("opcode_summary").doc(opcode.toString()).set({
-            count: opcodeSummary[opcode],
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).catch(error => console.error("Error updating opcode summary:", error));
-
         if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
@@ -89,20 +60,15 @@ const firebaseConfig = {
             try {
                 const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
                 console.log(`[Message Sent] ${messageText}`);
-
+                
                 // Normalize message: Remove extra spaces, line breaks, and special characters
-                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
-
+                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
+                
+                // Check if cleaned message contains 'UJ' (case-sensitive)
                 if (cleanedMessage.includes("UJ")) {
                     console.log("UJ detected!");
-                    
-                    // Log detected messages to Firebase
-                    db.collection("detected_messages").add({
-                        message: cleanedMessage,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    }).catch(error => console.error("Error logging detected message:", error));
                 }
-
+                
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
             }
@@ -141,7 +107,7 @@ const firebaseConfig = {
         if (dataArray.length >= 2) {
             const opcode = dataArray[0];
             const signalStrength = dataArray[1];
-            const rawMessage = buffer.slice(2);
+            const rawMessage = buffer.slice(2); // Extract the message part
             processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
         }
     }
@@ -156,24 +122,109 @@ const firebaseConfig = {
         console.table(opcodeRegistry);
     };
 
-    // Firebase Firestore Listener for Dynamic Actions
-    db.collection("websocket_commands").onSnapshot(snapshot => {
-        snapshot.docChanges().forEach(change => {
-            if (change.type === "added") {
-                const data = change.doc.data();
-                console.log(`[Firebase Command] Received command: ${data.command}`);
+})();
 
-                if (data.command === "restartWebSocket") {
-                    console.warn("[CustomWebSocket] Restarting WebSocket...");
-                    window.WebSocket = CustomWebSocket;
-                }
+/* -------------------------------------------------------
+   Firebase Chatbox Integration (Do not modify the code above)
+---------------------------------------------------------*/
 
-                if (data.command === "logOpcodes") {
-                    console.log("[CustomWebSocket] Fetching Opcode Registry...");
-                    console.table(opcodeRegistry);
-                }
-            }
-        });
+(function() {
+    'use strict';
+
+    // Firebase configuration (replace the placeholders with your actual config)
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Create chatbox container
+    const chatboxContainer = document.createElement('div');
+    chatboxContainer.id = 'chatbox-container';
+    Object.assign(chatboxContainer.style, {
+        position: 'fixed',
+        bottom: '0',
+        right: '0',
+        width: '300px',
+        height: '400px',
+        backgroundColor: '#fff',
+        border: '1px solid #ccc',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: '10000'
+    });
+    document.body.appendChild(chatboxContainer);
+
+    // Create chat display area
+    const chatDisplay = document.createElement('div');
+    chatDisplay.id = 'chat-display';
+    Object.assign(chatDisplay.style, {
+        flex: '1',
+        padding: '10px',
+        overflowY: 'auto',
+        borderBottom: '1px solid #ccc'
+    });
+    chatboxContainer.appendChild(chatDisplay);
+
+    // Create chat input area
+    const chatInputContainer = document.createElement('div');
+    Object.assign(chatInputContainer.style, {
+        display: 'flex',
+        padding: '10px'
+    });
+    chatboxContainer.appendChild(chatInputContainer);
+
+    const chatInput = document.createElement('input');
+    chatInput.type = 'text';
+    chatInput.placeholder = 'Type a message...';
+    Object.assign(chatInput.style, {
+        flex: '1',
+        padding: '5px'
+    });
+    chatInputContainer.appendChild(chatInput);
+
+    const sendButton = document.createElement('button');
+    sendButton.textContent = 'Send';
+    sendButton.style.marginLeft = '5px';
+    chatInputContainer.appendChild(sendButton);
+
+    // Listen for new chat messages and display them
+    database.ref('chat/messages').on('child_added', function(snapshot) {
+        const messageData = snapshot.val();
+        const messageElement = document.createElement('div');
+        messageElement.textContent = messageData.text;
+        chatDisplay.appendChild(messageElement);
+        // Scroll to the bottom
+        chatDisplay.scrollTop = chatDisplay.scrollHeight;
     });
 
+    // Function to send a chat message
+    function sendMessage() {
+        const messageText = chatInput.value.trim();
+        if (messageText.length > 0) {
+            database.ref('chat/messages').push({
+                text: messageText,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            chatInput.value = '';
+        }
+    }
+
+    // Event listeners for sending messages
+    sendButton.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    console.log('[Firebase Chatbox] Chatbox initialized.');
 })();
