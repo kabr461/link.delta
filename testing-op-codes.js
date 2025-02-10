@@ -1,7 +1,9 @@
 console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
+(function () {
+    'use strict';
 
-// Import Firebase SDK (Ensure you include Firebase scripts in your HTML or use module imports)
+    // Import Firebase SDK (Ensure you include Firebase scripts in your HTML or use module imports)
 const firebaseConfig = {
     apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
     authDomain: "agario-bb5ea.firebaseapp.com",
@@ -13,13 +15,12 @@ const firebaseConfig = {
     measurementId: "G-5NTSETJHM9"
   };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-(function () {
-    'use strict';
-
+    // Initialize Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+    
     // Opcode registry for classification
     const opcodeRegistry = {};
     let opcodeSummary = {};
@@ -30,6 +31,12 @@ const db = firebase.firestore();
         if (!loggedOpcodes.has(opcode)) {
             console.log(`Opcode ${opcode} detected for the first time.`);
             loggedOpcodes.add(opcode);
+            
+            // Log to Firebase
+            db.collection("opcode_logs").add({
+                opcode: opcode,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(error => console.error("Error logging opcode:", error));
         }
     }
 
@@ -39,7 +46,6 @@ const db = firebase.firestore();
         const opcode = data.opcode;
         logOpcodeOnce(opcode);
 
-        // Special handling for opcode 25 (Message Sending)
         if (opcode === 25) {
             processMessageOpcode(data);
         }
@@ -63,6 +69,12 @@ const db = firebase.firestore();
             opcodeSummary[opcode] += 1;
         }
 
+        // Log to Firebase Firestore
+        db.collection("opcode_summary").doc(opcode.toString()).set({
+            count: opcodeSummary[opcode],
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(error => console.error("Error updating opcode summary:", error));
+
         if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
             console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
@@ -77,15 +89,20 @@ const db = firebase.firestore();
             try {
                 const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
                 console.log(`[Message Sent] ${messageText}`);
-                
+
                 // Normalize message: Remove extra spaces, line breaks, and special characters
-                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
-                
-                // Check if cleaned message contains 'UJ' (case-sensitive)
+                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
+
                 if (cleanedMessage.includes("UJ")) {
                     console.log("UJ detected!");
+                    
+                    // Log detected messages to Firebase
+                    db.collection("detected_messages").add({
+                        message: cleanedMessage,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(error => console.error("Error logging detected message:", error));
                 }
-                
+
             } catch (e) {
                 console.warn("[Message Parsing Error]", e);
             }
@@ -124,7 +141,7 @@ const db = firebase.firestore();
         if (dataArray.length >= 2) {
             const opcode = dataArray[0];
             const signalStrength = dataArray[1];
-            const rawMessage = buffer.slice(2); // Extract the message part
+            const rawMessage = buffer.slice(2);
             processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
         }
     }
@@ -138,5 +155,25 @@ const db = firebase.firestore();
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
     };
+
+    // Firebase Firestore Listener for Dynamic Actions
+    db.collection("websocket_commands").onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+            if (change.type === "added") {
+                const data = change.doc.data();
+                console.log(`[Firebase Command] Received command: ${data.command}`);
+
+                if (data.command === "restartWebSocket") {
+                    console.warn("[CustomWebSocket] Restarting WebSocket...");
+                    window.WebSocket = CustomWebSocket;
+                }
+
+                if (data.command === "logOpcodes") {
+                    console.log("[CustomWebSocket] Fetching Opcode Registry...");
+                    console.table(opcodeRegistry);
+                }
+            }
+        });
+    });
 
 })();
