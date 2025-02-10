@@ -1,20 +1,4 @@
-console.log("[WebSocket Debug] Initializing WebSocket Analyzer with Firebase...");
-
-// Import Firebase SDK (Ensure you include Firebase scripts in your HTML or use module imports)
-const firebaseConfig = {
-    apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
-    authDomain: "agario-bb5ea.firebaseapp.com",
-    databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
-    projectId: "agario-bb5ea",
-    storageBucket: "agario-bb5ea.firebasestorage.app",
-    messagingSenderId: "306389211380",
-    appId: "1:306389211380:web:3c1eb559078b05734be6a1",
-    measurementId: "G-5NTSETJHM9"
-  };
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
 (function () {
     'use strict';
