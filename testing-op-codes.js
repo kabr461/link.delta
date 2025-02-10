@@ -128,10 +128,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
    Firebase Chatbox Integration (Do not modify the code above)
 ---------------------------------------------------------*/
 
-(function() {
-    'use strict';
-
-    // Import Firebase SDK (Ensure you include Firebase scripts in your HTML or use module imports)
+// Import Firebase SDK (Ensure you include Firebase scripts in your HTML or use module imports)
 const firebaseConfig = {
     apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
     authDomain: "agario-bb5ea.firebaseapp.com",
@@ -141,7 +138,10 @@ const firebaseConfig = {
     messagingSenderId: "306389211380",
     appId: "1:306389211380:web:3c1eb559078b05734be6a1",
     measurementId: "G-5NTSETJHM9"
-  };
+};
+
+(function() {
+    'use strict';
 
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
