@@ -1,161 +1,149 @@
-console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
+console.log("[WebSocket Debug] Initializing WebSocket Analyzer with Firebase...");
 
-(function () {
-    'use strict';
+// Import Firebase SDK (Ensure you include Firebase scripts in your HTML or use module imports)
+const firebaseConfig = {
+    apiKey: "AIzaSyDtlJnDcRiqO8uhofXqePLOhUTf2dWpEDI",
+    authDomain: "agario-bb5ea.firebaseapp.com",
+    databaseURL: "https://agario-bb5ea-default-rtdb.firebaseio.com",
+    projectId: "agario-bb5ea",
+    storageBucket: "agario-bb5ea.firebasestorage.app",
+    messagingSenderId: "306389211380",
+    appId: "1:306389211380:web:3c1eb559078b05734be6a1",
+    measurementId: "G-5NTSETJHM9"
+  };
 
-    let lastSummaryTime = Date.now();
-    const opcodeRegistry = {};
-    let opcodeSummary = {};
-    const loggedOpcodes = new Set();
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-    function logOpcodeOnce(opcode) {
-        if (!loggedOpcodes.has(opcode)) {
-            console.log(`Opcode ${opcode} detected for the first time.`);
-            loggedOpcodes.add(opcode);
+// Opcode registry for classification
+const opcodeRegistry = {};
+let opcodeSummary = {};
+let lastSummaryTime = Date.now();
+const loggedOpcodes = new Set();
+
+function logOpcodeOnce(opcode) {
+    if (!loggedOpcodes.has(opcode)) {
+        console.log(`Opcode ${opcode} detected for the first time.`);
+        loggedOpcodes.add(opcode);
+    }
+}
+
+async function processSignal(data) {
+    if (!data || data.opcode === undefined) return;
+
+    const opcode = data.opcode;
+    logOpcodeOnce(opcode);
+
+    // Special handling for opcode 25 (Message Sending)
+    if (opcode === 25) {
+        await processMessageOpcode(data);
+    }
+
+    const signalStrength = data.signalStrength || 0;
+    const messageSize = data.messageSize || 0;
+
+    if (!opcodeRegistry[opcode]) {
+        opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
+    } else {
+        opcodeRegistry[opcode].count += 1;
+        opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
+        if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
+            opcodeRegistry[opcode].messageSizes.push(messageSize);
         }
     }
 
-    function processSignal(data) {
-        if (!data || data.opcode === undefined) return;
-
-        const opcode = data.opcode;
-        logOpcodeOnce(opcode);
-
-        if (opcode === 25) {
-            if (processMessageOpcode(data)) return;
-        }
-
-        const signalStrength = data.signalStrength || 0;
-        const messageSize = data.messageSize || 0;
-
-        if (!opcodeRegistry[opcode]) {
-            opcodeRegistry[opcode] = { count: 1, strongestSignal: signalStrength, messageSizes: [messageSize] };
-        } else {
-            opcodeRegistry[opcode].count += 1;
-            opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
-            if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
-                opcodeRegistry[opcode].messageSizes.push(messageSize);
-            }
-        }
-
-        if (!opcodeSummary[opcode]) {
-            opcodeSummary[opcode] = 1;
-        } else {
-            opcodeSummary[opcode] += 1;
-        }
-
-        if (Date.now() - lastSummaryTime > 10000) {
-            console.clear();
-            console.log("[CustomWebSocket] Opcode Frequency Summary (Last 10s)");
-            console.table(opcodeSummary);
-            opcodeSummary = {};
-            lastSummaryTime = Date.now();
-        }
+    if (!opcodeSummary[opcode]) {
+        opcodeSummary[opcode] = 1;
+    } else {
+        opcodeSummary[opcode] += 1;
     }
 
-    function processMessageOpcode(data) {
-        if (data.rawMessage) {
-            try {
-                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
-                console.log(`[Message Sent] ${messageText}`);
+    if (Date.now() - lastSummaryTime > 10000) {
+        console.clear();
+        console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
+        console.table(opcodeSummary);
 
-                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
-                if (cleanedMessage.includes("UJ")) {
-                    console.log("🚨 UJ detected! Blocking message.");
-                    return true;
-                }
-            } catch (e) {
-                console.warn("[Message Parsing Error]", e);
-            }
-        } else {
-            console.warn("[Opcode 25] No message data found.");
-        }
-        return false;
+        // Save opcode summary to Firestore
+        await db.collection("opcode_summary").add({
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            summary: opcodeSummary
+        });
+
+        opcodeSummary = {};
+        lastSummaryTime = Date.now();
     }
+}
 
-    function processBinaryData(buffer) {
-        const dataArray = new Uint8Array(buffer);
-        if (dataArray.length >= 2) {
-            const opcode = dataArray[0];
-            const signalStrength = dataArray[1];
-            const rawMessage = buffer.slice(2);
-            processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
-        }
-    }
-
-    // === WebSocket SEND Override (Fixes Infinite Recursion & Blocks Outgoing Messages) ===
-    const originalSend = WebSocket.prototype.send;
-
-    WebSocket.prototype.send = function (data) {
+async function processMessageOpcode(data) {
+    if (data.rawMessage) {
         try {
-            if (typeof data === "string" && data.includes("UJ")) {
-                console.log("🚨 UJ detected in outgoing string message; Blocking message.");
-                return;
+            const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+            console.log(`[Message Sent] ${messageText}`);
+
+            // Normalize message: Remove extra spaces, line breaks, and special characters
+            const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
+
+            // Check if cleaned message contains 'UJ' (case-sensitive)
+            if (cleanedMessage.includes("UJ")) {
+                console.log("UJ detected!");
             }
 
-            if (data instanceof ArrayBuffer) {
-                let fullArray = new Uint8Array(data);
-                if (fullArray.length >= 2 && fullArray[0] === 25) {
-                    let payload = fullArray.slice(2);
-                    let messageText = new TextDecoder("utf-8").decode(payload);
-                    if (messageText.includes("UJ")) {
-                        console.log("🚨 UJ detected in outgoing ArrayBuffer message; Blocking message.");
-                        return;
-                    }
-                }
-            }
+            // Save message data to Firestore
+            await db.collection("messages").add({
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                message: cleanedMessage
+            });
 
-            return originalSend.call(this, data);
-        } catch (error) {
-            console.error("WebSocket Send Override Error:", error);
+        } catch (e) {
+            console.warn("[Message Parsing Error]", e);
         }
-    };
+    } else {
+        console.warn("[Opcode 25] No message data found.");
+    }
+}
 
-    console.log("[CustomWebSocket] WebSocket.send override installed.");
+const OriginalWebSocket = window.WebSocket;
 
-    // === WebSocket MESSAGE Override (Fixes Infinite Recursion & Blocks Incoming Messages) ===
-    const originalWebSocket = window.WebSocket;
+class CustomWebSocket extends OriginalWebSocket {
+    constructor(url, protocols) {
+        super(url, protocols);
+        console.log('[CustomWebSocket] Connecting to:', url);
 
-    window.WebSocket = function (...args) {
-        const wsInstance = new originalWebSocket(...args);
-
-        wsInstance.addEventListener("message", function(event) {
-            try {
-                let data = event.data;
-
-                if (typeof data === "string" && data.includes("UJ")) {
-                    console.log("🚨 UJ detected in incoming string message; Blocking message.");
-                    event.stopImmediatePropagation();
-                    return;
-                }
-
-                if (data instanceof ArrayBuffer) {
-                    let fullArray = new Uint8Array(data);
-                    if (fullArray.length >= 2 && fullArray[0] === 25) {
-                        let payload = fullArray.slice(2);
-                        let messageText = new TextDecoder("utf-8").decode(payload);
-                        if (messageText.includes("UJ")) {
-                            console.log("🚨 UJ detected in incoming ArrayBuffer message; Blocking message.");
-                            event.stopImmediatePropagation();
-                            return;
-                        }
-                    }
-                }
-
-                wsInstance.dispatchEvent(new MessageEvent("message", { data })); // Forward normal messages
-
-            } catch (error) {
-                console.error("Error processing WebSocket message:", error);
+        this.addEventListener('message', (event) => {
+            if (event.data instanceof ArrayBuffer) {
+                processBinaryData(event.data);
+            } else if (event.data instanceof Blob) {
+                event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
             }
         });
 
-        return wsInstance;
-    };
+        this.addEventListener('close', (event) => {
+            console.warn('[CustomWebSocket] Connection closed:', event);
+            setTimeout(() => {
+                console.log('[CustomWebSocket] Attempting to reconnect...');
+                window.WebSocket = new CustomWebSocket(this.url, this.protocols);
+            }, 1000);
+        });
+    }
+}
 
-    // Expose a global function to analyze opcodes if needed.
-    window.analyzeOpcodes = function() {
-        console.log("[CustomWebSocket] Opcode Registry Analysis:");
-        console.table(opcodeRegistry);
-    };
+function processBinaryData(buffer) {
+    const dataArray = new Uint8Array(buffer);
+    if (dataArray.length >= 2) {
+        const opcode = dataArray[0];
+        const signalStrength = dataArray[1];
+        const rawMessage = buffer.slice(2); // Extract the message part
+        processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
+    }
+}
 
-})();
+setTimeout(() => {
+    window.WebSocket = CustomWebSocket;
+    console.log('[CustomWebSocket] WebSocket Override Applied');
+}, 1000);
+
+window.analyzeOpcodes = function () {
+    console.log("[CustomWebSocket] Opcode Registry Analysis:");
+    console.table(opcodeRegistry);
+};
