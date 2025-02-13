@@ -1,62 +1,65 @@
+// Chat substitution functionality
 (function() {
-    const containerEls = document.querySelectorAll(".flex-row.p-1.gap-2");
-    const validContainers = [];
-  
-    containerEls.forEach(container => {
-      const commandInput = container.querySelector("input[name='command']");
-      const keyboardInput = container.querySelector("input[name='keyboard']");
-      if (commandInput && keyboardInput) validContainers.push({ commandInput, keyboardInput });
-    });
-  
-    const chatInput = document.getElementById("message");
-    if (chatInput && validContainers.length) {
-      const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  
-      chatInput.addEventListener("keydown", event => {
-        if (!event.isTrusted) return;
-        if (event.key === "Enter") {
-          event.preventDefault();
-          let modifiedMessage = chatInput.value;
-          validContainers.forEach(({ commandInput, keyboardInput }) => {
-            const pattern = keyboardInput.value.trim();
-            if (!pattern) return;
-            const regex = new RegExp(escapeRegExp(pattern), "gi");
-            modifiedMessage = modifiedMessage.replace(regex, commandInput.value);
-          });
-          chatInput.value = modifiedMessage;
-          setTimeout(() => {
-            chatInput.dispatchEvent(new KeyboardEvent("keydown", {
-              key: "Enter",
-              code: "Enter",
-              keyCode: 13,
-              which: 13,
-              bubbles: true
-            }));
-          }, 50);
-        }
-      });
-    }
-  })();
-  
+  const containerEls = document.querySelectorAll(".flex-row.p-1.gap-2");
+  const validContainers = [];
 
+  containerEls.forEach(container => {
+    const commandInput = container.querySelector("input[name='command']");
+    const keyboardInput = container.querySelector("input[name='keyboard']");
+    if (commandInput && keyboardInput) validContainers.push({ commandInput, keyboardInput });
+  });
+
+  const chatInput = document.getElementById("message");
+  if (chatInput && validContainers.length) {
+    const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    chatInput.addEventListener("keydown", event => {
+      if (!event.isTrusted) return;
+      if (event.key === "Enter") {
+        event.preventDefault();
+        let modifiedMessage = chatInput.value;
+        validContainers.forEach(({ commandInput, keyboardInput }) => {
+          const pattern = keyboardInput.value.trim();
+          if (!pattern) return;
+          const regex = new RegExp(escapeRegExp(pattern), "gi");
+          modifiedMessage = modifiedMessage.replace(regex, commandInput.value);
+        });
+        chatInput.value = modifiedMessage;
+        setTimeout(() => {
+          chatInput.dispatchEvent(new KeyboardEvent("keydown", {
+            key: "Enter",
+            code: "Enter",
+            keyCode: 13,
+            which: 13,
+            bubbles: true
+          }));
+        }, 50);
+      }
+    });
+  }
+})();
+
+// Spectate button functionality (delayed initialization)
 (function() {
+  // Try to initialize the Spectate functionality until the button is found
+  function initSpectate() {
     // Find the <div> with class "btn-layer" that exactly matches the text "Spectate"
     const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
       .find(el => el.textContent.trim() === 'Spectate');
-  
+
     if (!spectateBtn) {
-      console.log('Spectate button not found.');
-      return;
+      console.log('Spectate button not found yet. Retrying...');
+      return setTimeout(initSpectate, 10000); // Retry after 500ms
     }
-    
+
     console.log('Spectate button found:', spectateBtn);
-    
-    // Attach a click event listener to the spectate button.
+
+    // Attach a click event listener to the Spectate button.
     spectateBtn.addEventListener('click', function() {
       console.log('Spectate button clicked!');
       openSpectateTab();
     });
-  
+
     // Function to create and show the Spectate UI panel
     function openSpectateTab() {
       // Prevent duplicate panels
@@ -64,7 +67,7 @@
         document.getElementById('spectateTab').style.right = '0';
         return;
       }
-  
+
       const spectateTab = document.createElement('div');
       spectateTab.id = 'spectateTab';
       spectateTab.className = 'spectate-tab';
@@ -106,21 +109,21 @@
             </div>
         </div>
       `;
-  
+
       document.body.appendChild(spectateTab);
-  
-      // Use requestAnimationFrame to animate the panel sliding in
+
+      // Animate the panel sliding in using requestAnimationFrame
       requestAnimationFrame(() => {
         spectateTab.style.right = '0';
       });
     }
-  
+
     // Function to toggle switches on click
     window.toggleSwitch = function(element) {
       element.classList.toggle('active');
       element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
     };
-  
+
     // Listen for the Escape key to slide the panel out and remove it
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
@@ -134,8 +137,8 @@
         }
       }
     });
-  
-    // Inject CSS styles into the page
+
+    // Inject CSS styles for the Spectate panel into the page
     const style = document.createElement('style');
     style.innerHTML = `
       .spectate-tab {
@@ -235,5 +238,8 @@
       }
     `;
     document.head.appendChild(style);
-  })();
-  
+  }
+
+  // Begin the initialization
+  initSpectate();
+})();
