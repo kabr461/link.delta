@@ -1,42 +1,43 @@
-const containers = document.querySelectorAll(".flex-row.p-1.gap-2");
-const validContainers = [];
-
-containers.forEach(container => {
-  const commandInput = container.querySelector("input[name='command']");
-  const keyboardInput = container.querySelector("input[name='keyboard']");
-  if (commandInput && keyboardInput) validContainers.push({ commandInput, keyboardInput });
-});
-
-const chatInput = document.getElementById("message");
-
-if (chatInput && validContainers.length) {
-  const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  chatInput.addEventListener("keydown", event => {
-    if (!event.isTrusted) return;
-    if (event.key === "Enter") {
-      event.preventDefault();
-      let modifiedMessage = chatInput.value;
-      validContainers.forEach(({ commandInput, keyboardInput }) => {
-        const pattern = keyboardInput.value.trim();
-        if (!pattern) return;
-        const regex = new RegExp(escapeRegExp(pattern), "gi");
-        modifiedMessage = modifiedMessage.replace(regex, commandInput.value);
+(function() {
+    const containerEls = document.querySelectorAll(".flex-row.p-1.gap-2");
+    const validContainers = [];
+  
+    containerEls.forEach(container => {
+      const commandInput = container.querySelector("input[name='command']");
+      const keyboardInput = container.querySelector("input[name='keyboard']");
+      if (commandInput && keyboardInput) validContainers.push({ commandInput, keyboardInput });
+    });
+  
+    const chatInput = document.getElementById("message");
+    if (chatInput && validContainers.length) {
+      const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+      chatInput.addEventListener("keydown", event => {
+        if (!event.isTrusted) return;
+        if (event.key === "Enter") {
+          event.preventDefault();
+          let modifiedMessage = chatInput.value;
+          validContainers.forEach(({ commandInput, keyboardInput }) => {
+            const pattern = keyboardInput.value.trim();
+            if (!pattern) return;
+            const regex = new RegExp(escapeRegExp(pattern), "gi");
+            modifiedMessage = modifiedMessage.replace(regex, commandInput.value);
+          });
+          chatInput.value = modifiedMessage;
+          setTimeout(() => {
+            chatInput.dispatchEvent(new KeyboardEvent("keydown", {
+              key: "Enter",
+              code: "Enter",
+              keyCode: 13,
+              which: 13,
+              bubbles: true
+            }));
+          }, 50);
+        }
       });
-      chatInput.value = modifiedMessage;
-      setTimeout(() => {
-        chatInput.dispatchEvent(new KeyboardEvent("keydown", {
-          key: "Enter",
-          code: "Enter",
-          keyCode: 13,
-          which: 13,
-          bubbles: true
-        }));
-      }, 50);
     }
-  });
-}
-
+  })();
+  
 
 (function() {
     // Find the <div> with class "btn-layer" that exactly matches the text "Spectate"
