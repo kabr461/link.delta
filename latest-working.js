@@ -1,16 +1,21 @@
-// Chat substitution functionality
+// Chat substitution functionality with polling
 (function() {
-  const containerEls = document.querySelectorAll(".flex-row.p-1.gap-2");
-  const validContainers = [];
+  function initChat() {
+    const chatInput = document.getElementById("message");
+    const containerEls = document.querySelectorAll(".flex-row.p-1.gap-2");
+    const validContainers = [];
 
-  containerEls.forEach(container => {
-    const commandInput = container.querySelector("input[name='command']");
-    const keyboardInput = container.querySelector("input[name='keyboard']");
-    if (commandInput && keyboardInput) validContainers.push({ commandInput, keyboardInput });
-  });
+    containerEls.forEach(container => {
+      const commandInput = container.querySelector("input[name='command']");
+      const keyboardInput = container.querySelector("input[name='keyboard']");
+      if (commandInput && keyboardInput) validContainers.push({ commandInput, keyboardInput });
+    });
 
-  const chatInput = document.getElementById("message");
-  if (chatInput && validContainers.length) {
+    if (!chatInput || validContainers.length === 0) {
+      console.log('Chat elements not ready yet. Retrying...');
+      return setTimeout(initChat, 500); // Retry after 500ms
+    }
+
     const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     chatInput.addEventListener("keydown", event => {
@@ -36,12 +41,15 @@
         }, 50);
       }
     });
+
+    console.log("Chat substitution initialized.");
   }
+
+  initChat();
 })();
 
-// Spectate button functionality (delayed initialization)
+// Spectate button functionality with polling
 (function() {
-  // Try to initialize the Spectate functionality until the button is found
   function initSpectate() {
     // Find the <div> with class "btn-layer" that exactly matches the text "Spectate"
     const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
@@ -49,7 +57,7 @@
 
     if (!spectateBtn) {
       console.log('Spectate button not found yet. Retrying...');
-      return setTimeout(initSpectate, 10000); // Retry after 500ms
+      return setTimeout(initSpectate, 500); // Retry after 500ms
     }
 
     console.log('Spectate button found:', spectateBtn);
@@ -240,6 +248,5 @@
     document.head.appendChild(style);
   }
 
-  // Begin the initialization
   initSpectate();
 })();
