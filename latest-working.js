@@ -107,14 +107,6 @@
                 <span>Cmd Chat</span>
                 <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
             </div>
-            <div class="toggle-container">
-                <span>Ext. Map</span>
-                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
-            </div>
-            <div class="toggle-container">
-                <span>Full Map</span>
-                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
-            </div>
         </div>
       `;
 
