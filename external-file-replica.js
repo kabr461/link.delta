@@ -81,22 +81,26 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // New function to process opcode 45 data similarly to opcode 25
+    // Helper function to convert a buffer to a hex string
+    function bufferToHex(buffer) {
+        return Array.prototype.map
+            .call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2))
+            .join(' ');
+    }
+
+    // New function to process opcode 45 data
     function processOpcode45Data(data) {
         if (data.rawMessage) {
             try {
-                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+                // Use a TextDecoder with fatal set to false to ignore errors
+                const decoder = new TextDecoder("utf-8", { fatal: false });
+                const messageText = decoder.decode(data.rawMessage);
                 console.log(`[Opcode 45 Data] ${messageText}`);
                 
-                // Normalize the message similarly to opcode 25
-                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
+                // Also log the raw bytes in hex format for detailed inspection
+                console.log(`[Opcode 45 Hex Data] ${bufferToHex(data.rawMessage)}`);
                 
-                // Optional: You can add additional checks or processing for opcode 45 messages here.
-                // For example, logging if a specific keyword is found:
-                if (cleanedMessage.includes("SPECIAL")) {
-                    console.log("SPECIAL keyword detected in opcode 45 data!");
-                }
-                
+                // Optional: Further processing can be done here, e.g., filtering or keyword checks
             } catch (e) {
                 console.warn("[Opcode 45 Parsing Error]", e);
             }
