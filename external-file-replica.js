@@ -11,7 +11,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     function logOpcodeOnce(opcode) {
         if (!loggedOpcodes.has(opcode)) {
-            console.log(`Opcode ${opcode} detected for the first time.`);
+            console.log(Opcode ${opcode} detected for the first time.);
             loggedOpcodes.add(opcode);
         }
     }
@@ -48,7 +48,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
-            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
+            console.log([CustomWebSocket] Opcode Frequency Summary (Last 10s));
             console.table(opcodeSummary);
             opcodeSummary = {};
             lastSummaryTime = Date.now();
@@ -59,7 +59,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         if (data.rawMessage) {
             try {
                 const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
-                console.log(`[Message Sent] ${messageText}`);
+                console.log([Message Sent] ${messageText});
                 
                 // Normalize message: Remove extra spaces, line breaks, and special characters
                 const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
@@ -122,4 +122,4 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         console.table(opcodeRegistry);
     };
 
-})();
+})();       
