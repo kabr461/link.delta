@@ -1,5 +1,14 @@
 console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
+// Load pako.js dynamically for decompression
+(function loadPako() {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js";
+    script.onload = () => console.log("[WebSocket] pako.js loaded successfully.");
+    script.onerror = () => console.warn("[WebSocket] Failed to load pako.js.");
+    document.head.appendChild(script);
+})();
+
 (function () {
     'use strict';
 
@@ -8,7 +17,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     let opcodeSummary = {};
     let lastSummaryTime = Date.now();
     const loggedOpcodes = new Set();
-    const messageLogLimit = 10; // Limit message logs to avoid console spam
+    const messageLogLimit = 10;
     let messageLogCount = 0;
 
     function logOpcodeOnce(opcode) {
@@ -48,7 +57,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    function xorDecode(buffer, key = 123) { // Try different XOR keys
+    function xorDecode(buffer, key = 0x55) { // Try different XOR keys
         let decoded = "";
         for (let i = 0; i < buffer.length; i++) {
             decoded += String.fromCharCode(buffer[i] ^ key);
@@ -58,6 +67,10 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     function decompressData(buffer) {
         try {
+            if (typeof pako === "undefined") {
+                console.warn("[WebSocket] pako.js not loaded. Skipping decompression.");
+                return null;
+            }
             let decompressed = pako.inflate(buffer, { to: 'string' });
             console.log(`[Decompressed Data] ${decompressed}`);
             return decompressed;
@@ -71,28 +84,30 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         const dataArray = new Uint8Array(buffer);
         if (dataArray.length >= 2) {
             const opcode = dataArray[0];
-            const rawMessage = buffer.slice(2); // Extract message part
+            const rawMessage = buffer.slice(2); 
 
             console.log(`[WebSocket] Opcode: ${opcode}, Length: ${dataArray.length}`);
 
             try {
                 const messageText = new TextDecoder("utf-8").decode(rawMessage);
-                console.log(`[Decoded Text] ${messageText}`);
+                if (/[\w\s]/.test(messageText)) {  // Log only readable text
+                    console.log(`[Decoded Text] ${messageText}`);
+                }
             } catch (e) {
                 console.log("[UTF-8 Decoding Failed]", e);
             }
 
-            // Attempt XOR decoding
             try {
                 const xorDecoded = xorDecode(rawMessage);
-                console.log(`[XOR Decoded] ${xorDecoded}`);
+                if (/[\w\s]/.test(xorDecoded)) {
+                    console.log(`[XOR Decoded] ${xorDecoded}`);
+                }
             } catch (e) {
                 console.log("[XOR Decoding Failed]", e);
             }
 
-            // Attempt Decompression
             let decompressed = decompressData(rawMessage);
-            if (decompressed) {
+            if (decompressed && /[\w\s]/.test(decompressed)) {
                 console.log(`[Decompressed Text] ${decompressed}`);
             }
 
