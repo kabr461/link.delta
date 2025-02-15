@@ -17,9 +17,9 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     let lastSummaryTime = Date.now();
     const loggedOpcodes = new Set();
 
-    function logOpcodeOnce(opcode) {
+    function logOpcodeOnce(opcode, size) {
         if (!loggedOpcodes.has(opcode)) {
-            console.log(`[WebSocket] New Opcode Detected: ${opcode}`);
+            console.log(`[WebSocket] New Opcode Detected: ${opcode} | Size: ${size} bytes`);
             loggedOpcodes.add(opcode);
         }
     }
@@ -27,7 +27,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     function processSignal(data) {
         if (!data || data.opcode === undefined) return;
         const opcode = data.opcode;
-        logOpcodeOnce(opcode);
+        logOpcodeOnce(opcode, data.messageSize);
 
         if (!opcodeRegistry[opcode]) {
             opcodeRegistry[opcode] = { count: 1, messageSizes: [data.messageSize] };
@@ -54,7 +54,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    function xorDecode(buffer, key = 0x55) { // Try different XOR keys
+    function xorDecode(buffer, key) {
         let decoded = "";
         for (let i = 0; i < buffer.length; i++) {
             decoded += String.fromCharCode(buffer[i] ^ key);
@@ -62,9 +62,18 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         return decoded;
     }
 
+    function tryMultipleXOR(buffer) {
+        let keys = [0x55, 0xA3, 0x5F, 0x10, 0x99]; // Common XOR keys
+        for (let key of keys) {
+            let decoded = xorDecode(buffer, key);
+            if (/[\w\s]/.test(decoded)) { // Check if text is readable
+                console.log(`[XOR Key ${key}] Decoded: ${decoded}`);
+            }
+        }
+    }
+
     function isCompressed(buffer) {
-        // Check if data starts with Gzip/Deflate magic numbers
-        return buffer[0] === 0x1F && buffer[1] === 0x8B;
+        return buffer[0] === 0x1F && buffer[1] === 0x8B; // Check for Gzip header
     }
 
     function decompressData(buffer) {
@@ -74,7 +83,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 return null;
             }
             if (!isCompressed(buffer)) {
-                console.log("[WebSocket] Data is not compressed, skipping decompression.");
                 return null;
             }
             let decompressed = pako.inflate(buffer, { to: 'string' });
@@ -94,15 +102,11 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
             console.log(`[WebSocket] Opcode: ${opcode}, Length: ${dataArray.length}`);
 
+            // Log Raw Hex Data
+            console.log(`[Raw Data] ${Array.from(rawMessage).map(b => b.toString(16)).join(" ")}`);
+
             // Try XOR decoding first
-            try {
-                const xorDecoded = xorDecode(rawMessage);
-                if (/[\w\s]/.test(xorDecoded)) {
-                    console.log(`[XOR Decoded] ${xorDecoded}`);
-                }
-            } catch (e) {
-                console.log("[XOR Decoding Failed]", e);
-            }
+            tryMultipleXOR(rawMessage);
 
             // Try UTF-8 Decoding
             try {
@@ -114,7 +118,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 console.log("[UTF-8 Decoding Failed]", e);
             }
 
-            // Try decompression only if needed
+            // Try decompression if needed
             let decompressed = decompressData(rawMessage);
             if (decompressed && /[\w\s]/.test(decompressed)) {
                 console.log(`[Decompressed Text] ${decompressed}`);
@@ -124,7 +128,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // Override WebSocket
     const OriginalWebSocket = window.WebSocket;
     class CustomWebSocket extends OriginalWebSocket {
         constructor(url, protocols) {
@@ -149,13 +152,11 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
-    // Apply the WebSocket override after a short delay
     setTimeout(() => {
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] WebSocket Override Applied');
     }, 1000);
 
-    // Expose a function to display the current opcode registry
     window.analyzeOpcodes = function () {
         console.log("[CustomWebSocket] Opcode Registry Analysis:");
         console.table(opcodeRegistry);
