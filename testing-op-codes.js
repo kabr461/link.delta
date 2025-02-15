@@ -1,142 +1,166 @@
-console.log("[WebSocket Debug] Initializing WebSocket Analyzer for Player Data...");
+console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
-// Dynamically load pako.js for potential decompression (if needed)
-(function loadPako() {
-  const script = document.createElement("script");
-  script.src = "https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js";
-  script.onload = () => console.log("[WebSocket] pako.js loaded successfully.");
-  script.onerror = () => console.warn("[WebSocket] Failed to load pako.js.");
-  document.head.appendChild(script);
-})();
+(function () {
+    'use strict';
 
-(function() {
-  'use strict';
+    // Opcode registry for classification
+    const opcodeRegistry = {};
+    let opcodeSummary = {};
+    let lastSummaryTime = Date.now();
+    const loggedOpcodes = new Set();
 
-  // This array will store a simplified log of messages
-  const messageLog = [];
-  // A simple heuristic: Look for alphanumeric strings 3 to 16 characters long
-  const playerNameRegex = /\b[A-Za-z0-9_-]{3,16}\b/g;
-
-  // Intercept WebSocket messages
-  const OriginalWebSocket = window.WebSocket;
-  class CustomWebSocket extends OriginalWebSocket {
-    constructor(url, protocols) {
-      super(url, protocols);
-      console.log('[CustomWebSocket] Connecting to:', url);
-
-      this.addEventListener('message', (event) => {
-        if (event.data instanceof ArrayBuffer) {
-          processBinaryData(event.data);
-        } else if (event.data instanceof Blob) {
-          event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+    function logOpcodeOnce(opcode) {
+        if (!loggedOpcodes.has(opcode)) {
+            console.log(`Opcode ${opcode} detected for the first time.`);
+            loggedOpcodes.add(opcode);
         }
-      });
-
-      // Auto-reconnect on close (if needed)
-      this.addEventListener('close', (event) => {
-        console.warn('[CustomWebSocket] Connection closed:', event);
-        setTimeout(() => {
-          console.log('[CustomWebSocket] Attempting to reconnect...');
-          window.WebSocket = new CustomWebSocket(url, protocols);
-        }, 1000);
-      });
-    }
-  }
-
-  // Override the native WebSocket
-  setTimeout(() => {
-    window.WebSocket = CustomWebSocket;
-    console.log('[CustomWebSocket] WebSocket Override Applied');
-  }, 1000);
-
-  // Attempt XOR decoding with a list of possible keys
-  function xorDecode(buffer, key) {
-    let result = "";
-    for (let i = 0; i < buffer.length; i++) {
-      result += String.fromCharCode(buffer[i] ^ key);
-    }
-    return result;
-  }
-
-  function tryXORDecodings(buffer) {
-    const possibleKeys = [0x55, 0xA3, 0x5F, 0x10, 0x99];
-    let results = [];
-    possibleKeys.forEach(key => {
-      try {
-        const decoded = xorDecode(buffer, key);
-        results.push({ key, decoded });
-      } catch (e) {
-        console.warn("XOR decoding error with key", key, e);
-      }
-    });
-    return results;
-  }
-
-  // Check if data is compressed (by looking for a gzip header)
-  function isCompressed(buffer) {
-    return buffer[0] === 0x1F && buffer[1] === 0x8B;
-  }
-
-  function decompressData(buffer) {
-    try {
-      if (typeof pako === "undefined") {
-        console.warn("[Decompression] pako.js not loaded.");
-        return null;
-      }
-      if (!isCompressed(buffer)) return null;
-      return pako.inflate(buffer, { to: 'string' });
-    } catch (e) {
-      console.warn("[Decompression Failed]", e);
-      return null;
-    }
-  }
-
-  // Process a binary packet
-  function processBinaryData(buffer) {
-    const dataArray = new Uint8Array(buffer);
-    if (dataArray.length < 2) return; // Not enough data
-
-    // Assume the first byte is the dynamic opcode; the rest is payload
-    const opcode = dataArray[0];
-    const payload = buffer.slice(2);
-
-    // Record a simple log entry with opcode and payload length
-    messageLog.push({ opcode, length: dataArray.length, raw: payload });
-
-    // Try basic UTF-8 decoding
-    let decodedText = "";
-    try {
-      decodedText = new TextDecoder("utf-8").decode(payload);
-    } catch (e) {
-      decodedText = "";
     }
 
-    // Try XOR decoding with possible keys
-    const xorResults = tryXORDecodings(new Uint8Array(payload));
+    function processSignal(data) {
+        if (!data || data.opcode === undefined) return;
 
-    // Try decompression (if it looks compressed)
-    let decompressedText = decompressData(new Uint8Array(payload));
+        const opcode = data.opcode;
+        logOpcodeOnce(opcode);
 
-    // Combine potential candidate texts
-    let candidateTexts = [decodedText];
-    xorResults.forEach(result => candidateTexts.push(result.decoded));
-    if (decompressedText) candidateTexts.push(decompressedText);
-
-    // For each candidate text, check for potential player names
-    candidateTexts.forEach(text => {
-      if (text && text.length > 0) {
-        const matches = text.match(playerNameRegex);
-        if (matches && matches.length > 0) {
-          console.log(`[Player Data Candidate] from opcode ${opcode}:`, matches);
+        // Special handling for opcode 25 (Message Sending)
+        if (opcode === 25) {
+            processMessageOpcode(data);
         }
-      }
-    });
-  }
 
-  // Expose the collected message log for further offline analysis
-  window.getMessageLog = function() {
-    return messageLog;
-  };
+        const signalStrength = data.signalStrength || 0;
+        const messageSize = data.messageSize || 0;
 
-  console.log("WebSocket Analyzer initialized. Use window.getMessageLog() to inspect captured messages.");
+        // Initialize registry entry if needed
+        if (!opcodeRegistry[opcode]) {
+            opcodeRegistry[opcode] = { 
+                count: 1, 
+                strongestSignal: signalStrength, 
+                messageSizes: [messageSize],
+                lastRawMessage: data.rawMessage || null
+            };
+        } else {
+            opcodeRegistry[opcode].count += 1;
+            opcodeRegistry[opcode].strongestSignal = Math.max(opcodeRegistry[opcode].strongestSignal, signalStrength);
+            if (!opcodeRegistry[opcode].messageSizes.includes(messageSize)) {
+                opcodeRegistry[opcode].messageSizes.push(messageSize);
+            }
+            // Update the last raw message if available
+            if (data.rawMessage) {
+                opcodeRegistry[opcode].lastRawMessage = data.rawMessage;
+            }
+        }
+
+        // Update the summary (used for the 10s summary report)
+        if (!opcodeSummary[opcode]) {
+            opcodeSummary[opcode] = 1;
+        } else {
+            opcodeSummary[opcode] += 1;
+        }
+
+        // Every 10 seconds, print the summary and top raw messages for the top 6 opcodes
+        if (Date.now() - lastSummaryTime > 10000) {
+            console.clear();
+            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
+            console.table(opcodeSummary);
+            printTopRawMessages(opcodeSummary);
+            opcodeSummary = {};
+            lastSummaryTime = Date.now();
+        }
+    }
+
+    function processMessageOpcode(data) {
+        if (data.rawMessage) {
+            try {
+                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+                console.log(`[Message Sent] ${messageText}`);
+                
+                // Normalize message: Remove extra spaces, line breaks, and special characters
+                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
+                
+                // Check if cleaned message contains 'UJ' (case-sensitive)
+                if (cleanedMessage.includes("UJ")) {
+                    console.log("UJ detected!");
+                }
+                
+            } catch (e) {
+                console.warn("[Message Parsing Error]", e);
+            }
+        } else {
+            console.warn("[Opcode 25] No message data found.");
+        }
+    }
+
+    /**
+     * Prints the raw messages for the top 6 most frequent opcodes in the last 10 seconds.
+     * The raw message is logged as a Uint8Array if it's an ArrayBuffer.
+     *
+     * @param {Object} summary - The opcode summary object with opcode counts.
+     */
+    function printTopRawMessages(summary) {
+        // Convert the summary object into an array and sort descending by count.
+        const topOpcodes = Object.entries(summary)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6);
+
+        console.log('[CustomWebSocket] Top 6 Opcodes Raw Messages:');
+        topOpcodes.forEach(([opcode, count]) => {
+            const registryEntry = opcodeRegistry[opcode];
+            const rawMessage = registryEntry && registryEntry.lastRawMessage;
+            if (rawMessage) {
+                // If the rawMessage is an ArrayBuffer, convert it to a Uint8Array for display.
+                const messageDisplay = rawMessage instanceof ArrayBuffer
+                    ? new Uint8Array(rawMessage)
+                    : rawMessage;
+                console.log(`Opcode ${opcode} (Count: ${count}) Raw Message:`, messageDisplay);
+            } else {
+                console.log(`Opcode ${opcode} (Count: ${count}) No raw message available.`);
+            }
+        });
+    }
+
+    const OriginalWebSocket = window.WebSocket;
+
+    class CustomWebSocket extends OriginalWebSocket {
+        constructor(url, protocols) {
+            super(url, protocols);
+            console.log('[CustomWebSocket] Connecting to:', url);
+
+            this.addEventListener('message', (event) => {
+                if (event.data instanceof ArrayBuffer) {
+                    processBinaryData(event.data);
+                } else if (event.data instanceof Blob) {
+                    event.data.arrayBuffer().then(buffer => processBinaryData(buffer));
+                }
+            });
+
+            this.addEventListener('close', (event) => {
+                console.warn('[CustomWebSocket] Connection closed:', event);
+                setTimeout(() => {
+                    console.log('[CustomWebSocket] Attempting to reconnect...');
+                    window.WebSocket = new CustomWebSocket(this.url, this.protocols);
+                }, 1000);
+            });
+        }
+    }
+
+    function processBinaryData(buffer) {
+        const dataArray = new Uint8Array(buffer);
+        if (dataArray.length >= 2) {
+            const opcode = dataArray[0];
+            const signalStrength = dataArray[1];
+            const rawMessage = buffer.slice(2); // Extract the message part
+            processSignal({ opcode, signalStrength, messageSize: dataArray.length, rawMessage });
+        }
+    }
+
+    setTimeout(() => {
+        window.WebSocket = CustomWebSocket;
+        console.log('[CustomWebSocket] WebSocket Override Applied');
+    }, 1000);
+
+    window.analyzeOpcodes = function () {
+        console.log("[CustomWebSocket] Opcode Registry Analysis:");
+        console.table(opcodeRegistry);
+    };
+
 })();
