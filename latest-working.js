@@ -1,52 +1,28 @@
-// Chat substitution functionality with polling
 (function() {
-  function initChat() {
-    const chatInput = document.getElementById("message");
-    const containerEls = document.querySelectorAll(".flex-row.p-1.gap-2");
-    const validContainers = [];
-
-    containerEls.forEach(container => {
-      const commandInput = container.querySelector("input[name='command']");
-      const keyboardInput = container.querySelector("input[name='keyboard']");
-      if (commandInput && keyboardInput) validContainers.push({ commandInput, keyboardInput });
-    });
-
-    if (!chatInput || validContainers.length === 0) {
-      console.log('Chat elements not ready yet. Retrying...');
-      return setTimeout(initChat, 500); // Retry after 500ms
-    }
-
-    const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-    chatInput.addEventListener("keydown", event => {
-      if (!event.isTrusted) return;
-      if (event.key === "Enter") {
-        event.preventDefault();
-        let modifiedMessage = chatInput.value;
-        validContainers.forEach(({ commandInput, keyboardInput }) => {
-          const pattern = keyboardInput.value.trim();
-          if (!pattern) return;
-          const regex = new RegExp(escapeRegExp(pattern), "gi");
-          modifiedMessage = modifiedMessage.replace(regex, commandInput.value);
-        });
-        chatInput.value = modifiedMessage;
-        setTimeout(() => {
-          chatInput.dispatchEvent(new KeyboardEvent("keydown", {
-            key: "Enter",
-            code: "Enter",
-            keyCode: 13,
-            which: 13,
-            bubbles: true
-          }));
-        }, 50);
-      }
-    });
-
-    console.log("Chat substitution initialized.");
+  const chatContainer = document.querySelector('.chatmessages');
+  if (!chatContainer) {
+    console.error("Chat container not found!");
+    return;
   }
+  
+  const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
+          node.classList.add("command");
+          const textDiv = node.querySelector("div.text");
+          if (textDiv) {
+            textDiv.style.fontWeight = "bold";
+          }
+        }
+      });
+    });
+  });
 
-  initChat();
+  observer.observe(chatContainer, { childList: true });
+  console.log("Command style applied to new messages.");
 })();
+
 
 // Spectate button functionality with polling
 (function() {
