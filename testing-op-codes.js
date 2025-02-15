@@ -13,7 +13,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     'use strict';
 
     const opcodeRegistry = {};
-    let opcodeSummary = {};
     let lastSummaryTime = Date.now();
     const loggedOpcodes = new Set();
 
@@ -21,36 +20,6 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         if (!loggedOpcodes.has(opcode)) {
             console.log(`[WebSocket] New Opcode Detected: ${opcode} | Size: ${size} bytes`);
             loggedOpcodes.add(opcode);
-        }
-    }
-
-    function processSignal(data) {
-        if (!data || data.opcode === undefined) return;
-        const opcode = data.opcode;
-        logOpcodeOnce(opcode, data.messageSize);
-
-        if (!opcodeRegistry[opcode]) {
-            opcodeRegistry[opcode] = { count: 1, messageSizes: [data.messageSize] };
-        } else {
-            opcodeRegistry[opcode].count += 1;
-            if (!opcodeRegistry[opcode].messageSizes.includes(data.messageSize)) {
-                opcodeRegistry[opcode].messageSizes.push(data.messageSize);
-            }
-        }
-
-        if (!opcodeSummary[opcode]) {
-            opcodeSummary[opcode] = 1;
-        } else {
-            opcodeSummary[opcode] += 1;
-        }
-
-        // Summarize data every 30 seconds
-        if (Date.now() - lastSummaryTime > 30000) {
-            console.clear();
-            console.log(`[WebSocket Analyzer] Opcode Frequency Summary (Last 30s)`);
-            console.table(opcodeSummary);
-            opcodeSummary = {};
-            lastSummaryTime = Date.now();
         }
     }
 
@@ -63,7 +32,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     }
 
     function tryMultipleXOR(buffer) {
-        let keys = [0x55, 0xA3, 0x5F, 0x10, 0x99]; // Common XOR keys
+        let keys = [0x55, 0xA3, 0x5F, 0x10, 0x99]; // Possible XOR keys
         for (let key of keys) {
             let decoded = xorDecode(buffer, key);
             if (/[\w\s]/.test(decoded)) { // Check if text is readable
@@ -94,16 +63,32 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         }
     }
 
+    function detectPlayerData(buffer) {
+        // Look for readable strings that might be player names
+        let decoded = new TextDecoder("utf-8").decode(buffer);
+        let matches = decoded.match(/\b[A-Za-z0-9_-]{3,16}\b/g); // Detect possible names
+        if (matches) {
+            console.log(`[Player Data Detected] ${matches.join(", ")}`);
+        }
+    }
+
     function processBinaryData(buffer) {
         const dataArray = new Uint8Array(buffer);
         if (dataArray.length >= 2) {
             const opcode = dataArray[0];
             const rawMessage = buffer.slice(2);
 
-            console.log(`[WebSocket] Opcode: ${opcode}, Length: ${dataArray.length}`);
+            logOpcodeOnce(opcode, dataArray.length);
 
-            // Log Raw Hex Data
-            console.log(`[Raw Data] ${Array.from(rawMessage).map(b => b.toString(16)).join(" ")}`);
+            // Log structured message sizes
+            if (!opcodeRegistry[opcode]) {
+                opcodeRegistry[opcode] = { count: 1, messageSizes: [dataArray.length] };
+            } else {
+                opcodeRegistry[opcode].count += 1;
+                if (!opcodeRegistry[opcode].messageSizes.includes(dataArray.length)) {
+                    opcodeRegistry[opcode].messageSizes.push(dataArray.length);
+                }
+            }
 
             // Try XOR decoding first
             tryMultipleXOR(rawMessage);
@@ -124,7 +109,8 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 console.log(`[Decompressed Text] ${decompressed}`);
             }
 
-            processSignal({ opcode, messageSize: dataArray.length, rawMessage });
+            // Detect player-related data
+            detectPlayerData(rawMessage);
         }
     }
 
@@ -156,10 +142,5 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         window.WebSocket = CustomWebSocket;
         console.log('[CustomWebSocket] WebSocket Override Applied');
     }, 1000);
-
-    window.analyzeOpcodes = function () {
-        console.log("[CustomWebSocket] Opcode Registry Analysis:");
-        console.table(opcodeRegistry);
-    };
 
 })();
