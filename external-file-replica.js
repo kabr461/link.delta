@@ -11,7 +11,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
     function logOpcodeOnce(opcode) {
         if (!loggedOpcodes.has(opcode)) {
-            console.log(Opcode ${opcode} detected for the first time.);
+            console.log(`Opcode ${opcode} detected for the first time.`);
             loggedOpcodes.add(opcode);
         }
     }
@@ -25,6 +25,10 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         // Special handling for opcode 25 (Message Sending)
         if (opcode === 25) {
             processMessageOpcode(data);
+        }
+        // Special handling for opcode 45
+        else if (opcode === 45) {
+            processOpcode45Data(data);
         }
 
         const signalStrength = data.signalStrength || 0;
@@ -48,7 +52,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
 
         if (Date.now() - lastSummaryTime > 10000) {
             console.clear();
-            console.log([CustomWebSocket] Opcode Frequency Summary (Last 10s));
+            console.log(`[CustomWebSocket] Opcode Frequency Summary (Last 10s)`);
             console.table(opcodeSummary);
             opcodeSummary = {};
             lastSummaryTime = Date.now();
@@ -59,7 +63,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         if (data.rawMessage) {
             try {
                 const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
-                console.log([Message Sent] ${messageText});
+                console.log(`[Message Sent] ${messageText}`);
                 
                 // Normalize message: Remove extra spaces, line breaks, and special characters
                 const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Keep only standard ASCII printable chars
@@ -74,6 +78,30 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
             }
         } else {
             console.warn("[Opcode 25] No message data found.");
+        }
+    }
+
+    // New function to process opcode 45 data similarly to opcode 25
+    function processOpcode45Data(data) {
+        if (data.rawMessage) {
+            try {
+                const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
+                console.log(`[Opcode 45 Data] ${messageText}`);
+                
+                // Normalize the message similarly to opcode 25
+                const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
+                
+                // Optional: You can add additional checks or processing for opcode 45 messages here.
+                // For example, logging if a specific keyword is found:
+                if (cleanedMessage.includes("SPECIAL")) {
+                    console.log("SPECIAL keyword detected in opcode 45 data!");
+                }
+                
+            } catch (e) {
+                console.warn("[Opcode 45 Parsing Error]", e);
+            }
+        } else {
+            console.warn("[Opcode 45] No message data found.");
         }
     }
 
@@ -122,4 +150,4 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
         console.table(opcodeRegistry);
     };
 
-})();       
+})();
