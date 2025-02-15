@@ -8,10 +8,12 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
   let opcodeSummary = {};
   let lastSummaryTime = Date.now();
   const loggedOpcodes = new Set();
+  const messageLogLimit = 10; // Limit message logs to avoid console spam
+  let messageLogCount = 0;
 
   function logOpcodeOnce(opcode) {
     if (!loggedOpcodes.has(opcode)) {
-      console.log(`Opcode ${opcode} detected for the first time.`);
+      console.log(`[WebSocket] New Opcode Detected: ${opcode}`);
       loggedOpcodes.add(opcode);
     }
   }
@@ -45,9 +47,10 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
       opcodeSummary[opcode] += 1;
     }
 
+    // Summarize data every 30 seconds (reduce spam)
     if (Date.now() - lastSummaryTime > 30000) {
       console.clear();
-      console.log(`[WebSocket Analyzer] Opcode Frequency Summary (Last 10s)`);
+      console.log(`[WebSocket Analyzer] Opcode Frequency Summary (Last 30s)`);
       console.table(opcodeSummary);
       opcodeSummary = {};
       lastSummaryTime = Date.now();
@@ -55,23 +58,23 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
   }
 
   function processMessageOpcode(data) {
-    if (data.rawMessage) {
+    if (data.rawMessage && messageLogCount < messageLogLimit) {
       try {
         const messageText = new TextDecoder("utf-8").decode(data.rawMessage);
-        console.log(`[Message Sent] ${messageText}`);
-
-        // Normalize message: Remove non-printable characters.
-        const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, "");
+        const cleanedMessage = messageText.replace(/[^\x20-\x7E]/g, ""); // Remove non-printable characters
         
-        // Check if the cleaned message contains the keyword "player" (case-insensitive)
+        if (cleanedMessage.length > 0) {
+          console.log(`[WebSocket] Message Sent: ${cleanedMessage}`);
+          messageLogCount++;
+        }
+
+        // Detect player-related messages
         if (cleanedMessage.toLowerCase().includes("player")) {
-          console.log("[Player Info Detected]", cleanedMessage);
+          console.log("[WebSocket] Player Info Detected:", cleanedMessage);
         }
       } catch (e) {
-        console.warn("[Message Parsing Error]", e);
+        console.warn("[WebSocket] Message Parsing Error:", e);
       }
-    } else {
-      console.warn("[Opcode 25] No message data found.");
     }
   }
 
@@ -122,4 +125,4 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
     console.table(opcodeRegistry);
   };
 
-})();
+})(); 
