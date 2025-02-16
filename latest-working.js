@@ -1,11 +1,21 @@
-(function() {
+// Global variable to store the observer so it can be stopped later
+let cmdChatObserver = null;
+
+// Function to start the command chat observer
+function startCmdChat() {
   const chatContainer = document.querySelector('.chatmessages');
   if (!chatContainer) {
     console.error("Chat container not found!");
     return;
   }
-  
-  const observer = new MutationObserver(mutations => {
+
+  // Only create a new observer if one isn't already running
+  if (cmdChatObserver) {
+    console.log("Cmd Chat observer already running.");
+    return;
+  }
+
+  cmdChatObserver = new MutationObserver(mutations => {
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
         if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
@@ -19,9 +29,18 @@
     });
   });
 
-  observer.observe(chatContainer, { childList: true });
-  console.log("Command style applied to new messages.");
-})();
+  cmdChatObserver.observe(chatContainer, { childList: true });
+  console.log("Cmd Chat observer started.");
+}
+
+// Function to stop the command chat observer
+function stopCmdChat() {
+  if (cmdChatObserver) {
+    cmdChatObserver.disconnect();
+    cmdChatObserver = null;
+    console.log("Cmd Chat observer stopped.");
+  }
+}
 
 
 // Spectate button functionality with polling
@@ -81,7 +100,8 @@
             </div>
             <div class="toggle-container">
                 <span>Cmd Chat</span>
-                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
+                <!-- Assign an id to the Cmd Chat toggle -->
+                <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
             </div>
         </div>
       `;
@@ -98,6 +118,17 @@
     window.toggleSwitch = function(element) {
       element.classList.toggle('active');
       element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
+
+      // Check if this toggle is for the Cmd Chat functionality
+      if (element.id === 'cmdChatToggle') {
+        if (element.classList.contains('active')) {
+          // When turned ON, start the observer
+          startCmdChat();
+        } else {
+          // When turned OFF, stop the observer
+          stopCmdChat();
+        }
+      }
     };
 
     // Listen for the Escape key to slide the panel out and remove it
