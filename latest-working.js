@@ -1,31 +1,4 @@
 (function() {
-  const chatContainer = document.querySelector('.chatmessages');
-  if (!chatContainer) {
-    console.error("Chat container not found!");
-    return;
-  }
-  
-  const observer = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-      mutation.addedNodes.forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
-          node.classList.add("command");
-          const textDiv = node.querySelector("div.text");
-          if (textDiv) {
-            textDiv.style.fontWeight = "bold";
-          }
-        }
-      });
-    });
-  });
-
-  observer.observe(chatContainer, { childList: true });
-  console.log("Command style applied to new messages.");
-})();
-
-
-// Spectate button functionality with polling
-(function() {
   function initSpectate() {
     // Find the <div> with class "btn-layer" that exactly matches the text "Spectate"
     const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
@@ -56,9 +29,10 @@
       spectateTab.id = 'spectateTab';
       spectateTab.className = 'spectate-tab';
       spectateTab.innerHTML = `
-        <div class="title">Users (2)</div>
-        <div class="team-bar">Teams (1)</div>
-        <div class="team">
+        <div class="collapsible" onclick="toggleCollapse(this)">
+            Users (2) <span class="arrow">▶</span>
+        </div>
+        <div class="content player-list">
             <div class="player">
                 <div class="player-info">
                     <img src="https://via.placeholder.com/40" alt="User">
@@ -72,6 +46,23 @@
                     <span>Hook</span>
                 </div>
                 <span>0</span>
+            </div>
+        </div>
+        <div class="collapsible" onclick="toggleCollapse(this)">
+            Teams (1) <span class="arrow">▶</span>
+        </div>
+        <div class="content team">
+            <div class="player">
+                <div class="player-info">
+                    <img src="https://via.placeholder.com/40" alt="User">
+                    <span>naze</span>
+                </div>
+            </div>
+            <div class="player">
+                <div class="player-info">
+                    <img src="https://via.placeholder.com/40" alt="User">
+                    <span>Hook</span>
+                </div>
             </div>
         </div>
         <div class="button-container">
@@ -93,6 +84,14 @@
         spectateTab.style.right = '0';
       });
     }
+
+    // Function to toggle collapsible sections
+    window.toggleCollapse = function(element) {
+      element.classList.toggle('active');
+      const content = element.nextElementSibling;
+      content.style.display = content.style.display === "block" ? "none" : "block";
+      element.querySelector(".arrow").style.transform = content.style.display === "block" ? "rotate(90deg)" : "rotate(0deg)";
+    };
 
     // Function to toggle switches on click
     window.toggleSwitch = function(element) {
@@ -138,28 +137,29 @@
           display: flex;
           flex-direction: column;
       }
-      .title {
-          font-size: 0.9vw;
-          text-align: left;
-          font-weight: bold;
-          margin-bottom: 6px;
-          padding-left: 5px;
-          color: #bbb;
-      }
-      .team-bar {
-          text-align: left;
-          font-size: 0.9vw;
-          font-weight: bold;
+      .collapsible {
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           padding: 4px 5px;
           background: #222;
-          border-top: 1px solid #444;
-          border-bottom: 1px solid #444;
-          margin-bottom: 5px;
+          border: 1px solid #444;
+          font-size: 0.9vw;
+          font-weight: bold;
       }
-      .team {
-          padding-bottom: 0.5vh;
-          margin-bottom: 1vh;
-          flex: 50%;
+      .arrow {
+          transform: rotate(0deg);
+          transition: transform 0.3s ease-in-out;
+      }
+      .collapsible.active .arrow {
+          transform: rotate(90deg);
+      }
+      .content {
+          display: none;
+          padding: 5px;
+          background: #181818;
+          border-top: 1px solid #444;
       }
       .player {
           display: flex;
@@ -183,7 +183,7 @@
           display: flex;
           flex-direction: column;
           gap: 1px;
-          flex: 30%;
+          margin-top: auto; /* Buttons start from the bottom */
       }
       .toggle-container {
           display: flex;
