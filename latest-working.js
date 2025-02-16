@@ -39,7 +39,6 @@ function stopCmdChat() {
     cmdChatObserver.disconnect();
     cmdChatObserver = null;
     console.log("Cmd Chat observer stopped.");
-  }
 }
 
 
@@ -75,9 +74,9 @@ function stopCmdChat() {
       spectateTab.id = 'spectateTab';
       spectateTab.className = 'spectate-tab';
       spectateTab.innerHTML = `
-        <div class="title">Users (2)</div>
-        <div class="team-bar">Teams (1)</div>
-        <div class="team">
+        <div class="section">
+          <div class="header" id="usersHeader">Users (2)</div>
+          <div class="content" id="usersContent">
             <div class="player">
                 <div class="player-info">
                     <img src="https://via.placeholder.com/40" alt="User">
@@ -92,6 +91,28 @@ function stopCmdChat() {
                 </div>
                 <span>0</span>
             </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="header" id="teamsHeader">Teams (1)</div>
+          <div class="content" id="teamsContent">
+            <div class="team">
+                <div class="player">
+                    <div class="player-info">
+                        <img src="https://via.placeholder.com/40" alt="User">
+                        <span>naze</span>
+                    </div>
+                    <span>1</span>
+                </div>
+                <div class="player">
+                    <div class="player-info">
+                        <img src="https://via.placeholder.com/40" alt="User">
+                        <span>Hook</span>
+                    </div>
+                    <span>0</span>
+                </div>
+            </div>
+          </div>
         </div>
         <div class="button-container">
             <div class="toggle-container">
@@ -100,7 +121,6 @@ function stopCmdChat() {
             </div>
             <div class="toggle-container">
                 <span>Cmd Chat</span>
-                <!-- Assign an id to the Cmd Chat toggle -->
                 <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
             </div>
         </div>
@@ -111,6 +131,25 @@ function stopCmdChat() {
       // Animate the panel sliding in using requestAnimationFrame
       requestAnimationFrame(() => {
         spectateTab.style.right = '0';
+      });
+
+      // Add event listeners to the headers to toggle their sections
+      document.getElementById('usersHeader').addEventListener('click', () => {
+        const usersContent = document.getElementById('usersContent');
+        if (usersContent.style.display === 'none' || usersContent.style.display === '') {
+          usersContent.style.display = 'block';
+        } else {
+          usersContent.style.display = 'none';
+        }
+      });
+
+      document.getElementById('teamsHeader').addEventListener('click', () => {
+        const teamsContent = document.getElementById('teamsContent');
+        if (teamsContent.style.display === 'none' || teamsContent.style.display === '') {
+          teamsContent.style.display = 'block';
+        } else {
+          teamsContent.style.display = 'none';
+        }
       });
     }
 
@@ -168,31 +207,26 @@ function stopCmdChat() {
           z-index: 10000;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
       }
-      .title {
-          font-size: 0.9vw;
-          text-align: left;
-          font-weight: bold;
-          margin-bottom: 6px;
-          padding-left: 5px;
-          color: #bbb;
+      .section {
+          margin-bottom: 10px;
       }
-      .team-bar {
-          text-align: left;
+      .header {
           font-size: 0.9vw;
           font-weight: bold;
           padding: 4px 5px;
           background: #222;
-          border-top: 1px solid #444;
-          border-bottom: 1px solid #444;
-          margin-bottom: 5px;
+          border: 1px solid #444;
+          cursor: pointer;
+          user-select: none;
       }
-      .team {
-          padding-bottom: 0.5vh;
-          margin-bottom: 1vh;
-          flex: 50%;
+      .content {
+          padding: 4px 5px;
+          border: 1px solid #444;
+          border-top: none;
       }
-      .player {
+      .player, .team {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -214,13 +248,12 @@ function stopCmdChat() {
           display: flex;
           flex-direction: column;
           gap: 1px;
-          flex: 30%;
+          margin-top: auto;
       }
       .toggle-container {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin: 1px 0;
           font-size: 0.9vw;
           padding: 1px;
           background: #222;
@@ -231,7 +264,6 @@ function stopCmdChat() {
           height: 1.5vh;
           background: #555;
           border-radius: 2px;
-          position: relative;
           cursor: pointer;
           display: flex;
           align-items: center;
