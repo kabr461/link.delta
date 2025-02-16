@@ -115,7 +115,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 const messageDisplay = rawMessage instanceof ArrayBuffer
                     ? new Uint8Array(rawMessage)
                     : rawMessage;
-                console.log(`Opcode ${opcode} (Count: ${count}) Raw Message:`, messageDisplay);
+             //   console.log(`Opcode ${opcode} (Count: ${count}) Raw Message:`, messageDisplay);
                 // --- Extended: Log a translated version of the raw message ---
                 console.log(`Opcode ${opcode} (Count: ${count}) Translated Message:`, translateRawMessage(rawMessage));
             } else {
@@ -137,7 +137,7 @@ console.log("[WebSocket Debug] Initializing WebSocket Analyzer...");
                 : registryEntry.lastRawMessage;
             console.log('---------------------------------------------------');
             console.log(`Most Repeated Opcode: ${topOpcode} (Count: ${topCount})`);
-            console.log('Raw Message:', messageDisplay);
+         //   console.log('Raw Message:', messageDisplay);
             console.log('Translated Message:', translateRawMessage(registryEntry.lastRawMessage));
             console.log('---------------------------------------------------');
         }
