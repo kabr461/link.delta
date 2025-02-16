@@ -1,3 +1,48 @@
+// Global variable to store the observer instance
+let cmdObserver = null;
+
+// Function to start the command observer
+function startCmdObserver() {
+  const chatContainer = document.querySelector('.chatmessages');
+  if (!chatContainer) {
+    console.error("Chat container not found!");
+    return;
+  }
+  
+  // If an observer is already running, do nothing
+  if (cmdObserver) {
+    console.log("Cmd Chat observer is already running.");
+    return;
+  }
+
+  cmdObserver = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
+          node.classList.add("command");
+          const textDiv = node.querySelector("div.text");
+          if (textDiv) {
+            textDiv.style.fontWeight = "bold";
+          }
+        }
+      });
+    });
+  });
+
+  cmdObserver.observe(chatContainer, { childList: true });
+  console.log("Command style observer started.");
+}
+
+// Function to stop the command observer
+function stopCmdObserver() {
+  if (cmdObserver) {
+    cmdObserver.disconnect();
+    cmdObserver = null;
+    console.log("Command style observer stopped.");
+  }
+}
+
+
 (function() {
   function initSpectate() {
     // Find the <div> with class "btn-layer" that exactly matches the text "Spectate"
@@ -72,7 +117,8 @@
             </div>
             <div class="toggle-container">
                 <span>Cmd Chat</span>
-                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
+                <!-- Give the Cmd Chat toggle an id so we can identify it -->
+                <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
             </div>
         </div>
       `;
@@ -90,13 +136,23 @@
       element.classList.toggle('active');
       const content = element.nextElementSibling;
       content.style.display = content.style.display === "block" ? "none" : "block";
-      element.querySelector(".arrow").style.transform = content.style.display === "block" ? "rotate(90deg)" : "rotate(0deg)";
+      element.querySelector(".arrow").style.transform =
+        content.style.display === "block" ? "rotate(90deg)" : "rotate(0deg)";
     };
 
     // Function to toggle switches on click
     window.toggleSwitch = function(element) {
       element.classList.toggle('active');
       element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
+
+      // If this is the Cmd Chat toggle, start or stop the observer accordingly
+      if (element.id === 'cmdChatToggle') {
+        if (element.classList.contains('active')) {
+          startCmdObserver();
+        } else {
+          stopCmdObserver();
+        }
+      }
     };
 
     // Listen for the Escape key to slide the panel out and remove it
