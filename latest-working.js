@@ -1,49 +1,3 @@
-// Global variable to store the observer so it can be stopped later
-let cmdChatObserver = null;
-
-// Function to start the command chat observer
-function startCmdChat() {
-  const chatContainer = document.querySelector('.chatmessages');
-  if (!chatContainer) {
-    console.error("Chat container not found!");
-    return;
-  }
-
-  // Only create a new observer if one isn't already running
-  if (cmdChatObserver) {
-    console.log("Cmd Chat observer already running.");
-    return;
-  }
-
-  cmdChatObserver = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-      mutation.addedNodes.forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
-          node.classList.add("command");
-          const textDiv = node.querySelector("div.text");
-          if (textDiv) {
-            textDiv.style.fontWeight = "bold";
-          }
-        }
-      });
-    });
-  });
-
-  cmdChatObserver.observe(chatContainer, { childList: true });
-  console.log("Cmd Chat observer started.");
-}
-
-// Function to stop the command chat observer
-function stopCmdChat() {
-  if (cmdChatObserver) {
-    cmdChatObserver.disconnect();
-    cmdChatObserver = null;
-    console.log("Cmd Chat observer stopped.");
-  }
-}
-
-
-// Spectate button functionality with polling
 (function() {
   function initSpectate() {
     // Find the <div> with class "btn-layer" that exactly matches the text "Spectate"
@@ -75,55 +29,51 @@ function stopCmdChat() {
       spectateTab.id = 'spectateTab';
       spectateTab.className = 'spectate-tab';
       spectateTab.innerHTML = `
-        <div class="section">
-          <div class="header" id="usersHeader">Users (2)</div>
-          <div class="content" id="usersContent">
-            <div class="player">
-              <div class="player-info">
-                <img src="https://via.placeholder.com/40" alt="User">
-                <span>naze</span>
-              </div>
-              <span>1</span>
-            </div>
-            <div class="player">
-              <div class="player-info">
-                <img src="https://via.placeholder.com/40" alt="User">
-                <span>Hook</span>
-              </div>
-              <span>0</span>
-            </div>
-          </div>
+        <div class="collapsible" onclick="toggleCollapse(this)">
+            Users (2) <span class="arrow">▶</span>
         </div>
-        <div class="section">
-          <div class="header" id="teamsHeader">Teams (1)</div>
-          <div class="content" id="teamsContent">
-            <div class="team">
-              <div class="player">
+        <div class="content player-list">
+            <div class="player">
                 <div class="player-info">
-                  <img src="https://via.placeholder.com/40" alt="User">
-                  <span>naze</span>
+                    <img src="https://via.placeholder.com/40" alt="User">
+                    <span>naze</span>
                 </div>
                 <span>1</span>
-              </div>
-              <div class="player">
+            </div>
+            <div class="player">
                 <div class="player-info">
-                  <img src="https://via.placeholder.com/40" alt="User">
-                  <span>Hook</span>
+                    <img src="https://via.placeholder.com/40" alt="User">
+                    <span>Hook</span>
                 </div>
                 <span>0</span>
-              </div>
             </div>
-          </div>
+        </div>
+        <div class="collapsible" onclick="toggleCollapse(this)">
+            Teams (1) <span class="arrow">▶</span>
+        </div>
+        <div class="content team">
+            <div class="player">
+                <div class="player-info">
+                    <img src="https://via.placeholder.com/40" alt="User">
+                    <span>naze</span>
+                </div>
+            </div>
+            <div class="player">
+                <div class="player-info">
+                    <img src="https://via.placeholder.com/40" alt="User">
+                    <span>Hook</span>
+                </div>
+            </div>
         </div>
         <div class="button-container">
-          <div class="toggle-container">
-            <span>Spy Tag</span>
-            <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
-          </div>
-          <div class="toggle-container">
-            <span>Cmd Chat</span>
-            <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
-          </div>
+            <div class="toggle-container">
+                <span>Spy Tag</span>
+                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
+            </div>
+            <div class="toggle-container">
+                <span>Cmd Chat</span>
+                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
+            </div>
         </div>
       `;
 
@@ -133,32 +83,20 @@ function stopCmdChat() {
       requestAnimationFrame(() => {
         spectateTab.style.right = '0';
       });
-
-      // Add event listeners to the headers to toggle their sections
-      document.getElementById('usersHeader').addEventListener('click', () => {
-        const usersContent = document.getElementById('usersContent');
-        usersContent.style.display = (usersContent.style.display === 'block') ? 'none' : 'block';
-      });
-
-      document.getElementById('teamsHeader').addEventListener('click', () => {
-        const teamsContent = document.getElementById('teamsContent');
-        teamsContent.style.display = (teamsContent.style.display === 'block') ? 'none' : 'block';
-      });
     }
+
+    // Function to toggle collapsible sections
+    window.toggleCollapse = function(element) {
+      element.classList.toggle('active');
+      const content = element.nextElementSibling;
+      content.style.display = content.style.display === "block" ? "none" : "block";
+      element.querySelector(".arrow").style.transform = content.style.display === "block" ? "rotate(90deg)" : "rotate(0deg)";
+    };
 
     // Function to toggle switches on click
     window.toggleSwitch = function(element) {
       element.classList.toggle('active');
       element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
-
-      // Check if this toggle is for the Cmd Chat functionality
-      if (element.id === 'cmdChatToggle') {
-        if (element.classList.contains('active')) {
-          startCmdChat();
-        } else {
-          stopCmdChat();
-        }
-      }
     };
 
     // Listen for the Escape key to slide the panel out and remove it
@@ -198,26 +136,32 @@ function stopCmdChat() {
           z-index: 10000;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
       }
-      .section {
-          margin-bottom: 10px;
-      }
-      .header {
-          font-size: 0.9vw;
-          font-weight: bold;
+      .collapsible {
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           padding: 4px 5px;
           background: #222;
           border: 1px solid #444;
-          cursor: pointer;
-          user-select: none;
+          font-size: 0.9vw;
+          font-weight: bold;
+      }
+      .arrow {
+          transform: rotate(0deg);
+          transition: transform 0.3s ease-in-out;
+      }
+      .collapsible.active .arrow {
+          transform: rotate(90deg);
       }
       .content {
-          padding: 4px 5px;
-          border: 1px solid #444;
-          border-top: none;
+          display: none;
+          padding: 5px;
+          background: #181818;
+          border-top: 1px solid #444;
       }
-      .player, .team {
+      .player {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -239,12 +183,13 @@ function stopCmdChat() {
           display: flex;
           flex-direction: column;
           gap: 1px;
-          margin-top: auto;
+          margin-top: auto; /* Buttons start from the bottom */
       }
       .toggle-container {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          margin: 1px 0;
           font-size: 0.9vw;
           padding: 1px;
           background: #222;
@@ -255,6 +200,7 @@ function stopCmdChat() {
           height: 1.5vh;
           background: #555;
           border-radius: 2px;
+          position: relative;
           cursor: pointer;
           display: flex;
           align-items: center;
