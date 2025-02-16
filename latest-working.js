@@ -39,6 +39,7 @@ function stopCmdChat() {
     cmdChatObserver.disconnect();
     cmdChatObserver = null;
     console.log("Cmd Chat observer stopped.");
+  }
 }
 
 
@@ -78,18 +79,18 @@ function stopCmdChat() {
           <div class="header" id="usersHeader">Users (2)</div>
           <div class="content" id="usersContent">
             <div class="player">
-                <div class="player-info">
-                    <img src="https://via.placeholder.com/40" alt="User">
-                    <span>naze</span>
-                </div>
-                <span>1</span>
+              <div class="player-info">
+                <img src="https://via.placeholder.com/40" alt="User">
+                <span>naze</span>
+              </div>
+              <span>1</span>
             </div>
             <div class="player">
-                <div class="player-info">
-                    <img src="https://via.placeholder.com/40" alt="User">
-                    <span>Hook</span>
-                </div>
-                <span>0</span>
+              <div class="player-info">
+                <img src="https://via.placeholder.com/40" alt="User">
+                <span>Hook</span>
+              </div>
+              <span>0</span>
             </div>
           </div>
         </div>
@@ -97,32 +98,32 @@ function stopCmdChat() {
           <div class="header" id="teamsHeader">Teams (1)</div>
           <div class="content" id="teamsContent">
             <div class="team">
-                <div class="player">
-                    <div class="player-info">
-                        <img src="https://via.placeholder.com/40" alt="User">
-                        <span>naze</span>
-                    </div>
-                    <span>1</span>
+              <div class="player">
+                <div class="player-info">
+                  <img src="https://via.placeholder.com/40" alt="User">
+                  <span>naze</span>
                 </div>
-                <div class="player">
-                    <div class="player-info">
-                        <img src="https://via.placeholder.com/40" alt="User">
-                        <span>Hook</span>
-                    </div>
-                    <span>0</span>
+                <span>1</span>
+              </div>
+              <div class="player">
+                <div class="player-info">
+                  <img src="https://via.placeholder.com/40" alt="User">
+                  <span>Hook</span>
                 </div>
+                <span>0</span>
+              </div>
             </div>
           </div>
         </div>
         <div class="button-container">
-            <div class="toggle-container">
-                <span>Spy Tag</span>
-                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
-            </div>
-            <div class="toggle-container">
-                <span>Cmd Chat</span>
-                <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
-            </div>
+          <div class="toggle-container">
+            <span>Spy Tag</span>
+            <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
+          </div>
+          <div class="toggle-container">
+            <span>Cmd Chat</span>
+            <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
+          </div>
         </div>
       `;
 
@@ -136,20 +137,12 @@ function stopCmdChat() {
       // Add event listeners to the headers to toggle their sections
       document.getElementById('usersHeader').addEventListener('click', () => {
         const usersContent = document.getElementById('usersContent');
-        if (usersContent.style.display === 'none' || usersContent.style.display === '') {
-          usersContent.style.display = 'block';
-        } else {
-          usersContent.style.display = 'none';
-        }
+        usersContent.style.display = (usersContent.style.display === 'block') ? 'none' : 'block';
       });
 
       document.getElementById('teamsHeader').addEventListener('click', () => {
         const teamsContent = document.getElementById('teamsContent');
-        if (teamsContent.style.display === 'none' || teamsContent.style.display === '') {
-          teamsContent.style.display = 'block';
-        } else {
-          teamsContent.style.display = 'none';
-        }
+        teamsContent.style.display = (teamsContent.style.display === 'block') ? 'none' : 'block';
       });
     }
 
@@ -161,10 +154,8 @@ function stopCmdChat() {
       // Check if this toggle is for the Cmd Chat functionality
       if (element.id === 'cmdChatToggle') {
         if (element.classList.contains('active')) {
-          // When turned ON, start the observer
           startCmdChat();
         } else {
-          // When turned OFF, stop the observer
           stopCmdChat();
         }
       }
