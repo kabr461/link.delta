@@ -39,7 +39,6 @@ function stopCmdObserver() {
     cmdObserver.disconnect();
     cmdObserver = null;
     console.log("Command style observer stopped.");
-  }
 }
 
 (function() {
