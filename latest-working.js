@@ -1,46 +1,54 @@
-// Global variable to store the observer instance
-let cmdObserver = null;
-
-// Function to start the command observer
-function startCmdObserver() {
+// Chat observer logic using previous approach
+(function() {
   const chatContainer = document.querySelector('.chatmessages');
   if (!chatContainer) {
     console.error("Chat container not found!");
     return;
   }
   
-  // If an observer is already running, do nothing
-  if (cmdObserver) {
-    console.log("Cmd Chat observer is already running.");
-    return;
-  }
-
-  cmdObserver = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-      mutation.addedNodes.forEach(node => {
-        if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
-          node.classList.add("command");
-          const textDiv = node.querySelector("div.text");
-          if (textDiv) {
-            textDiv.style.fontWeight = "bold";
+  // Global variable to hold our observer instance
+  let cmdObserver = null;
+  
+  // Function to start the command observer
+  function startCmdObserver() {
+    if (cmdObserver) {
+      console.log("Cmd Chat observer is already running.");
+      return;
+    }
+    cmdObserver = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
+            node.classList.add("command");
+            const textDiv = node.querySelector("div.text");
+            if (textDiv) {
+              textDiv.style.fontWeight = "bold";
+            }
           }
-        }
+        });
       });
     });
-  });
-
-  cmdObserver.observe(chatContainer, { childList: true });
-  console.log("Command style observer started.");
-}
-
-// Function to stop the command observer
-function stopCmdObserver() {
-  if (cmdObserver) {
-    cmdObserver.disconnect();
-    cmdObserver = null;
-    console.log("Command style observer stopped.");
-}
-
+    
+    // Observe changes within the chat container (including subtree for nested nodes)
+    cmdObserver.observe(chatContainer, { childList: true, subtree: true });
+    console.log("Command style observer started.");
+  }
+  
+  // Function to stop the command observer
+  function stopCmdObserver() {
+    if (cmdObserver) {
+      cmdObserver.disconnect();
+      cmdObserver = null;
+      console.log("Command style observer stopped.");
+    }
+  }
+  
+  // Expose these functions so that they can be called from the toggle code
+  window.startCmdObserver = startCmdObserver;
+  window.stopCmdObserver = stopCmdObserver;
+})();
+  
+// Spectate panel code
 (function() {
   function initSpectate() {
     // Find the <div> with class "btn-layer" that exactly matches the text "Spectate"
@@ -78,18 +86,18 @@ function stopCmdObserver() {
       </div>
       <div class="content player-list">
           <div class="player">
-              <div class="player-info">
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
                   <img src="https://via.placeholder.com/40" alt="User">
                   <span>naze</span>
               </div>
-              <span class="tag">test</span>
+              <span class="player-tag">naze</span>
           </div>
           <div class="player">
-              <div class="player-info">
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
                   <img src="https://via.placeholder.com/40" alt="User">
                   <span>Hook</span>
               </div>
-              <span class="tag">test</span>
+              <span class="player-tag">Hook</span>
           </div>
       </div>
       <div class="collapsible" onclick="toggleCollapse(this)">
@@ -97,16 +105,20 @@ function stopCmdObserver() {
       </div>
       <div class="content team">
           <div class="player">
-              <div class="tick-button">✓</div>
-              <img src="https://via.placeholder.com/40" alt="User">
-              <span>naze</span>
-              <span class="number">1</span>
+              <div class="tick-button" onclick="toggleTick(this)">☐</div>
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                  <img src="https://via.placeholder.com/40" alt="User">
+                  <span>naze</span>
+              </div>
+              <span class="score">1</span>
           </div>
           <div class="player">
-              <div class="tick-button">✓</div>
-              <img src="https://via.placeholder.com/40" alt="User">
-              <span>Hook</span>
-              <span class="number">0</span>
+              <div class="tick-button" onclick="toggleTick(this)">☐</div>
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                  <img src="https://via.placeholder.com/40" alt="User">
+                  <span>Hook</span>
+              </div>
+              <span class="score">0</span>
           </div>
       </div>
       <div class="button-container">
@@ -116,7 +128,7 @@ function stopCmdObserver() {
           </div>
           <div class="toggle-container">
               <span>Cmd Chat</span>
-              <!-- Give the Cmd Chat toggle an id so we can identify it -->
+              <!-- Added an id to easily reference the Cmd Chat toggle -->
               <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
           </div>
       </div>
@@ -143,8 +155,8 @@ function stopCmdObserver() {
   window.toggleSwitch = function(element) {
     element.classList.toggle('active');
     element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
-
-    // If this is the Cmd Chat toggle, start or stop the observer accordingly
+    
+    // If this is the Cmd Chat toggle, use the previously defined observer logic
     if (element.id === 'cmdChatToggle') {
       if (element.classList.contains('active')) {
         startCmdObserver();
@@ -153,6 +165,67 @@ function stopCmdObserver() {
       }
     }
   };
+
+  // Toggle tick state on click
+  window.toggleTick = function(element) {
+    // Toggle between ticked (✓) and unticked (☐)
+    element.textContent = element.textContent.trim() === '✓' ? '☐' : '✓';
+    // Prevent event propagation so the parent click doesn't trigger copy
+    event.stopPropagation();
+  };
+
+  // Function to copy player info (depending on what was clicked)
+  // If the image is clicked, copy the URL; if the span is clicked, copy the text
+  window.copyPlayerInfo = function(event, container) {
+    event.stopPropagation();
+    let textToCopy = '';
+    const target = event.target;
+    if (target.tagName.toLowerCase() === 'img') {
+      textToCopy = target.src;
+    } else if (target.tagName.toLowerCase() === 'span') {
+      textToCopy = target.textContent.trim();
+    } else {
+      // If container was clicked, default to copying the name from the first span
+      const span = container.querySelector('span');
+      if (span) {
+        textToCopy = span.textContent.trim();
+      }
+    }
+    if (!textToCopy) return;
+    
+    // Use the Clipboard API if available
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showCopyAlert(container, "Copied!");
+      }).catch(err => {
+        console.error("Copy failed", err);
+      });
+    } else {
+      // Fallback using a temporary textarea
+      const textarea = document.createElement('textarea');
+      textarea.value = textToCopy;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showCopyAlert(container, "Copied!");
+      } catch (err) {
+        console.error("Fallback: Copy failed", err);
+      }
+      document.body.removeChild(textarea);
+    }
+  };
+
+  // Function to show a temporary copy alert
+  function showCopyAlert(parent, message) {
+    const alertEl = document.createElement('div');
+    alertEl.textContent = message;
+    alertEl.className = 'copy-alert';
+    parent.appendChild(alertEl);
+    setTimeout(() => {
+      alertEl.remove();
+    }, 1500);
+  }
 
   // Listen for the Escape key to slide the panel out and remove it
   document.addEventListener('keydown', function(e) {
@@ -227,32 +300,44 @@ function stopCmdObserver() {
     .player-info {
         display: flex;
         align-items: center;
+        cursor: pointer;
     }
-    .player img {
+    .player-info img {
         width: 2vw;
         height: 2vw;
         border-radius: 50%;
-        margin-right: 0.5vw;
+        margin-right: 0.3vw;
+        cursor: pointer;
+    }
+    .player-info span {
+        cursor: pointer;
     }
     .tick-button {
-        margin-right: 5px;
         color: #0f0;
         font-size: 1vw;
         cursor: pointer;
     }
-    .tag {
-        background: #444;
+    .name {
+        margin: 0 0.2vw;
+    }
+    .player-tag {
+        background: #888;
+        padding: 0.2em 0.5em;
+        border-radius: 4px;
+        font-size: 0.85vw;
         color: #fff;
-        padding: 2px 4px;
-        border-radius: 3px;
+    }
+    .score {
         font-size: 0.8vw;
-        margin-left: 5px;
+        background: #555;
+        padding: 0.1em 0.3em;
+        border-radius: 3px;
     }
     .button-container {
         display: flex;
         flex-direction: column;
         gap: 1px;
-        margin-top: auto; /* Buttons start from the bottom */
+        margin-top: auto;
     }
     .toggle-container {
         display: flex;
@@ -281,9 +366,18 @@ function stopCmdObserver() {
     .toggle.active {
         background: #0f0;
     }
+    .copy-alert {
+        position: absolute;
+        bottom: -1.2em;
+        left: 0;
+        background: #333;
+        padding: 0.1em 0.3em;
+        font-size: 0.7vw;
+        border-radius: 3px;
+        opacity: 0.8;
+    }
   `;
   document.head.appendChild(style);
 
-  // Initialize the spectate interface
   initSpectate();
 })();
