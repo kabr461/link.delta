@@ -1,69 +1,89 @@
-
-
 (function() {
   'use strict';
 
-  // Chat observer logic
+  // --------------------------------------------------------
+  // 1) Chat observer logic (CMD Chat)
+  // --------------------------------------------------------
   (function() {
-    const chatContainer = document.querySelector('.chatmessages');
-    if (!chatContainer) {
-      console.error("Chat container not found!");
-      return;
-    }
-
-    let cmdObserver = null;
-
-    window.startCmdObserver = function() {
-      if (cmdObserver) {
-        console.log("Cmd Chat observer is already running.");
+    // We’ll try to find the chat container repeatedly in case it's not loaded immediately
+    function findChatContainer() {
+      const chatContainer = document.querySelector('.chatmessages');
+      if (!chatContainer) {
+        console.log("Chat container not found yet. Retrying...");
+        setTimeout(findChatContainer, 500);
         return;
       }
-      cmdObserver = new MutationObserver(mutations => {
-        mutations.forEach(mutation => {
-          mutation.addedNodes.forEach(node => {
-            if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
-              node.classList.add("command");
-              const textDiv = node.querySelector("div.text");
-              if (textDiv) {
-                textDiv.style.fontWeight = "bold";
+      console.log("Chat container found:", chatContainer);
+
+      let cmdObserver = null;
+
+      // Start the observer
+      window.startCmdObserver = function() {
+        if (cmdObserver) {
+          console.log("Cmd Chat observer is already running.");
+          return;
+        }
+        cmdObserver = new MutationObserver(mutations => {
+          mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+              if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
+                node.classList.add("command");
+                const textDiv = node.querySelector("div.text");
+                if (textDiv) {
+                  textDiv.style.fontWeight = "bold";
+                }
               }
-            }
+            });
           });
         });
-      });
 
-      cmdObserver.observe(chatContainer, { childList: true, subtree: true });
-      console.log("Command style observer started.");
-    };
+        // Observe changes within the chat container (including subtree for nested nodes)
+        cmdObserver.observe(chatContainer, { childList: true, subtree: true });
+        console.log("Command style observer started.");
+      };
 
-    window.stopCmdObserver = function() {
-      if (cmdObserver) {
-        cmdObserver.disconnect();
-        cmdObserver = null;
-        console.log("Command style observer stopped.");
-      }
-    };
+      // Stop the observer
+      window.stopCmdObserver = function() {
+        if (cmdObserver) {
+          cmdObserver.disconnect();
+          cmdObserver = null;
+          console.log("Command style observer stopped.");
+        }
+      };
+    }
+
+    // Initiate the search for the chat container
+    findChatContainer();
   })();
 
-  // Spectate panel code
+
+  // --------------------------------------------------------
+  // 2) Spectate panel code
+  // --------------------------------------------------------
   (function() {
+    // Wait for the "Spectate" button to exist
     function initSpectate() {
       const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
         .find(el => el.textContent.trim() === 'Spectate');
 
       if (!spectateBtn) {
         console.log('Spectate button not found yet. Retrying...');
-        return setTimeout(initSpectate, 500);
+        setTimeout(initSpectate, 500);
+        return;
       }
 
       console.log('Spectate button found:', spectateBtn);
+
+      // Attach a click event listener to the Spectate button.
       spectateBtn.addEventListener('click', function() {
         console.log('Spectate button clicked!');
         openSpectateTab();
       });
     }
 
+    // Create and show the Spectate UI panel
     function openSpectateTab() {
+      // Prevent duplicate panels
       if (document.getElementById('spectateTab')) {
         document.getElementById('spectateTab').style.right = '0';
         return;
@@ -72,6 +92,7 @@
       const spectateTab = document.createElement('div');
       spectateTab.id = 'spectateTab';
       spectateTab.className = 'spectate-tab';
+
       spectateTab.innerHTML = `
         <div class="collapsible" onclick="toggleCollapse(this)">
             Users (2) <span class="arrow">▶</span>
@@ -97,7 +118,7 @@
         </div>
         <div class="content team">
             <div class="player">
-                <div class="tick-button" onclick="toggleTick(this)">☐</div>
+                <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
                 <div class="player-info" onclick="copyPlayerInfo(event, this)">
                     <img src="https://via.placeholder.com/40" alt="User">
                     <span>naze</span>
@@ -105,7 +126,7 @@
                 <span class="score">1</span>
             </div>
             <div class="player">
-                <div class="tick-button" onclick="toggleTick(this)">☐</div>
+                <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
                 <div class="player-info" onclick="copyPlayerInfo(event, this)">
                     <img src="https://via.placeholder.com/40" alt="User">
                     <span>Hook</span>
@@ -127,11 +148,13 @@
 
       document.body.appendChild(spectateTab);
 
+      // Animate the panel sliding in using requestAnimationFrame
       requestAnimationFrame(() => {
         spectateTab.style.right = '0';
       });
     }
 
+    // Toggle collapsible sections
     window.toggleCollapse = function(element) {
       element.classList.toggle('active');
       const content = element.nextElementSibling;
@@ -140,33 +163,41 @@
         (content.style.display === "block") ? "rotate(90deg)" : "rotate(0deg)";
     };
 
+    // Toggle ON/OFF switches
     window.toggleSwitch = function(element) {
       element.classList.toggle('active');
       element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
 
+      // If this is the Cmd Chat toggle, start/stop the observer
       if (element.id === 'cmdChatToggle') {
         if (element.classList.contains('active')) {
-          startCmdObserver();
+          window.startCmdObserver?.();
         } else {
-          stopCmdObserver();
+          window.stopCmdObserver?.();
         }
       }
     };
 
-    window.toggleTick = function(element) {
+    // Toggle tick state on click
+    window.toggleTick = function(e, element) {
+      // Toggle between ticked (✓) and unticked (☐)
       element.textContent = element.textContent.trim() === '✓' ? '☐' : '✓';
-      event.stopPropagation();
+      // Prevent the parent click from firing
+      e.stopPropagation();
     };
 
-    window.copyPlayerInfo = function(event, container) {
-      event.stopPropagation();
+    // Copy player info
+    window.copyPlayerInfo = function(e, container) {
+      e.stopPropagation();
       let textToCopy = '';
-      const target = event.target;
+      const target = e.target;
+
       if (target.tagName.toLowerCase() === 'img') {
         textToCopy = target.src;
       } else if (target.tagName.toLowerCase() === 'span') {
         textToCopy = target.textContent.trim();
       } else {
+        // If container was clicked, default to copying the name from the first span
         const span = container.querySelector('span');
         if (span) {
           textToCopy = span.textContent.trim();
@@ -175,12 +206,11 @@
       if (!textToCopy) return;
 
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToCopy).then(() => {
-          showCopyAlert(container, "Copied!");
-        }).catch(err => {
-          console.error("Copy failed", err);
-        });
+        navigator.clipboard.writeText(textToCopy)
+          .then(() => showCopyAlert(container, "Copied!"))
+          .catch(err => console.error("Copy failed", err));
       } else {
+        // Fallback for older browsers
         const textarea = document.createElement('textarea');
         textarea.value = textToCopy;
         document.body.appendChild(textarea);
@@ -195,16 +225,16 @@
       }
     };
 
+    // Show a temporary "Copied!" alert
     function showCopyAlert(parent, message) {
       const alertEl = document.createElement('div');
       alertEl.textContent = message;
       alertEl.className = 'copy-alert';
       parent.appendChild(alertEl);
-      setTimeout(() => {
-        alertEl.remove();
-      }, 1500);
+      setTimeout(() => alertEl.remove(), 1500);
     }
 
+    // Press Escape to hide and remove the panel
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         const spectateTab = document.getElementById('spectateTab');
@@ -218,6 +248,7 @@
       }
     });
 
+    // Inject CSS styles for the Spectate panel
     const style = document.createElement('style');
     style.innerHTML = `
       .spectate-tab {
@@ -355,6 +386,7 @@
     `;
     document.head.appendChild(style);
 
+    // Start trying to find the Spectate button
     initSpectate();
   })();
 })();
