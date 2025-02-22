@@ -1,10 +1,11 @@
 // Chat observer logic using previous approach
 (function() {
-  const chatContainer = document.querySelector('.chatmessages');
-  if (!chatContainer) {
-    console.error("Chat container not found!");
-    return;
-  }
+  function initChatObserver() {
+    const chatContainer = document.querySelector('.chatmessages');
+    if (!chatContainer) {
+      console.log("Chat container not found yet. Retrying...");
+      return setTimeout(initChatObserver, 500); // Retry every 500ms until found
+    }
   
   // Global variable to hold our observer instance
   let cmdObserver = null;
