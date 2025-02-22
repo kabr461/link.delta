@@ -4,6 +4,7 @@
   // ========================
   let cmdObserver = null;
 
+  // Repeatedly look for the chat container and attach the observer when needed.
   function initChatObserver() {
     const chatContainer = document.querySelector('.chatmessages');
     if (!chatContainer) {
@@ -27,11 +28,12 @@
       });
     });
 
-    // Observe changes within the chat container (including subtree for nested nodes)
+    // Observe changes within the chat container (including nested nodes)
     cmdObserver.observe(chatContainer, { childList: true, subtree: true });
     console.log("Command style observer started.");
   }
 
+  // These functions are controlled solely by the toggle button.
   window.startCmdObserver = function() {
     if (cmdObserver) {
       console.log("Cmd Chat observer is already running.");
@@ -48,8 +50,7 @@
     }
   };
 
-  // Start looking for the chat container immediately
-  initChatObserver();
+  // Note: Do not auto-start the observer here. It will only run when toggled ON.
 
 
   // ========================
@@ -110,7 +111,7 @@
       </div>
       <div class="content team">
           <div class="player">
-              <div class="tick-button" onclick="toggleTick(this)">☐</div>
+              <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
               <div class="player-info" onclick="copyPlayerInfo(event, this)">
                   <img src="https://via.placeholder.com/40" alt="User">
                   <span>naze</span>
@@ -118,7 +119,7 @@
               <span class="score">1</span>
           </div>
           <div class="player">
-              <div class="tick-button" onclick="toggleTick(this)">☐</div>
+              <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
               <div class="player-info" onclick="copyPlayerInfo(event, this)">
                   <img src="https://via.placeholder.com/40" alt="User">
                   <span>Hook</span>
@@ -161,7 +162,7 @@
     element.classList.toggle('active');
     element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
 
-    // If this is the Cmd Chat toggle, use the chat observer logic
+    // If this is the Cmd Chat toggle, control the chat observer
     if (element.id === 'cmdChatToggle') {
       if (element.classList.contains('active')) {
         startCmdObserver();
@@ -171,8 +172,8 @@
     }
   };
 
-  // Toggle tick state on click
-  window.toggleTick = function(element) {
+  // Toggle tick state on click, now correctly accepts event and element parameters.
+  window.toggleTick = function(event, element) {
     // Toggle between ticked (✓) and unticked (☐)
     element.textContent = element.textContent.trim() === '✓' ? '☐' : '✓';
     // Prevent event propagation so the parent click doesn't trigger copy
@@ -196,7 +197,7 @@
       }
     }
     if (!textToCopy) return;
-
+    
     // Use the Clipboard API if available
     if (navigator.clipboard) {
       navigator.clipboard.writeText(textToCopy).then(() => {
