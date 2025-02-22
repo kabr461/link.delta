@@ -1,8 +1,6 @@
 (function() {
   function main() {
-    // ========================
     // Global Error Handling & Logging
-    // ========================
     window.onerror = function(message, source, lineno, colno, error) {
       console.error("Global error caught:", message, "at", source, "line:", lineno, "col:", colno, "error:", error);
     };
@@ -22,25 +20,20 @@
 
     function initChatObserver() {
       try {
-        console.log("[initChatObserver] Looking for chat container (.chatmessages)...");
         const chatContainer = document.querySelector('.chatmessages');
         if (!chatContainer) {
-          console.log("[initChatObserver] Chat container not found. Retrying...");
           return setTimeout(initChatObserver, 500);
         }
-        console.log("[initChatObserver] Chat container found:", chatContainer);
 
         cmdObserver = new MutationObserver(mutations => {
           mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
               try {
                 if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
-                  console.log("[MutationObserver] New message node found:", node);
                   node.classList.add("command");
                   const textDiv = node.querySelector("div.text");
                   if (textDiv) {
                     textDiv.style.fontWeight = "bold";
-                    console.log("[MutationObserver] Bold style applied to:", textDiv);
                   }
                 }
               } catch (err) {
@@ -51,29 +44,22 @@
         });
 
         cmdObserver.observe(chatContainer, { childList: true, subtree: true });
-        console.log("[initChatObserver] Command style observer started.");
       } catch (err) {
         console.error("[initChatObserver] Exception:", err);
       }
     }
 
     window.startCmdObserver = function() {
-      console.log("[startCmdObserver] Called.");
       if (cmdObserver) {
-        console.log("[startCmdObserver] Cmd Chat observer is already running.");
         return;
       }
       initChatObserver();
     };
 
     window.stopCmdObserver = function() {
-      console.log("[stopCmdObserver] Called.");
       if (cmdObserver) {
         cmdObserver.disconnect();
         cmdObserver = null;
-        console.log("[stopCmdObserver] Command style observer stopped.");
-      } else {
-        console.log("[stopCmdObserver] No observer to stop.");
       }
     };
 
@@ -82,17 +68,13 @@
     // ========================
     function initSpectate() {
       try {
-        console.log("[initSpectate] Looking for Spectate button (div.btn-layer with text 'Spectate')...");
         const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
           .find(el => el.textContent.trim() === 'Spectate');
         if (!spectateBtn) {
-          console.log("[initSpectate] Spectate button not found. Retrying...");
           return setTimeout(initSpectate, 500);
         }
-        console.log("[initSpectate] Spectate button found:", spectateBtn);
         spectateBtn.addEventListener('click', function() {
           try {
-            console.log("[SpectateButton] Click event triggered.");
             openSpectateTab();
           } catch (err) {
             console.error("[SpectateButton] Error during click event:", err);
@@ -105,9 +87,7 @@
 
     function openSpectateTab() {
       try {
-        console.log("[openSpectateTab] Called.");
         if (document.getElementById('spectateTab')) {
-          console.log("[openSpectateTab] Spectate tab already exists. Showing it.");
           document.getElementById('spectateTab').style.right = '0';
           return;
         }
@@ -168,11 +148,9 @@
           </div>
         `;
         document.body.appendChild(spectateTab);
-        console.log("[openSpectateTab] Spectate tab created.");
         requestAnimationFrame(() => {
           try {
             spectateTab.style.right = '0';
-            console.log("[openSpectateTab] Spectate tab animation triggered.");
           } catch (err) {
             console.error("[openSpectateTab] Error during animation:", err);
           }
@@ -184,7 +162,6 @@
 
     window.toggleCollapse = function(element) {
       try {
-        console.log("[toggleCollapse] Toggling collapse for element:", element);
         element.classList.toggle('active');
         const content = element.nextElementSibling;
         content.style.display = content.style.display === "block" ? "none" : "block";
@@ -197,17 +174,10 @@
 
     window.toggleSwitch = function(element) {
       try {
-        console.log("[toggleSwitch] Toggling switch for element:", element);
         element.classList.toggle('active');
         element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
-
         if (element.id === 'cmdChatToggle') {
-          console.log("[toggleSwitch] Cmd Chat toggle detected. Current state:", element.textContent);
-          if (element.classList.contains('active')) {
-            startCmdObserver();
-          } else {
-            stopCmdObserver();
-          }
+          element.classList.contains('active') ? startCmdObserver() : stopCmdObserver();
         }
       } catch (err) {
         console.error("[toggleSwitch] Exception:", err);
@@ -216,7 +186,6 @@
 
     window.toggleTick = function(event, element) {
       try {
-        console.log("[toggleTick] Toggling tick for element:", element);
         element.textContent = element.textContent.trim() === '✓' ? '☐' : '✓';
         event.stopPropagation();
       } catch (err) {
@@ -226,7 +195,6 @@
 
     window.copyPlayerInfo = function(event, container) {
       try {
-        console.log("[copyPlayerInfo] Called for container:", container);
         event.stopPropagation();
         let textToCopy = '';
         const target = event.target;
@@ -241,15 +209,11 @@
           }
         }
         if (!textToCopy) {
-          console.log("[copyPlayerInfo] Nothing to copy.");
           return;
         }
-        console.log("[copyPlayerInfo] Text to copy:", textToCopy);
-
         if (navigator.clipboard) {
           navigator.clipboard.writeText(textToCopy).then(() => {
             showCopyAlert(container, "Copied!");
-            console.log("[copyPlayerInfo] Clipboard write successful.");
           }).catch(err => {
             console.error("[copyPlayerInfo] Clipboard write failed:", err);
           });
@@ -261,7 +225,6 @@
           try {
             document.execCommand('copy');
             showCopyAlert(container, "Copied!");
-            console.log("[copyPlayerInfo] Fallback copy successful.");
           } catch (err) {
             console.error("[copyPlayerInfo] Fallback copy failed:", err);
           }
@@ -274,7 +237,6 @@
 
     function showCopyAlert(parent, message) {
       try {
-        console.log("[showCopyAlert] Showing alert with message:", message);
         const alertEl = document.createElement('div');
         alertEl.textContent = message;
         alertEl.className = 'copy-alert';
@@ -282,7 +244,6 @@
         setTimeout(() => {
           try {
             alertEl.remove();
-            console.log("[showCopyAlert] Alert removed.");
           } catch (err) {
             console.error("[showCopyAlert] Error removing alert:", err);
           }
@@ -295,14 +256,12 @@
     document.addEventListener('keydown', function(e) {
       try {
         if (e.key === 'Escape') {
-          console.log("[keydown] Escape pressed.");
           const spectateTab = document.getElementById('spectateTab');
           if (spectateTab) {
             spectateTab.style.right = '-15vw';
             setTimeout(() => {
               try {
                 spectateTab.remove();
-                console.log("[keydown] Spectate panel hidden.");
               } catch (err) {
                 console.error("[keydown] Error removing spectate panel:", err);
               }
@@ -448,10 +407,7 @@
     `;
     document.head.appendChild(style);
 
-    // Start the search for the Spectate button
     initSpectate();
   }
-
-  // Wait 15 seconds before running the main code
-  setTimeout(main, 15000);
+  setTimeout(main, 8000);
 })();
