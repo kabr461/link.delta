@@ -1,21 +1,18 @@
-// Chat observer logic using previous approach
 (function() {
+  // ========================
+  // Chat Observer Logic
+  // ========================
+  let cmdObserver = null;
+
   function initChatObserver() {
     const chatContainer = document.querySelector('.chatmessages');
     if (!chatContainer) {
       console.log("Chat container not found yet. Retrying...");
       return setTimeout(initChatObserver, 500); // Retry every 500ms until found
     }
-  
-  // Global variable to hold our observer instance
-  let cmdObserver = null;
-  
-  // Function to start the command observer
-  function startCmdObserver() {
-    if (cmdObserver) {
-      console.log("Cmd Chat observer is already running.");
-      return;
-    }
+
+    console.log("Chat container found:", chatContainer);
+
     cmdObserver = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
         mutation.addedNodes.forEach(node => {
@@ -29,28 +26,35 @@
         });
       });
     });
-    
+
     // Observe changes within the chat container (including subtree for nested nodes)
     cmdObserver.observe(chatContainer, { childList: true, subtree: true });
     console.log("Command style observer started.");
   }
-  
-  // Function to stop the command observer
-  function stopCmdObserver() {
+
+  window.startCmdObserver = function() {
+    if (cmdObserver) {
+      console.log("Cmd Chat observer is already running.");
+      return;
+    }
+    initChatObserver();
+  };
+
+  window.stopCmdObserver = function() {
     if (cmdObserver) {
       cmdObserver.disconnect();
       cmdObserver = null;
       console.log("Command style observer stopped.");
     }
-  }
-  
-  // Expose these functions so that they can be called from the toggle code
-  window.startCmdObserver = startCmdObserver;
-  window.stopCmdObserver = stopCmdObserver;
-})();
-  
-// Spectate panel code
-(function() {
+  };
+
+  // Start looking for the chat container immediately
+  initChatObserver();
+
+
+  // ========================
+  // Spectate Panel Code
+  // ========================
   function initSpectate() {
     // Find the <div> with class "btn-layer" that exactly matches the text "Spectate"
     const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
@@ -156,8 +160,8 @@
   window.toggleSwitch = function(element) {
     element.classList.toggle('active');
     element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
-    
-    // If this is the Cmd Chat toggle, use the previously defined observer logic
+
+    // If this is the Cmd Chat toggle, use the chat observer logic
     if (element.id === 'cmdChatToggle') {
       if (element.classList.contains('active')) {
         startCmdObserver();
@@ -175,8 +179,7 @@
     event.stopPropagation();
   };
 
-  // Function to copy player info (depending on what was clicked)
-  // If the image is clicked, copy the URL; if the span is clicked, copy the text
+  // Function to copy player info (if the image is clicked, copy the URL; if the span is clicked, copy the text)
   window.copyPlayerInfo = function(event, container) {
     event.stopPropagation();
     let textToCopy = '';
@@ -193,7 +196,7 @@
       }
     }
     if (!textToCopy) return;
-    
+
     // Use the Clipboard API if available
     if (navigator.clipboard) {
       navigator.clipboard.writeText(textToCopy).then(() => {
@@ -318,9 +321,6 @@
         font-size: 1vw;
         cursor: pointer;
     }
-    .name {
-        margin: 0 0.2vw;
-    }
     .player-tag {
         background: #888;
         padding: 0.2em 0.5em;
@@ -380,5 +380,6 @@
   `;
   document.head.appendChild(style);
 
+  // Initialize the Spectate panel once the Spectate button is available
   initSpectate();
 })();
