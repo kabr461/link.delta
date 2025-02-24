@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  // ----- Minimal BinaryReader Implementation -----
+  // ----- Enhanced BinaryReader Implementation -----
   class BinaryReader {
     constructor(data) {
       if (data instanceof ArrayBuffer) {
@@ -40,7 +40,13 @@
       this.offset += 2;
       return value;
     }
-    // Reads a UTF-16 string until a null (0) is encountered.
+    readInt32() {
+      if (this.offset + 4 > this.view.byteLength) throw new RangeError("Offset out of bounds");
+      const value = this.view.getInt32(this.offset, this.le);
+      this.offset += 4;
+      return value;
+    }
+    // Reads a null-terminated UTF-16 string.
     readUTF16StringZero() {
       let str = "";
       while (this.offset + 2 <= this.view.byteLength) {
@@ -50,7 +56,7 @@
       }
       return str;
     }
-    // Reads a UTF-8 string until a 0 byte is encountered.
+    // Reads a null-terminated UTF-8 string.
     readUTF8StringZero() {
       let str = "";
       while (this.offset < this.view.byteLength) {
@@ -60,10 +66,21 @@
       }
       return str;
     }
+    // Reads a length-prefixed UTF-16 string.
+    // First reads an unsigned 16-bit integer (the length), then that many 16-bit code units.
+    readUTF16StringLength() {
+      const len = this.readUInt16();
+      let str = "";
+      for (let i = 0; i < len; i++) {
+        if (this.offset + 2 > this.view.byteLength) throw new RangeError("Offset out of bounds in readUTF16StringLength");
+        const code = this.readUInt16();
+        str += String.fromCharCode(code);
+      }
+      return str;
+    }
   }
 
-  // ----- WebSocket Message Interception -----
-  // Save a reference to the original WebSocket constructor and addEventListener.
+  // ----- WebSocket Message Interception & Parser Hook -----
   const OriginalWebSocket = window.WebSocket;
   const originalAddEventListener = OriginalWebSocket.prototype.addEventListener;
 
@@ -77,7 +94,7 @@
             const rawData = new Uint8Array(event.data);
             console.log("Raw binary data:", rawData);
 
-            // If delta_packet.parse is available, try all its parser functions.
+            // If delta_packet.parse is available, try every parser function.
             if (window.delta_packet && window.delta_packet.parse) {
               const parsers = window.delta_packet.parse;
               for (const key in parsers) {
@@ -120,5 +137,5 @@
     }
   });
 
-  console.log("WebSocket interception for delta_packet parsing installed.");
+  console.log("WebSocket interception with enhanced BinaryReader installed.");
 })();
