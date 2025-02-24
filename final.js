@@ -181,7 +181,8 @@
     });
 
     console.log("[Hook] Game state hook installed. Current game state:", window.gameState);
-  })(); // end Part 1
+    })(); // end Part 1
+  })();
 
   /* =====================================================
      PART 2: UI CODE
