@@ -189,120 +189,175 @@
      extra 6‑second delay) and then builds a UI panel using
      the dynamic data from window.gameState.
   ===================================================== */
-  (function initUIDelayed() {
-    function initUI() {
-      console.log("[UI] Starting UI initialization...");
-      console.log("[UI] Current game state:", window.gameState);
-      buildSpectatePanel();
-    }
+(function() {
+  function main() {
+    // Global Error Handling & Logging
+    window.onerror = function(message, source, lineno, colno, error) {
+      console.error("Global error caught:", message, "at", source, "line:", lineno, "col:", colno, "error:", error);
+    };
+    window.addEventListener('error', function(e) {
+      console.error("Error event caught:", e);
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error("Unhandled rejection:", e.reason);
+    });
 
-    function buildSpectatePanel() {
-      // Remove any existing panel.
-      const oldPanel = document.getElementById("spectateTab");
-      if (oldPanel) oldPanel.remove();
-
-      // Create the panel container.
-      const panel = document.createElement("div");
-      panel.id = "spectateTab";
-      panel.className = "spectate-tab";
-
-      // Build a section for players dynamically.
-      const players = window.gameState.players;
-      const playerCount = Object.keys(players).length;
-      const playerSection = document.createElement("div");
-      playerSection.className = "content player-list";
-      const playerHeader = document.createElement("div");
-      playerHeader.className = "collapsible";
-      playerHeader.innerHTML = `Players (${playerCount}) <span class="arrow">▶</span>`;
-      playerHeader.onclick = () => toggleCollapse(playerHeader);
-      panel.appendChild(playerHeader);
-      panel.appendChild(playerSection);
-
-      // Create each player element dynamically.
-      Object.values(players).forEach(player => {
-        const playerDiv = document.createElement("div");
-        playerDiv.className = "player";
-        // Use dynamic data (or fallbacks) for tag and clan.
-        const tag = player.tag || ("Player " + player.playerID);
-        const clan = player.clanTag || "";
-        playerDiv.innerHTML = `
-          <div class="player-info" onclick="copyPlayerInfo(event, this)">
-            <img src="https://via.placeholder.com/40" alt="User">
-            <span>${tag}</span>
-          </div>
-          <span class="player-tag">${clan}</span>
-        `;
-        playerSection.appendChild(playerDiv);
-      });
-
-      // Build a section for spectators dynamically.
-      const spectators = window.gameState.spectators;
-      const specCount = Object.keys(spectators).length;
-      const specSection = document.createElement("div");
-      specSection.className = "content player-list";
-      const specHeader = document.createElement("div");
-      specHeader.className = "collapsible";
-      specHeader.innerHTML = `Spectators (${specCount}) <span class="arrow">▶</span>`;
-      specHeader.onclick = () => toggleCollapse(specHeader);
-      panel.appendChild(specHeader);
-      panel.appendChild(specSection);
-
-      // Create each spectator element.
-      Object.values(spectators).forEach(spec => {
-        const specDiv = document.createElement("div");
-        specDiv.className = "player";
-        // Assuming the first element of the spectator array is the playerID.
-        specDiv.innerHTML = `
-          <div class="player-info" onclick="copyPlayerInfo(event, this)">
-            <img src="https://via.placeholder.com/40" alt="User">
-            <span>Spectator ${spec[0]}</span>
-          </div>
-        `;
-        specSection.appendChild(specDiv);
-      });
-
-      // Append panel to the body and animate it in.
-      document.body.appendChild(panel);
-      requestAnimationFrame(() => {
-        panel.style.right = "0";
-      });
-    }
-
-    function delayedUIInit() {
-      console.log("[UI] DOM ready; delaying UI init by 6 seconds.");
-      setTimeout(initUI, 6000);
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", delayedUIInit);
-    } else {
-      delayedUIInit();
-    }
-
-    // --- UI Helper Functions ---
-    window.toggleCollapse = function (element) {
+    // ----------------------------
+    // Spectate Panel UI (Dynamic)
+    // ----------------------------
+    function initSpectate() {
       try {
-        element.classList.toggle("active");
+        // Find the Spectate button (by text). Adjust the selector if needed.
+        const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
+          .find(el => el.textContent.trim() === 'Spectate');
+        if (!spectateBtn) {
+          return setTimeout(initSpectate, 500);
+        }
+        spectateBtn.addEventListener('click', function() {
+          try {
+            openSpectateTab();
+          } catch (err) {
+            console.error("[SpectateButton] Error during click event:", err);
+          }
+        });
+      } catch (err) {
+        console.error("[initSpectate] Exception:", err);
+      }
+    }
+
+    function openSpectateTab() {
+      try {
+        // If already open, simply show it.
+        if (document.getElementById('spectateTab')) {
+          document.getElementById('spectateTab').style.right = '0';
+          return;
+        }
+
+        // Get dynamic data from the game state.
+        // (Make sure your hook code populates window.gameState before this UI code runs.)
+        const players = (window.gameState && window.gameState.players) || {};
+        const spectators = (window.gameState && window.gameState.spectators) || {};
+
+        // Combine players and spectators (or you can separate them if you wish).
+        // For example, here we create one "Users" list that includes both.
+        const allUsers = Object.values(players).concat(Object.values(spectators));
+
+        // Build the Users list dynamically.
+        let usersHTML = '';
+        if (allUsers.length === 0) {
+          usersHTML = `<div class="player">No users found</div>`;
+        } else {
+          allUsers.forEach(user => {
+            // Replace fixed names with dynamic ones.
+            const imageUrl = user.image || 'https://via.placeholder.com/40';
+            usersHTML += `
+              <div class="player">
+                <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                  <img src="${imageUrl}" alt="User">
+                  <span>${user.name || 'Unknown'}</span>
+                </div>
+                <span class="player-tag">${user.tag || ''}</span>
+              </div>
+            `;
+          });
+        }
+
+        // If you want to build teams separately (assuming each player may have a "team" property)
+        let teamsHTML = '';
+        const teams = {};
+        Object.values(players).forEach(user => {
+          if (user.team) {
+            teams[user.team] = teams[user.team] || [];
+            teams[user.team].push(user);
+          }
+        });
+        if (Object.keys(teams).length > 0) {
+          for (let team in teams) {
+            teamsHTML += `
+              <div class="collapsible" onclick="toggleCollapse(this)">
+                Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
+              </div>
+              <div class="content team">
+            `;
+            teams[team].forEach(user => {
+              const imageUrl = user.image || 'https://via.placeholder.com/40';
+              teamsHTML += `
+                <div class="player">
+                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
+                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                    <img src="${imageUrl}" alt="User">
+                    <span>${user.name || 'Unknown'}</span>
+                  </div>
+                  <span class="score">${user.score || 0}</span>
+                </div>
+              `;
+            });
+            teamsHTML += `</div>`;
+          }
+        }
+
+        // Create the spectate tab container with dynamic content.
+        const spectateTab = document.createElement('div');
+        spectateTab.id = 'spectateTab';
+        spectateTab.className = 'spectate-tab';
+        spectateTab.innerHTML = `
+          <div class="collapsible" onclick="toggleCollapse(this)">
+            Users (${allUsers.length}) <span class="arrow">▶</span>
+          </div>
+          <div class="content player-list">
+            ${usersHTML}
+          </div>
+          ${teamsHTML}
+        `;
+        document.body.appendChild(spectateTab);
+        // Animate it into view.
+        requestAnimationFrame(() => {
+          try {
+            spectateTab.style.right = '0';
+          } catch (err) {
+            console.error("[openSpectateTab] Error during animation:", err);
+          }
+        });
+      } catch (err) {
+        console.error("[openSpectateTab] Exception:", err);
+      }
+    }
+
+    // ----------------------------
+    // UI Helper Functions
+    // ----------------------------
+    window.toggleCollapse = function(element) {
+      try {
+        element.classList.toggle('active');
         const content = element.nextElementSibling;
-        content.style.display = content.style.display === "block" ? "none" : "block";
+        content.style.display = (content.style.display === "block") ? "none" : "block";
         element.querySelector(".arrow").style.transform =
-          content.style.display === "block" ? "rotate(90deg)" : "rotate(0deg)";
+          (content.style.display === "block") ? "rotate(90deg)" : "rotate(0deg)";
       } catch (err) {
         console.error("[toggleCollapse] Exception:", err);
       }
     };
 
-    window.copyPlayerInfo = function (event, container) {
+    window.toggleTick = function(event, element) {
+      try {
+        element.textContent = (element.textContent.trim() === '✓') ? '☐' : '✓';
+        event.stopPropagation();
+      } catch (err) {
+        console.error("[toggleTick] Exception:", err);
+      }
+    };
+
+    window.copyPlayerInfo = function(event, container) {
       try {
         event.stopPropagation();
-        let textToCopy = "";
+        let textToCopy = '';
         const target = event.target;
-        if (target.tagName.toLowerCase() === "img") {
+        if (target.tagName.toLowerCase() === 'img') {
           textToCopy = target.src;
-        } else if (target.tagName.toLowerCase() === "span") {
+        } else if (target.tagName.toLowerCase() === 'span') {
           textToCopy = target.textContent.trim();
         } else {
-          const span = container.querySelector("span");
+          const span = container.querySelector('span');
           if (span) {
             textToCopy = span.textContent.trim();
           }
@@ -315,12 +370,12 @@
             console.error("[copyPlayerInfo] Clipboard write failed:", err);
           });
         } else {
-          const textarea = document.createElement("textarea");
+          const textarea = document.createElement('textarea');
           textarea.value = textToCopy;
           document.body.appendChild(textarea);
           textarea.select();
           try {
-            document.execCommand("copy");
+            document.execCommand('copy');
             showCopyAlert(container, "Copied!");
           } catch (err) {
             console.error("[copyPlayerInfo] Fallback copy failed:", err);
@@ -334,20 +389,47 @@
 
     function showCopyAlert(parent, message) {
       try {
-        const alertEl = document.createElement("div");
+        const alertEl = document.createElement('div');
         alertEl.textContent = message;
-        alertEl.className = "copy-alert";
+        alertEl.className = 'copy-alert';
         parent.appendChild(alertEl);
         setTimeout(() => {
-          alertEl.remove();
+          try {
+            alertEl.remove();
+          } catch (err) {
+            console.error("[showCopyAlert] Error removing alert:", err);
+          }
         }, 1500);
       } catch (err) {
         console.error("[showCopyAlert] Exception:", err);
       }
     }
 
-    // Append custom styles (same as your previous CSS)
-    const style = document.createElement("style");
+    // Close the spectate panel on Escape key press.
+    document.addEventListener('keydown', function(e) {
+      try {
+        if (e.key === 'Escape') {
+          const spectateTab = document.getElementById('spectateTab');
+          if (spectateTab) {
+            spectateTab.style.right = '-15vw';
+            setTimeout(() => {
+              try {
+                spectateTab.remove();
+              } catch (err) {
+                console.error("[keydown] Error removing spectate panel:", err);
+              }
+            }, 500);
+          }
+        }
+      } catch (err) {
+        console.error("[keydown] Exception:", err);
+      }
+    });
+
+    // ----------------------------
+    // Add CSS styles for the spectate panel.
+    // ----------------------------
+    const style = document.createElement('style');
     style.innerHTML = `
       .spectate-tab {
           position: fixed;
@@ -417,12 +499,23 @@
       .player-info span {
           cursor: pointer;
       }
+      .tick-button {
+          color: #0f0;
+          font-size: 1vw;
+          cursor: pointer;
+      }
       .player-tag {
           background: #888;
           padding: 0.2em 0.5em;
           border-radius: 4px;
           font-size: 0.85vw;
           color: #fff;
+      }
+      .score {
+          font-size: 0.8vw;
+          background: #555;
+          padding: 0.1em 0.3em;
+          border-radius: 3px;
       }
       .button-container {
           display: flex;
@@ -470,6 +563,10 @@
     `;
     document.head.appendChild(style);
 
-    console.log("[Combined Script] Finished initial setup.");
-  })(); // end Part 2 UI
+    // Initialize the Spectate button logic.
+    initSpectate();
+  }
+  
+  // Delay UI initialization only (not the hook code) by 6000 ms.
+  setTimeout(main, 6000);
 })();
