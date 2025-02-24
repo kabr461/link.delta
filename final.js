@@ -1,13 +1,3 @@
-// ==UserScript==
-// @name         Delta Combined Hook & Dynamic UI
-// @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Divides the game state hook and UI code into two modules that share the same gameState
-// @match        https://agar.io/*
-// @grant        none
-// @run-at       document-start
-// ==/UserScript==
-
 (function () {
   "use strict";
 
