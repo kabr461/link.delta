@@ -73,53 +73,44 @@
         // Filter out spectators.
         const playingPlayers = Object.values(players).filter(p => !p.isSpectator);
         
-        // Build the Users section.
-        let usersHTML = "";
-        if (playingPlayers.length === 0) {
-          usersHTML = `<div class="player">No players found</div>`;
-        } else {
-          playingPlayers.forEach(player => {
-            const imageUrl = player.skin || 'https://via.placeholder.com/40';
-            const name = player.name || 'Unknown';
-            const tag = player.tag || '';
-            usersHTML += `
-              <div class="player">
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                  <img src="${imageUrl}" alt="User">
-                  <span>${name}</span>
-                </div>
-                <span class="player-tag">${tag}</span>
-              </div>
-            `;
-          });
-        }
+      // Build the Users section.
+let usersHTML = "";
+if (playingPlayers.length === 0) {
+  usersHTML = `<div class="player">No players found</div>`;
+} else {
+  playingPlayers.forEach(player => {
+    **const imageUrl = player.skinUrl || 'https://via.placeholder.com/40'; // CHANGED**
+    **const name = player.username || 'Unknown'; // CHANGED**
+    **const tag = player.clanTag || ''; // Optional, if you want clan tags**
+    usersHTML += `
+      <div class="player">
+        <div class="player-info" onclick="copyPlayerInfo(event, this)">
+          <img src="${imageUrl}" alt="User">
+          <span>${name}</span>
+        </div>
+        <span class="player-tag">${tag}</span>
+      </div>
+    `;
+  });
+}
 
         // Build the Teams section.
-        let teamsHTML = "";
-        const teams = {};
-        playingPlayers.forEach(player => {
-          if (player.team) {
-            teams[player.team] = teams[player.team] || [];
-            teams[player.team].push(player);
-          }
-        });
-        if (Object.keys(teams).length > 0) {
-          for (let team in teams) {
-            let teamPlayersHTML = "";
-            teams[team].forEach(player => {
-              const imageUrl = player.skin || 'https://via.placeholder.com/40';
-              const name = player.name || 'Unknown';
-              const score = player.score || 0;
-              teamPlayersHTML += `
-                <div class="player">
-                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                    <img src="${imageUrl}" alt="User">
-                    <span>${name}</span>
-                  </div>
-                  <span class="score">${score}</span>
-                </div>
-              `;
+       teams[team].forEach(player => {
+  **const imageUrl = player.skinUrl || 'https://via.placeholder.com/40'; // CHANGED**
+  **const name = player.username || 'Unknown'; // CHANGED**
+  const score = player.score || 0;
+  teamPlayersHTML += `
+    <div class="player">
+      <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
+      <div class="player-info" onclick="copyPlayerInfo(event, this)">
+        <img src="${imageUrl}" alt="User">
+        <span>${name}</span>
+      </div>
+      <span class="score">${score}</span>
+    </div>
+  `;
+});
+
             });
             if (!teamPlayersHTML.trim()) {
               teamPlayersHTML = `<div class="player">No players found</div>`;
