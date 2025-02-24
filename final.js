@@ -2,14 +2,13 @@
   "use strict";
 
   // ----------------------------
-  // BinaryReader – enhanced for our game data
+  // BinaryReader utility for parsing binary packets
   // ----------------------------
   class BinaryReader {
     constructor(data) {
       if (data instanceof ArrayBuffer) {
         this.buffer = data;
       } else if (data instanceof Uint8Array) {
-        // Use a slice of the underlying ArrayBuffer.
         this.buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
       } else {
         throw new Error("Unsupported data type for BinaryReader");
@@ -53,7 +52,6 @@
       this.offset += 4;
       return value;
     }
-    // Read a null-terminated UTF-16 string.
     readUTF16StringZero() {
       let str = "";
       while (this.offset + 2 <= this.view.byteLength) {
@@ -63,19 +61,17 @@
       }
       return str;
     }
-    // Read a length-prefixed UTF-16 string.
     readUTF16StringLength() {
       const len = this.readUInt16();
       let str = "";
       for (let i = 0; i < len; i++) {
         if (this.offset + 2 > this.view.byteLength)
-          throw new RangeError("Offset out of bounds in readUTF16StringLength");
+          throw new RangeError("Offset out of bounds");
         const code = this.readUInt16();
         str += String.fromCharCode(code);
       }
       return str;
     }
-    // Read a null-terminated UTF-8 string.
     readUTF8StringZero() {
       let str = "";
       while (this.offset < this.view.byteLength) {
@@ -88,14 +84,14 @@
   }
 
   // ----------------------------
-  // Global Game State
+  // Global Game State Hook (runs immediately)
   // ----------------------------
   window.gameState = {
-    players: {},   // each player by playerID
-    spectators: {} // each spectator by playerID (for example, from a "commander" parser)
+    players: {},   // keyed by playerID; holds registration and token data
+    spectators: {} // keyed by playerID; holds spectator info arrays
   };
 
-  // Helper functions to update the global state:
+  // Helper functions to update game state.
   function updatePlayerFromRegister(data) {
     if (data && data.playerID) {
       window.gameState.players[data.playerID] =
@@ -116,7 +112,6 @@
     }
   }
   function updateSpectator(data) {
-    // Here we assume the "commander" parser returns an array whose first element is the playerID.
     if (Array.isArray(data) && data.length > 0) {
       const playerID = data[0];
       window.gameState.spectators[playerID] = data;
@@ -125,11 +120,10 @@
   }
 
   // ----------------------------
-  // WebSocket Interception to capture binary messages
+  // WebSocket Interception – Wrap message events to capture packets.
   // ----------------------------
   const OriginalWebSocket = window.WebSocket;
   const originalAddEventListener = OriginalWebSocket.prototype.addEventListener;
-
   OriginalWebSocket.prototype.addEventListener = function(type, listener, options) {
     if (type === "message") {
       const wrappedListener = function(event) {
@@ -137,23 +131,18 @@
           try {
             const rawData = new Uint8Array(event.data);
             console.log("Raw binary data:", rawData);
-
-            // Make sure window.delta_packet.parse exists.
             if (window.delta_packet && window.delta_packet.parse) {
               const parsers = window.delta_packet.parse;
-
-              // Process auth events.
               try {
                 const authReader = new BinaryReader(event.data);
                 const authData = parsers.auth(authReader);
                 console.log("Auth data:", authData);
                 if (authData && authData.playerID) {
-                  window.gameState.players[authData.playerID] = window.gameState.players[authData.playerID] || {};
+                  window.gameState.players[authData.playerID] =
+                    window.gameState.players[authData.playerID] || {};
                   window.gameState.players[authData.playerID].auth = authData;
                 }
-              } catch (err) { /* not an auth packet */ }
-
-              // Process player registration (client and server).
+              } catch (err) { }
               try {
                 const regReader = new BinaryReader(event.data);
                 const regData = parsers.clientRegisterTab(regReader);
@@ -166,8 +155,6 @@
                 console.log("Server register data:", sRegData);
                 updatePlayerFromRegister(sRegData);
               } catch (err) { }
-
-              // Process removals.
               try {
                 const remReader = new BinaryReader(event.data);
                 const remData = parsers.clientRemoveTab(remReader);
@@ -180,16 +167,12 @@
                 console.log("Server remove data:", sRemData);
                 if (sRemData && sRemData.playerID) removePlayer(sRemData.playerID);
               } catch (err) { }
-
-              // Process token/tag info.
               try {
                 const tokenReader = new BinaryReader(event.data);
                 const tokenData = parsers.clientTokenTag(tokenReader);
                 console.log("Token tag data:", tokenData);
                 if (tokenData && tokenData.playerID) updatePlayerToken(tokenData);
               } catch (err) { }
-
-              // Process spectator info using the "commander" parser.
               try {
                 const commReader = new BinaryReader(event.data);
                 const commData = parsers.commander(commReader);
@@ -201,7 +184,6 @@
             console.error("Error processing WebSocket data for game state:", processingError);
           }
         }
-        // Call the original listener
         listener(event);
       };
       originalAddEventListener.call(this, type, wrappedListener, options);
@@ -210,7 +192,6 @@
     }
   };
 
-  // Override onmessage property for good measure.
   Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
     set: function(fn) {
       this.addEventListener("message", fn);
@@ -223,13 +204,12 @@
   console.log("Game state hook installed. Current game state:", window.gameState);
 
   // ----------------------------
-  // UI Code for the Spectate Panel
+  // UI Panel Code (delayed by 6 seconds to wait for DOM load)
   // ----------------------------
-  function mainUI() {
+  function initUI() {
     console.log("Initializing UI. Current game state:", window.gameState);
     waitForGameState();
   }
-
   function waitForGameState() {
     if (!window.gameState || !window.gameState.players) {
       console.log("Game state is still undefined. Waiting...");
@@ -238,22 +218,14 @@
     console.log("Game state is available:", window.gameState);
     updateUI();
   }
-
   function updateUI() {
-    // Update the UI based on window.gameState.players and window.gameState.spectators.
     console.log("Updating UI with game state:", window.gameState);
-
-    // Only show players (or spectators) that match your tag (for example, same as your own)
-    // Here we assume your tag is stored in localStorage or a variable.
     const myTag = localStorage.getItem("myTag") || "defaultTag";
-
     const playersDiv = document.getElementById('playersList');
     const spectatorsDiv = document.getElementById('spectatorsList');
-
     if (playersDiv) {
       playersDiv.innerHTML = '';
       Object.values(window.gameState.players).forEach(player => {
-        // Only display players with matching tag (assuming player.tokenTag holds the tag)
         if (player.tokenTag === myTag) {
           const div = document.createElement('div');
           div.textContent = `Player ${player.playerID} Tag: ${player.tokenTag || ''}`;
@@ -261,11 +233,10 @@
         }
       });
     }
-
     if (spectatorsDiv) {
       spectatorsDiv.innerHTML = '';
       Object.values(window.gameState.spectators).forEach(spect => {
-        // We assume spect is an array and spect[3] holds a tag.
+        // Assuming that for commander data, the fourth element (index 3) holds the tag.
         if (spect[3] === myTag) {
           const div = document.createElement('div');
           div.textContent = `Spectator ${spect[0]} Tag: ${spect[3] || ''}`;
@@ -276,16 +247,13 @@
   }
 
   // ----------------------------
-  // Chat Observer & Spectate Panel UI
-  // (Your original UI code with minor modifications)
+  // UI Panel – Spectate Panel Code (as before)
   // ----------------------------
   let cmdObserver = null;
   function initChatObserver() {
     try {
       const chatContainer = document.querySelector('.chatmessages');
-      if (!chatContainer) {
-        return setTimeout(initChatObserver, 500);
-      }
+      if (!chatContainer) return setTimeout(initChatObserver, 500);
       cmdObserver = new MutationObserver(mutations => {
         mutations.forEach(mutation => {
           mutation.addedNodes.forEach(node => {
@@ -318,12 +286,14 @@
       cmdObserver = null;
     }
   };
-
   function initSpectate() {
     try {
       const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
         .find(el => el.textContent.trim() === 'Spectate');
-      if (!spectateBtn) return setTimeout(initSpectate, 500);
+      if (!spectateBtn) {
+        console.log("Spectate button not found. Retrying...");
+        return setTimeout(initSpectate, 500);
+      }
       spectateBtn.addEventListener('click', function() {
         try {
           openSpectateTab();
@@ -335,7 +305,6 @@
       console.error("[initSpectate] Exception:", err);
     }
   }
-
   function openSpectateTab() {
     try {
       if (document.getElementById('spectateTab')) {
@@ -368,6 +337,7 @@
         </div>
       `;
       document.body.appendChild(spectateTab);
+      console.log("Spectate tab created and appended.");
       requestAnimationFrame(() => {
         try {
           spectateTab.style.right = '0';
@@ -379,7 +349,6 @@
       console.error("[openSpectateTab] Exception:", err);
     }
   }
-
   window.toggleCollapse = function(element) {
     try {
       element.classList.toggle('active');
@@ -391,7 +360,6 @@
       console.error("[toggleCollapse] Exception:", err);
     }
   };
-
   window.toggleSwitch = function(element) {
     try {
       element.classList.toggle('active');
@@ -403,7 +371,6 @@
       console.error("[toggleSwitch] Exception:", err);
     }
   };
-
   window.toggleTick = function(event, element) {
     try {
       element.textContent = element.textContent.trim() === '✓' ? '☐' : '✓';
@@ -412,7 +379,6 @@
       console.error("[toggleTick] Exception:", err);
     }
   };
-
   window.copyPlayerInfo = function(event, container) {
     try {
       event.stopPropagation();
@@ -424,13 +390,9 @@
         textToCopy = target.textContent.trim();
       } else {
         const span = container.querySelector('span');
-        if (span) {
-          textToCopy = span.textContent.trim();
-        }
+        if (span) textToCopy = span.textContent.trim();
       }
-      if (!textToCopy) {
-        return;
-      }
+      if (!textToCopy) return;
       if (navigator.clipboard) {
         navigator.clipboard.writeText(textToCopy).then(() => {
           showCopyAlert(container, "Copied!");
@@ -454,7 +416,6 @@
       console.error("[copyPlayerInfo] Exception:", err);
     }
   };
-
   function showCopyAlert(parent, message) {
     try {
       const alertEl = document.createElement('div');
@@ -462,17 +423,12 @@
       alertEl.className = 'copy-alert';
       parent.appendChild(alertEl);
       setTimeout(() => {
-        try {
-          alertEl.remove();
-        } catch (err) {
-          console.error("[showCopyAlert] Error removing alert:", err);
-        }
+        try { alertEl.remove(); } catch (err) { console.error("[showCopyAlert] Error removing alert:", err); }
       }, 1500);
     } catch (err) {
       console.error("[showCopyAlert] Exception:", err);
     }
   }
-
   document.addEventListener('keydown', function(e) {
     try {
       if (e.key === 'Escape') {
@@ -480,11 +436,7 @@
         if (spectateTab) {
           spectateTab.style.right = '-15vw';
           setTimeout(() => {
-            try {
-              spectateTab.remove();
-            } catch (err) {
-              console.error("[keydown] Error removing spectate panel:", err);
-            }
+            try { spectateTab.remove(); } catch (err) { console.error("[keydown] Error removing spectate panel:", err); }
           }, 500);
         }
       }
@@ -492,143 +444,76 @@
       console.error("[keydown] Exception:", err);
     }
   });
-
   const style = document.createElement('style');
   style.innerHTML = `
-    .spectate-tab {
-        position: fixed;
-        top: 50%;
-        right: -15vw;
-        transform: translateY(-50%);
-        width: 12vw;
-        max-width: 180px;
-        height: 50vh;
-        max-height: 420px;
-        background: #0d0d0d;
-        padding: 0.5vw;
-        border-radius: 5px;
-        border: 1px solid #444;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-        transition: right 0.5s ease-out;
-        color: white;
-        font-family: Arial, sans-serif;
-        z-index: 10000;
-        display: flex;
-        flex-direction: column;
-    }
-    .collapsible {
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 4px 5px;
-        background: #222;
-        border: 1px solid #444;
-        font-size: 0.9vw;
-        font-weight: bold;
-    }
-    .arrow {
-        transform: rotate(0deg);
-        transition: transform 0.3s ease-in-out;
-    }
-    .collapsible.active .arrow {
-        transform: rotate(90deg);
-    }
-    .content {
-        display: none;
-        padding: 5px;
-        background: #181818;
-        border-top: 1px solid #444;
-    }
-    .player {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.3vh 0;
-        font-size: 1vw;
-        color: #ddd;
-    }
-    .player-info {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-    }
-    .player-info img {
-        width: 2vw;
-        height: 2vw;
-        border-radius: 50%;
-        margin-right: 0.3vw;
-        cursor: pointer;
-    }
-    .player-info span {
-        cursor: pointer;
-    }
-    .tick-button {
-        color: #0f0;
-        font-size: 1vw;
-        cursor: pointer;
-    }
-    .player-tag {
-        background: #888;
-        padding: 0.2em 0.5em;
-        border-radius: 4px;
-        font-size: 0.85vw;
-        color: #fff;
-    }
-    .score {
-        font-size: 0.8vw;
-        background: #555;
-        padding: 0.1em 0.3em;
-        border-radius: 3px;
-    }
-    .button-container {
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
-        margin-top: auto;
-    }
-    .toggle-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 1px 0;
-        font-size: 0.9vw;
-        padding: 1px;
-        background: #222;
-        border-radius: 2px;
-    }
-    .toggle {
-        width: 3vw;
-        height: 1.5vh;
-        background: #555;
-        border-radius: 2px;
-        position: relative;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8vw;
-        font-weight: bold;
-        color: white;
-    }
-    .toggle.active {
-        background: #0f0;
-    }
-    .copy-alert {
-        position: absolute;
-        bottom: -1.2em;
-        left: 0;
-        background: #333;
-        padding: 0.1em 0.3em;
-        font-size: 0.7vw;
-        border-radius: 3px;
-        opacity: 0.8;
-    }
+    .spectate-tab { position: fixed; top: 50%; right: -15vw; transform: translateY(-50%); width: 12vw; max-width: 180px; height: 50vh; max-height: 420px; background: #0d0d0d; padding: 0.5vw; border-radius: 5px; border: 1px solid #444; box-shadow: 0 0 10px rgba(0,0,0,0.8); transition: right 0.5s ease-out; color: white; font-family: Arial, sans-serif; z-index: 10000; display: flex; flex-direction: column; }
+    .collapsible { cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 4px 5px; background: #222; border: 1px solid #444; font-size: 0.9vw; font-weight: bold; }
+    .arrow { transform: rotate(0deg); transition: transform 0.3s ease-in-out; }
+    .collapsible.active .arrow { transform: rotate(90deg); }
+    .content { display: none; padding: 5px; background: #181818; border-top: 1px solid #444; }
+    .player { display: flex; align-items: center; justify-content: space-between; padding: 0.3vh 0; font-size: 1vw; color: #ddd; }
+    .player-info { display: flex; align-items: center; cursor: pointer; }
+    .player-info img { width: 2vw; height: 2vw; border-radius: 50%; margin-right: 0.3vw; cursor: pointer; }
+    .player-info span { cursor: pointer; }
+    .tick-button { color: #0f0; font-size: 1vw; cursor: pointer; }
+    .player-tag { background: #888; padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.85vw; color: #fff; }
+    .score { font-size: 0.8vw; background: #555; padding: 0.1em 0.3em; border-radius: 3px; }
+    .button-container { display: flex; flex-direction: column; gap: 1px; margin-top: auto; }
+    .toggle-container { display: flex; justify-content: space-between; align-items: center; margin: 1px 0; font-size: 0.9vw; padding: 1px; background: #222; border-radius: 2px; }
+    .toggle { width: 3vw; height: 1.5vh; background: #555; border-radius: 2px; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8vw; font-weight: bold; color: white; }
+    .toggle.active { background: #0f0; }
+    .copy-alert { position: absolute; bottom: -1.2em; left: 0; background: #333; padding: 0.1em 0.3em; font-size: 0.7vw; border-radius: 3px; opacity: 0.8; }
   `;
   document.head.appendChild(style);
 
-  // Initialize the Spectate button observer and UI.
-  initSpectate();
-  mainUI();
+  // ----------------------------
+  // Delay only the UI initialization by 6 seconds (no delay for gameState hooking)
+  // ----------------------------
+  function mainUI() {
+    console.log("Starting UI initialization...");
+    initSpectate();
+    // Kick off UI update loop after DOM is ready
+    waitForGameState();
+  }
+  function waitForGameState() {
+    if (!window.gameState || !window.gameState.players) {
+      console.log("Game state is still undefined. Waiting...");
+      return setTimeout(waitForGameState, 1000);
+    }
+    console.log("Game state is available:", window.gameState);
+    updateUI();
+  }
+  function updateUI() {
+    console.log("Updating UI with game state:", window.gameState);
+    const myTag = localStorage.getItem("myTag") || "defaultTag";
+    const playersDiv = document.getElementById('playersList');
+    const spectatorsDiv = document.getElementById('spectatorsList');
+    if (playersDiv) {
+      playersDiv.innerHTML = '';
+      Object.values(window.gameState.players).forEach(player => {
+        if (player.tokenTag === myTag) {
+          const div = document.createElement('div');
+          div.textContent = `Player ${player.playerID} Tag: ${player.tokenTag || ''}`;
+          playersDiv.appendChild(div);
+        }
+      });
+    }
+    if (spectatorsDiv) {
+      spectatorsDiv.innerHTML = '';
+      Object.values(window.gameState.spectators).forEach(spect => {
+        if (spect[3] === myTag) {
+          const div = document.createElement('div');
+          div.textContent = `Spectator ${spect[0]} Tag: ${spect[3] || ''}`;
+          spectatorsDiv.appendChild(div);
+        }
+      });
+    }
+  }
 
+  // ----------------------------
+  // Start UI initialization after 6 seconds (delay only for UI)
+  // ----------------------------
+  setTimeout(mainUI, 8000);
+
+  console.log("Combined script loaded – game state hook installed and UI will initialize after a delay.");
 })();
