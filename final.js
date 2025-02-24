@@ -513,7 +513,7 @@
   // ----------------------------
   // Start UI initialization after 6 seconds (delay only for UI)
   // ----------------------------
-  setTimeout(mainUI, 8000);
+  setTimeout(mainUI, 6000);
 
   console.log("Combined script loaded – game state hook installed and UI will initialize after a delay.");
 })();
