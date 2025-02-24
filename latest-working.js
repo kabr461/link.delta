@@ -1,30 +1,18 @@
 (function() {
   function main() {
-    // Global Error Handling & Logging
+    // --- Global Error Handling ---
     window.onerror = function(message, source, lineno, colno, error) {
       console.error("Global error caught:", message, "at", source, "line:", lineno, "col:", colno, "error:", error);
     };
+    window.addEventListener('error', e => console.error("Error event caught:", e));
+    window.addEventListener('unhandledrejection', e => console.error("Unhandled rejection:", e.reason));
 
-    window.addEventListener('error', function(e) {
-      console.error("Error event caught:", e);
-    });
-
-    window.addEventListener('unhandledrejection', function(e) {
-      console.error("Unhandled rejection:", e.reason);
-    });
-
-    // ========================
-    // Chat Observer Logic
-    // ========================
+    // --- Chat Observer (Cmd Chat) ---
     let cmdObserver = null;
-
     function initChatObserver() {
       try {
         const chatContainer = document.querySelector('.chatmessages');
-        if (!chatContainer) {
-          return setTimeout(initChatObserver, 500);
-        }
-
+        if (!chatContainer) return setTimeout(initChatObserver, 500);
         cmdObserver = new MutationObserver(mutations => {
           mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
@@ -32,9 +20,7 @@
                 if (node.nodeType === Node.ELEMENT_NODE && node.matches("li.message")) {
                   node.classList.add("command");
                   const textDiv = node.querySelector("div.text");
-                  if (textDiv) {
-                    textDiv.style.fontWeight = "bold";
-                  }
+                  if (textDiv) textDiv.style.fontWeight = "bold";
                 }
               } catch (err) {
                 console.error("[MutationObserver] Error processing added node:", err);
@@ -42,20 +28,14 @@
             });
           });
         });
-
         cmdObserver.observe(chatContainer, { childList: true, subtree: true });
       } catch (err) {
         console.error("[initChatObserver] Exception:", err);
       }
     }
-
     window.startCmdObserver = function() {
-      if (cmdObserver) {
-        return;
-      }
-      initChatObserver();
+      if (!cmdObserver) initChatObserver();
     };
-
     window.stopCmdObserver = function() {
       if (cmdObserver) {
         cmdObserver.disconnect();
@@ -63,17 +43,13 @@
       }
     };
 
-    // ========================
-    // Spectate Panel Code
-    // ========================
+    // --- Spectate Panel Logic ---
     function initSpectate() {
       try {
         const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
           .find(el => el.textContent.trim() === 'Spectate');
-        if (!spectateBtn) {
-          return setTimeout(initSpectate, 500);
-        }
-        spectateBtn.addEventListener('click', function() {
+        if (!spectateBtn) return setTimeout(initSpectate, 500);
+        spectateBtn.addEventListener('click', () => {
           try {
             openSpectateTab();
           } catch (err) {
@@ -87,86 +63,129 @@
 
     function openSpectateTab() {
       try {
-        if (document.getElementById('spectateTab')) {
-          document.getElementById('spectateTab').style.right = '0';
+        let panel = document.getElementById('spectateTab');
+        if (panel) {
+          panel.style.right = '0';
           return;
         }
+        // Get the playing players from window.gameState.players.
+        const players = (window.gameState && window.gameState.players) || {};
+        // Filter out spectators.
+        const playingPlayers = Object.values(players).filter(p => !p.isSpectator);
+        
+        // Build the Users section.
+        let usersHTML = "";
+        if (playingPlayers.length === 0) {
+          usersHTML = `<div class="player">No players found</div>`;
+        } else {
+          playingPlayers.forEach(player => {
+            const imageUrl = player.skin || 'https://via.placeholder.com/40';
+            const name = player.name || 'Unknown';
+            const tag = player.tag || '';
+            usersHTML += `
+              <div class="player">
+                <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                  <img src="${imageUrl}" alt="User">
+                  <span>${name}</span>
+                </div>
+                <span class="player-tag">${tag}</span>
+              </div>
+            `;
+          });
+        }
 
-        const spectateTab = document.createElement('div');
-        spectateTab.id = 'spectateTab';
-        spectateTab.className = 'spectate-tab';
-        spectateTab.innerHTML = `
-          <div class="collapsible" onclick="toggleCollapse(this)">
-              Users (2) <span class="arrow">▶</span>
-          </div>
-          <div class="content player-list">
-              <div class="player">
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                      <img src="https://via.placeholder.com/40" alt="User">
-                      <span>naze</span>
-                  </div>
-                  <span class="player-tag">naze</span>
-              </div>
-              <div class="player">
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                      <img src="https://via.placeholder.com/40" alt="User">
-                      <span>Hook</span>
-                  </div>
-                  <span class="player-tag">Hook</span>
-              </div>
-          </div>
-          <div class="collapsible" onclick="toggleCollapse(this)">
-              Teams (1) <span class="arrow">▶</span>
-          </div>
-          <div class="content team">
-              <div class="player">
-                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                      <img src="https://via.placeholder.com/40" alt="User">
-                      <span>naze</span>
-                  </div>
-                  <span class="score">1</span>
-              </div>
-              <div class="player">
-                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                      <img src="https://via.placeholder.com/40" alt="User">
-                      <span>Hook</span>
-                  </div>
-                  <span class="score">0</span>
-              </div>
-          </div>
-          <div class="button-container">
-              <div class="toggle-container">
-                  <span>Spy Tag</span>
-                  <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
-              </div>
-              <div class="toggle-container">
-                  <span>Cmd Chat</span>
-                  <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
-              </div>
-          </div>
-        `;
-        document.body.appendChild(spectateTab);
-        requestAnimationFrame(() => {
-          try {
-            spectateTab.style.right = '0';
-          } catch (err) {
-            console.error("[openSpectateTab] Error during animation:", err);
+        // Build the Teams section.
+        let teamsHTML = "";
+        const teams = {};
+        playingPlayers.forEach(player => {
+          if (player.team) {
+            teams[player.team] = teams[player.team] || [];
+            teams[player.team].push(player);
           }
         });
+        if (Object.keys(teams).length > 0) {
+          for (let team in teams) {
+            let teamPlayersHTML = "";
+            teams[team].forEach(player => {
+              const imageUrl = player.skin || 'https://via.placeholder.com/40';
+              const name = player.name || 'Unknown';
+              const score = player.score || 0;
+              teamPlayersHTML += `
+                <div class="player">
+                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
+                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                    <img src="${imageUrl}" alt="User">
+                    <span>${name}</span>
+                  </div>
+                  <span class="score">${score}</span>
+                </div>
+              `;
+            });
+            if (!teamPlayersHTML.trim()) {
+              teamPlayersHTML = `<div class="player">No players found</div>`;
+            }
+            teamsHTML += `
+              <div class="collapsible" onclick="toggleCollapse(this)">
+                Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
+              </div>
+              <div class="content team">
+                ${teamPlayersHTML}
+              </div>
+            `;
+          }
+        } else {
+          teamsHTML = `
+            <div class="collapsible" onclick="toggleCollapse(this)">
+              Teams (0) <span class="arrow">▶</span>
+            </div>
+            <div class="content team">
+              <div class="player">No teams found</div>
+            </div>
+          `;
+        }
+
+        // Create the spectate panel container with two sections.
+        panel = document.createElement('div');
+        panel.id = 'spectateTab';
+        panel.className = 'spectate-tab';
+        panel.innerHTML = `
+          <div class="player-team-section">
+            <div class="collapsible" onclick="toggleCollapse(this)">
+              Users (${playingPlayers.length}) <span class="arrow">▶</span>
+            </div>
+            <div class="content player-list">
+              ${usersHTML}
+            </div>
+            ${teamsHTML}
+          </div>
+          <div class="button-container">
+            <div class="toggle-container">
+              <span>Spy Tag</span>
+              <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
+            </div>
+            <div class="toggle-container">
+              <span>Cmd Chat</span>
+              <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(panel);
+        requestAnimationFrame(() => panel.style.right = '0');
       } catch (err) {
         console.error("[openSpectateTab] Exception:", err);
       }
     }
 
+    // --- UI Helper Functions ---
     window.toggleCollapse = function(element) {
       try {
         element.classList.toggle('active');
         const content = element.nextElementSibling;
-        content.style.display = content.style.display === "block" ? "none" : "block";
-        element.querySelector(".arrow").style.transform =
-          content.style.display === "block" ? "rotate(90deg)" : "rotate(0deg)";
+        content.style.display = (content.style.display === "block") ? "none" : "block";
+        const arrow = element.querySelector(".arrow");
+        if (arrow) {
+          arrow.style.transform = (content.style.display === "block") ? "rotate(90deg)" : "rotate(0deg)";
+        }
       } catch (err) {
         console.error("[toggleCollapse] Exception:", err);
       }
@@ -186,7 +205,7 @@
 
     window.toggleTick = function(event, element) {
       try {
-        element.textContent = element.textContent.trim() === '✓' ? '☐' : '✓';
+        element.textContent = (element.textContent.trim() === '✓') ? '☐' : '✓';
         event.stopPropagation();
       } catch (err) {
         console.error("[toggleTick] Exception:", err);
@@ -204,19 +223,13 @@
           textToCopy = target.textContent.trim();
         } else {
           const span = container.querySelector('span');
-          if (span) {
-            textToCopy = span.textContent.trim();
-          }
+          if (span) textToCopy = span.textContent.trim();
         }
-        if (!textToCopy) {
-          return;
-        }
+        if (!textToCopy) return;
         if (navigator.clipboard) {
-          navigator.clipboard.writeText(textToCopy).then(() => {
-            showCopyAlert(container, "Copied!");
-          }).catch(err => {
-            console.error("[copyPlayerInfo] Clipboard write failed:", err);
-          });
+          navigator.clipboard.writeText(textToCopy)
+            .then(() => showCopyAlert(container, "Copied!"))
+            .catch(err => console.error("[copyPlayerInfo] Clipboard write failed:", err));
         } else {
           const textarea = document.createElement('textarea');
           textarea.value = textToCopy;
@@ -253,15 +266,16 @@
       }
     }
 
+    // --- Close Spectate Panel on Escape ---
     document.addEventListener('keydown', function(e) {
       try {
         if (e.key === 'Escape') {
-          const spectateTab = document.getElementById('spectateTab');
-          if (spectateTab) {
-            spectateTab.style.right = '-15vw';
+          const panel = document.getElementById('spectateTab');
+          if (panel) {
+            panel.style.right = '-15vw';
             setTimeout(() => {
               try {
-                spectateTab.remove();
+                panel.remove();
               } catch (err) {
                 console.error("[keydown] Error removing spectate panel:", err);
               }
@@ -273,6 +287,7 @@
       }
     });
 
+    // --- CSS Styles for the Spectate Panel ---
     const style = document.createElement('style');
     style.innerHTML = `
       .spectate-tab {
@@ -409,5 +424,6 @@
 
     initSpectate();
   }
-  setTimeout(main, 8000);
+  // Delay UI initialization by 6000ms.
+  setTimeout(main, 6000);
 })();
