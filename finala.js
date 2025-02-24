@@ -1,8 +1,9 @@
 (function() {
+  // ==================================================
+  // Section 1: Global Error Handling, Chat Observer, & Spectate Panel
+  // ==================================================
   function main() {
-    // ========================
     // Global Error Handling & Logging
-    // ========================
     window.onerror = function(message, source, lineno, colno, error) {
       console.error("Global error caught:", message, "at", source, "line:", lineno, "col:", colno, "error:", error);
     };
@@ -15,16 +16,18 @@
       console.error("Unhandled rejection:", e.reason);
     });
 
-    // ========================
+    // ----------------------------
     // Chat Observer Logic
-    // ========================
+    // ----------------------------
     let cmdObserver = null;
+
     function initChatObserver() {
       try {
         const chatContainer = document.querySelector('.chatmessages');
         if (!chatContainer) {
           return setTimeout(initChatObserver, 500);
         }
+
         cmdObserver = new MutationObserver(mutations => {
           mutations.forEach(mutation => {
             mutation.addedNodes.forEach(node => {
@@ -42,15 +45,18 @@
             });
           });
         });
+
         cmdObserver.observe(chatContainer, { childList: true, subtree: true });
       } catch (err) {
         console.error("[initChatObserver] Exception:", err);
       }
     }
+
     window.startCmdObserver = function() {
       if (cmdObserver) return;
       initChatObserver();
     };
+
     window.stopCmdObserver = function() {
       if (cmdObserver) {
         cmdObserver.disconnect();
@@ -58,68 +64,61 @@
       }
     };
 
-    // ========================
-    // Message Processing & Game State
-    // ========================
-    const gameState = {
-      players: {},
-      spectators: {}
-    };
+    // ----------------------------
+    // Spectate Panel Code (Dynamic Names)
+    // ----------------------------
+    // Helper: Build the spectate panel's content dynamically
+    function buildSpectatePanelContent() {
+      // Retrieve players from gameState (updated via messages)
+      const players = Object.values(window.gameState && window.gameState.players || {});
+      const playerListHtml = players.map(player => {
+        // Use a "name" property if available, or fall back to playerID.
+        const name = player.name || player.playerID || "Unknown";
+        return `
+          <div class="player">
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                  <img src="https://via.placeholder.com/40" alt="User">
+                  <span>${name}</span>
+              </div>
+              <span class="player-tag">${name}</span>
+          </div>
+        `;
+      }).join("");
 
-    // Process incoming WebSocket messages.
-    // (Replace the JSON parsing below with your BinaryReader/parsers if needed.)
-    function processMessage(data) {
-      try {
-        let msg;
-        if (typeof data === "string") {
-          msg = JSON.parse(data);
-        } else if (data instanceof ArrayBuffer) {
-          const decoder = new TextDecoder("utf-8");
-          msg = JSON.parse(decoder.decode(new Uint8Array(data)));
-        }
-        // Example handling:
-        if (msg.type === "auth" || msg.type === "register") {
-          gameState.players[msg.playerID] = Object.assign({}, msg);
-        } else if (msg.type === "spectate") {
-          gameState.spectators[msg.playerID] = msg;
-        } else if (msg.type === "remove") {
-          delete gameState.players[msg.playerID];
-          delete gameState.spectators[msg.playerID];
-        }
-        updateSpectatePanel();
-      } catch (err) {
-        console.error("Error processing message:", err);
-      }
+      // For teams you might want to build a similar list (if your messages provide team info)
+      const teamListHtml = ""; // Placeholder if team info is available
+
+      return `
+        <div class="collapsible" onclick="toggleCollapse(this)">
+            Users (${players.length}) <span class="arrow">▶</span>
+        </div>
+        <div class="content player-list">
+            ${playerListHtml || '<div>No users available</div>'}
+        </div>
+        <div class="collapsible" onclick="toggleCollapse(this)">
+            Teams (0) <span class="arrow">▶</span>
+        </div>
+        <div class="content team">
+            ${teamListHtml || '<div>No teams available</div>'}
+        </div>
+        <div class="button-container">
+            <div class="toggle-container">
+                <span>Spy Tag</span>
+                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
+            </div>
+            <div class="toggle-container">
+                <span>Cmd Chat</span>
+                <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
+            </div>
+        </div>
+      `;
     }
 
-    // ========================
-    // Install WebSocket Hook
-    // ========================
-    (function installWebSocketHook() {
-      const OriginalWebSocket = window.WebSocket;
-      const originalAddEventListener = OriginalWebSocket.prototype.addEventListener;
-      OriginalWebSocket.prototype.addEventListener = function(type, listener, options) {
-        if (type === "message") {
-          const wrappedListener = function(event) {
-            processMessage(event.data);
-            listener(event);
-          };
-          originalAddEventListener.call(this, type, wrappedListener, options);
-        } else {
-          originalAddEventListener.call(this, type, listener, options);
-        }
-      };
-      Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
-        set: function(fn) {
-          this.addEventListener("message", fn);
-        },
-        get: function() { return null; }
-      });
-    })();
+    // Update spectate panel content (in case the game state changes while open)
+    function updateSpectatePanelContent(panel) {
+      panel.innerHTML = buildSpectatePanelContent();
+    }
 
-    // ========================
-    // Spectate Panel UI (same as your second script)
-    // ========================
     function initSpectate() {
       try {
         const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
@@ -141,98 +140,25 @@
 
     function openSpectateTab() {
       try {
-        if (document.getElementById('spectateTab')) {
-          document.getElementById('spectateTab').style.right = '0';
+        let spectateTab = document.getElementById('spectateTab');
+        if (spectateTab) {
+          updateSpectatePanelContent(spectateTab);
+          spectateTab.style.right = '0';
           return;
         }
-        const spectateTab = document.createElement('div');
+        spectateTab = document.createElement('div');
         spectateTab.id = 'spectateTab';
         spectateTab.className = 'spectate-tab';
-        // Use the same layout as your working UI
-        spectateTab.innerHTML = `
-          <div class="collapsible" onclick="toggleCollapse(this)">
-              Users (<span id="userCount">0</span>) <span class="arrow">▶</span>
-          </div>
-          <div class="content player-list" id="userList">
-              <!-- Dynamic list will be inserted here -->
-          </div>
-          <div class="collapsible" onclick="toggleCollapse(this)">
-              Teams (<span id="teamCount">0</span>) <span class="arrow">▶</span>
-          </div>
-          <div class="content team" id="teamList">
-              <!-- Dynamic list will be inserted here -->
-          </div>
-          <div class="button-container">
-              <div class="toggle-container">
-                  <span>Spy Tag</span>
-                  <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
-              </div>
-              <div class="toggle-container">
-                  <span>Cmd Chat</span>
-                  <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
-              </div>
-          </div>
-        `;
+        spectateTab.innerHTML = buildSpectatePanelContent();
         document.body.appendChild(spectateTab);
         requestAnimationFrame(() => {
-          try {
-            spectateTab.style.right = '0';
-          } catch (err) {
-            console.error("[openSpectateTab] Error during animation:", err);
-          }
+          spectateTab.style.right = '0';
         });
-        updateSpectatePanel();
       } catch (err) {
         console.error("[openSpectateTab] Exception:", err);
       }
     }
 
-    // Update UI using gameState (called after each message)
-    function updateSpectatePanel() {
-      const userList = document.getElementById('userList');
-      const teamList = document.getElementById('teamList');
-      const userCountEl = document.getElementById('userCount');
-      const teamCountEl = document.getElementById('teamCount');
-      if (!userList || !teamList) return;
-
-      let userHtml = "";
-      let userCount = 0;
-      for (const pid in gameState.spectators) {
-        userCount++;
-        const spec = gameState.spectators[pid];
-        userHtml += `<div class="player">
-          <div class="player-info" onclick="copyPlayerInfo(event, this)">
-              <img src="https://via.placeholder.com/40" alt="User">
-              <span>${pid}</span>
-          </div>
-          <span class="player-tag">${spec.tag || pid}</span>
-        </div>`;
-      }
-
-      let teamHtml = "";
-      let teamCount = 0;
-      for (const pid in gameState.players) {
-        teamCount++;
-        const player = gameState.players[pid];
-        teamHtml += `<div class="player">
-          <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-          <div class="player-info" onclick="copyPlayerInfo(event, this)">
-              <img src="https://via.placeholder.com/40" alt="User">
-              <span>${pid}</span>
-          </div>
-          <span class="score">${player.score || 0}</span>
-        </div>`;
-      }
-
-      userList.innerHTML = userHtml;
-      teamList.innerHTML = teamHtml;
-      userCountEl.textContent = userCount;
-      teamCountEl.textContent = teamCount;
-    }
-
-    // ========================
-    // UI Helper Functions (exposed globally)
-    // ========================
     window.toggleCollapse = function(element) {
       try {
         element.classList.toggle('active');
@@ -344,9 +270,6 @@
       }
     });
 
-    // ========================
-    // Insert UI CSS Styles
-    // ========================
     const style = document.createElement('style');
     style.innerHTML = `
       .spectate-tab {
@@ -481,8 +404,222 @@
     `;
     document.head.appendChild(style);
 
-    // Initialize the Spectate functionality (attaches to the Spectate button)
     initSpectate();
   }
+  // Delay the initialization (if necessary)
   setTimeout(main, 8000);
+
+  // ==================================================
+  // Section 2: Enhanced BinaryReader & Game State WebSocket Hook
+  // ==================================================
+  (function() {
+    "use strict";
+
+    // Enhanced BinaryReader with additional methods
+    class BinaryReader {
+      constructor(data) {
+        if (data instanceof ArrayBuffer) {
+          this.buffer = data;
+        } else if (data instanceof Uint8Array) {
+          this.buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+        } else {
+          throw new Error("Unsupported data type for BinaryReader");
+        }
+        this.view = new DataView(this.buffer);
+        this.offset = 0;
+        this.le = true; // little-endian
+      }
+      readUInt8() {
+        if (this.offset + 1 > this.view.byteLength) throw new RangeError("Offset out of bounds");
+        const value = this.view.getUint8(this.offset);
+        this.offset++;
+        return value;
+      }
+      readUInt16() {
+        if (this.offset + 2 > this.view.byteLength) throw new RangeError("Offset out of bounds");
+        const value = this.view.getUint16(this.offset, this.le);
+        this.offset += 2;
+        return value;
+      }
+      readUInt32() {
+        if (this.offset + 4 > this.view.byteLength) throw new RangeError("Offset out of bounds");
+        const value = this.view.getUint32(this.offset, this.le);
+        this.offset += 4;
+        return value;
+      }
+      readInt16() {
+        if (this.offset + 2 > this.view.byteLength) throw new RangeError("Offset out of bounds");
+        const value = this.view.getInt16(this.offset, this.le);
+        this.offset += 2;
+        return value;
+      }
+      readInt32() {
+        if (this.offset + 4 > this.view.byteLength) throw new RangeError("Offset out of bounds");
+        const value = this.view.getInt32(this.offset, this.le);
+        this.offset += 4;
+        return value;
+      }
+      // Reads a null-terminated UTF-16 string.
+      readUTF16StringZero() {
+        let str = "";
+        while (this.offset + 2 <= this.view.byteLength) {
+          const code = this.readUInt16();
+          if (code === 0) break;
+          str += String.fromCharCode(code);
+        }
+        return str;
+      }
+      // Reads a length-prefixed UTF-16 string.
+      readUTF16StringLength() {
+        const len = this.readUInt16();
+        let str = "";
+        for (let i = 0; i < len; i++) {
+          if (this.offset + 2 > this.view.byteLength) throw new RangeError("Offset out of bounds in readUTF16StringLength");
+          const code = this.readUInt16();
+          str += String.fromCharCode(code);
+        }
+        return str;
+      }
+      // Reads a null-terminated UTF-8 string.
+      readUTF8StringZero() {
+        let str = "";
+        while (this.offset < this.view.byteLength) {
+          const byte = this.readUInt8();
+          if (byte === 0) break;
+          str += String.fromCharCode(byte);
+        }
+        return str;
+      }
+    }
+
+    // Global game state for tracking players and spectators
+    window.gameState = {
+      players: {},   // keyed by playerID; will hold registration and tag data
+      spectators: {} // keyed by playerID; used if a parser yields spectator info
+    };
+
+    // Helper functions to update gameState.
+    function updatePlayerFromRegister(data) {
+      if (data.playerID) {
+        window.gameState.players[data.playerID] = Object.assign(window.gameState.players[data.playerID] || {}, data);
+        console.log("Updated player registration:", window.gameState.players[data.playerID]);
+      }
+    }
+
+    function removePlayer(playerID) {
+      console.log("Removing player:", playerID);
+      delete window.gameState.players[playerID];
+      delete window.gameState.spectators[playerID];
+    }
+
+    function updatePlayerToken(data) {
+      if (data && data.playerID) {
+        window.gameState.players[data.playerID] = Object.assign(window.gameState.players[data.playerID] || {}, data);
+        console.log("Updated player token tags:", window.gameState.players[data.playerID]);
+      }
+    }
+
+    function updateSpectator(data) {
+      if (Array.isArray(data) && data.length > 0) {
+        const playerID = data[0];
+        window.gameState.spectators[playerID] = data;
+        console.log("Updated spectator info for player", playerID, ":", data);
+      }
+    }
+
+    // WebSocket Interception to capture delta_packet messages
+    const OriginalWebSocket = window.WebSocket;
+    const originalAddEventListener = OriginalWebSocket.prototype.addEventListener;
+
+    OriginalWebSocket.prototype.addEventListener = function (type, listener, options) {
+      if (type === "message") {
+        const wrappedListener = function (event) {
+          if (event.data instanceof ArrayBuffer) {
+            try {
+              const rawData = new Uint8Array(event.data);
+              console.log("Raw binary data:", rawData);
+
+              if (window.delta_packet && window.delta_packet.parse) {
+                const parsers = window.delta_packet.parse;
+
+                try {
+                  const authReader = new BinaryReader(event.data);
+                  const authData = parsers.auth(authReader);
+                  console.log("Auth data:", authData);
+                  if (authData && authData.playerID) {
+                    window.gameState.players[authData.playerID] = window.gameState.players[authData.playerID] || {};
+                    window.gameState.players[authData.playerID].auth = authData;
+                  }
+                } catch (err) {}
+
+                try {
+                  const regReader = new BinaryReader(event.data);
+                  const regData = parsers.clientRegisterTab(regReader);
+                  console.log("Client register data:", regData);
+                  updatePlayerFromRegister(regData);
+                } catch (err) {}
+
+                try {
+                  const sRegReader = new BinaryReader(event.data);
+                  const sRegData = parsers.serverRegisteredTab(sRegReader);
+                  console.log("Server register data:", sRegData);
+                  updatePlayerFromRegister(sRegData);
+                } catch (err) {}
+
+                try {
+                  const remReader = new BinaryReader(event.data);
+                  const remData = parsers.clientRemoveTab(remReader);
+                  console.log("Client remove data:", remData);
+                  if (remData && remData.playerID) {
+                    removePlayer(remData.playerID);
+                  }
+                } catch (err) {}
+                try {
+                  const sRemReader = new BinaryReader(event.data);
+                  const sRemData = parsers.serverRemovedTab(sRemReader);
+                  console.log("Server remove data:", sRemData);
+                  if (sRemData && sRemData.playerID) {
+                    removePlayer(sRemData.playerID);
+                  }
+                } catch (err) {}
+
+                try {
+                  const tokenReader = new BinaryReader(event.data);
+                  const tokenData = parsers.clientTokenTag(tokenReader);
+                  console.log("Token tag data:", tokenData);
+                  if (tokenData && tokenData.playerID) {
+                    updatePlayerToken(tokenData);
+                  }
+                } catch (err) {}
+
+                try {
+                  const commReader = new BinaryReader(event.data);
+                  const commData = parsers.commander(commReader);
+                  console.log("Commander (spectator) data:", commData);
+                  updateSpectator(commData);
+                } catch (err) {}
+              }
+            } catch (processingError) {
+              console.error("Error processing WebSocket data for game state:", processingError);
+            }
+          }
+          listener(event);
+        };
+        originalAddEventListener.call(this, type, wrappedListener, options);
+      } else {
+        originalAddEventListener.call(this, type, listener, options);
+      }
+    };
+
+    Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
+      set: function (fn) {
+        this.addEventListener("message", fn);
+      },
+      get: function () {
+        return null;
+      }
+    });
+
+    console.log("Game state hook installed. Current game state:", window.gameState);
+  })();
 })();
