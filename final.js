@@ -1,13 +1,5 @@
-// ==UserScript==
-// @name         Combined Game State & Delayed UI Hook
-// @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Installs game state hooks immediately but delays UI initialization by 6 seconds after DOM is ready.
-// @match        https://agar.io/*
-// @grant        none
-// @run-at       document-end
-// ==/UserScript==
 
+S
 (function () {
   "use strict";
 
