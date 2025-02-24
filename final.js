@@ -13,9 +13,109 @@
       console.error("Unhandled rejection:", e.reason);
     });
 
-    // ========================
-    // Chat Observer Logic
-    // ========================
+    // --- Helper: Update the Spectate Panel using gameState ---
+    function updateSpectatePanel() {
+      try {
+        if (!window.gameState) {
+          console.log("Game state not available yet, waiting...");
+          return;
+        }
+        // For demonstration, we assume your team tag is stored in window.myTeamTag
+        // (Set window.myTeamTag = "11" or whatever tag your game uses.)
+        const myTeamTag = window.myTeamTag || "11"; // default to "11" if not set
+
+        // We'll assume window.gameState.players is an object where each value may include a tag.
+        // (Your hook may add more properties; here we simulate by expecting a "tag" property.)
+        const teamPlayers = [];
+        if (window.gameState.players) {
+          Object.values(window.gameState.players).forEach(player => {
+            if (player.tag === myTeamTag) {
+              teamPlayers.push(player);
+            }
+          });
+        }
+
+        // For spectators, we assume window.gameState.spectators is an object keyed by spectator id,
+        // and each value is an array of 5 elements. In our simulation, we assume that the 3rd element (index 2)
+        // represents the tag (as a number). We convert it to string and compare.
+        const spectatorPlayers = [];
+        if (window.gameState.spectators) {
+          Object.values(window.gameState.spectators).forEach(specArr => {
+            // For example, if specArr[2] equals myTeamTag when both are strings
+            if (String(specArr[2]) === myTeamTag) {
+              spectatorPlayers.push(specArr);
+            }
+          });
+        }
+
+        // Update the UI lists
+        const userCountEl = document.querySelector('.collapsible .user-count');
+        const teamCountEl = document.querySelector('.collapsible + .content.team ~ .collapsible .user-count');
+        const playerListContainer = document.querySelector('.content.player-list');
+        const teamContainer = document.querySelector('.content.team');
+
+        // Update Users (players) list:
+        if (playerListContainer) {
+          playerListContainer.innerHTML = ''; // Clear existing content
+          teamPlayers.forEach(player => {
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'player';
+            playerDiv.innerHTML = `
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                <img src="https://via.placeholder.com/40" alt="User">
+                <span>${player.tag || player.playerID}</span>
+              </div>
+              <span class="player-tag">${player.tag || player.playerID}</span>
+            `;
+            playerListContainer.appendChild(playerDiv);
+          });
+          // Update count if element exists
+          const countSpan = playerListContainer.parentElement.querySelector('.user-count');
+          if (countSpan) {
+            countSpan.textContent = teamPlayers.length;
+          }
+        }
+
+        // Update Teams (spectators) list:
+        if (teamContainer) {
+          teamContainer.innerHTML = ''; // Clear existing content
+          spectatorPlayers.forEach(spec => {
+            const specDiv = document.createElement('div');
+            specDiv.className = 'player';
+            // We use spec[2] for tag and spec[3] for a score value (as an example)
+            specDiv.innerHTML = `
+              <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                <img src="https://via.placeholder.com/40" alt="User">
+                <span>${spec[2]}</span>
+              </div>
+              <span class="score">${spec[3]}</span>
+            `;
+            teamContainer.appendChild(specDiv);
+          });
+          const countSpan = teamContainer.parentElement.querySelector('.user-count');
+          if (countSpan) {
+            countSpan.textContent = spectatorPlayers.length;
+          }
+        }
+      } catch (err) {
+        console.error("[updateSpectatePanel] Exception:", err);
+      }
+    }
+
+    // Poll for window.gameState until it exists, then update the panel every second.
+    function pollGameState() {
+      if (!window.gameState) {
+        console.log("Polling for game state...");
+        setTimeout(pollGameState, 1000);
+      } else {
+        updateSpectatePanel();
+        // Optionally, set an interval to update the panel regularly:
+        setInterval(updateSpectatePanel, 1000);
+      }
+    }
+
+    // --- Chat Observer Logic (unchanged) ---
     let cmdObserver = null;
 
     function initChatObserver() {
@@ -63,9 +163,7 @@
       }
     };
 
-    // ========================
-    // Spectate Panel Code
-    // ========================
+    // --- Spectate Panel Code ---
     function initSpectate() {
       try {
         const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
@@ -95,20 +193,15 @@
         const spectateTab = document.createElement('div');
         spectateTab.id = 'spectateTab';
         spectateTab.className = 'spectate-tab';
-        // Define three collapsible sections: Players, Spectators, and Teams.
         spectateTab.innerHTML = `
           <div class="collapsible" onclick="toggleCollapse(this)">
-              Players (<span id="playerCount">0</span>) <span class="arrow">▶</span>
+              Users (<span class="user-count">0</span>) <span class="arrow">▶</span>
           </div>
           <div class="content player-list"></div>
           <div class="collapsible" onclick="toggleCollapse(this)">
-              Spectators (<span id="spectatorCount">0</span>) <span class="arrow">▶</span>
+              Teams (<span class="user-count">0</span>) <span class="arrow">▶</span>
           </div>
-          <div class="content spectator-list"></div>
-          <div class="collapsible" onclick="toggleCollapse(this)">
-              Teams (<span id="teamCount">0</span>) <span class="arrow">▶</span>
-          </div>
-          <div class="content team-list"></div>
+          <div class="content team"></div>
           <div class="button-container">
               <div class="toggle-container">
                   <span>Spy Tag</span>
@@ -128,93 +221,14 @@
             console.error("[openSpectateTab] Error during animation:", err);
           }
         });
+
+        // Once the panel is open, start polling for game state data.
+        pollGameState();
       } catch (err) {
         console.error("[openSpectateTab] Exception:", err);
       }
     }
 
-    // ================================
-    // Game-State Update (Team Filtering)
-    // ================================
-    function updateSpectatePanel() {
-      try {
-        const spectateTab = document.getElementById('spectateTab');
-        if (!spectateTab) return;
-
-        // Get the containers for the three sections
-        const playerList = spectateTab.querySelector('.player-list');
-        const spectatorList = spectateTab.querySelector('.spectator-list');
-        const teamList = spectateTab.querySelector('.team-list');
-
-        // Clear existing lists
-        if (playerList) playerList.innerHTML = '';
-        if (spectatorList) spectatorList.innerHTML = '';
-        if (teamList) teamList.innerHTML = '';
-
-        // Assume window.gameState is updated by your hook with players and spectators.
-        const players = window.gameState && window.gameState.players ? window.gameState.players : {};
-        const spectators = window.gameState && window.gameState.spectators ? window.gameState.spectators : {};
-
-        // Get your own team identifiers.
-        // For spectators, we assume that the 4th element (index 3) in the array is the team tag.
-        // For players, we assume that the callbackID property determines team membership.
-        const myTeamTag = window.myTeamTag; // You must set this from your client info.
-        const myCallbackID = window.myCallbackID; // Likewise, your own callbackID.
-
-        // For players, we now show only those that have the same callbackID as yours.
-        const teamPlayers = Object.values(players).filter(player => player.callbackID === myCallbackID);
-        // Also show all players in the normal players list (if desired) separately.
-        // Here we use the teamPlayers array for the "Teams" section.
-        teamPlayers.forEach(player => {
-          const div = document.createElement('div');
-          div.className = 'player';
-          div.innerHTML = `
-            <div class="player-info" onclick="copyPlayerInfo(event, this)">
-              <img src="https://via.placeholder.com/40" alt="Player">
-              <span>Player ${player.playerID}</span>
-            </div>
-            <span class="player-tag">CBID: ${player.callbackID}</span>
-          `;
-          if (teamList) teamList.appendChild(div);
-        });
-
-        // Update the players header count (all players, if needed)
-        const playerCountEl = document.getElementById('playerCount');
-        if (playerCountEl) playerCountEl.textContent = Object.keys(players).length;
-
-        // For spectators, only include those with the same team tag as you.
-        const teamSpectators = Object.values(spectators).filter(spec => spec[3] === myTeamTag);
-        teamSpectators.forEach(spec => {
-          const div = document.createElement('div');
-          div.className = 'player';
-          div.innerHTML = `
-            <div class="player-info" onclick="copyPlayerInfo(event, this)">
-              <img src="https://via.placeholder.com/40" alt="Spectator">
-              <span>Spectator ${spec[0]}</span>
-            </div>
-            <span class="player-tag">Data: ${spec.join(', ')}</span>
-          `;
-          if (spectatorList) spectatorList.appendChild(div);
-        });
-
-        // Update the spectators header count with only team spectators
-        const spectatorCountEl = document.getElementById('spectatorCount');
-        if (spectatorCountEl) spectatorCountEl.textContent = teamSpectators.length;
-
-        // Also update the team section header count
-        const teamCountEl = document.getElementById('teamCount');
-        if (teamCountEl) teamCountEl.textContent = teamPlayers.length;
-      } catch (err) {
-        console.error("[updateSpectatePanel] Exception:", err);
-      }
-    }
-
-    // Update the spectate panel every 2 seconds.
-    setInterval(updateSpectatePanel, 2000);
-
-    // -------------------------------
-    // Existing UI functions
-    // -------------------------------
     window.toggleCollapse = function(element) {
       try {
         element.classList.toggle('active');
@@ -328,9 +342,7 @@
       }
     });
 
-    // ========================
-    // Append styles for the panel
-    // ========================
+    // --- Append Style ---
     const style = document.createElement('style');
     style.innerHTML = `
       .spectate-tab {
@@ -465,9 +477,10 @@
     `;
     document.head.appendChild(style);
 
+    // Initialize the Spectate panel button listener
     initSpectate();
-    startCmdObserver();
   }
 
+  // Delay the main function so that other scripts (like the game state hook) have time to load.
   setTimeout(main, 8000);
 })();
