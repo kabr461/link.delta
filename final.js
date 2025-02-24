@@ -1,22 +1,44 @@
-
 (function () {
   "use strict";
 
-  // ------------------------------
-  // GAME STATE HOOK SECTION
-  // ------------------------------
+  // ====================================================
+  // GAME STATE HOOK SECTION (runs immediately)
+  // ====================================================
   console.log("[Hook] Starting game state hook installation...");
 
-  // Create a global gameState object to hold players and spectators data.
+  // Create a global gameState object
   window.gameState = {
-    players: {},
-    spectators: {}
+    players: {},    // e.g. {1234: {playerID:1234, tag:"Hook", ...}, ...}
+    spectators: {}  // e.g. {5678: [5678, ...], ...}
   };
 
-  // Dummy parser functions for demonstration.
+  // Minimal BinaryReader for demonstration (use your actual one)
+  class BinaryReader {
+    constructor(data) {
+      if (data instanceof ArrayBuffer) {
+        this.buffer = data;
+      } else if (data instanceof Uint8Array) {
+        this.buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+      } else {
+        throw new Error("Unsupported data type for BinaryReader");
+      }
+      this.view = new DataView(this.buffer);
+      this.offset = 0;
+      this.le = true;
+    }
+    readUInt8() {
+      if (this.offset + 1 > this.view.byteLength)
+        throw new RangeError("Offset out of bounds");
+      const value = this.view.getUint8(this.offset);
+      this.offset++;
+      return value;
+    }
+    // ... Add additional methods as needed
+  }
+
+  // Dummy parsers for demonstration (replace these with your actual parsing logic)
   const deltaPacketParsers = {
     auth(reader) {
-      // Example: Read one UInt8 (your real parser would do more)
       try {
         const id = reader.readUInt8();
         return { playerID: id };
@@ -27,7 +49,8 @@
     clientRegisterTab(reader) {
       try {
         const id = reader.readUInt8();
-        return { playerID: id, callbackID: Date.now() };
+        // In a real scenario, you’d extract a tag or nickname from the packet.
+        return { playerID: id, tag: "Player" + id };
       } catch (e) {
         throw e;
       }
@@ -43,7 +66,8 @@
     clientTokenTag(reader) {
       try {
         const id = reader.readUInt8();
-        return { playerID: id, clanTag: "dummyTag" };
+        // Again, replace this with real fields.
+        return { playerID: id, clanTag: "Clan" + id };
       } catch (e) {
         throw e;
       }
@@ -51,41 +75,15 @@
     commander(reader) {
       try {
         const id = reader.readUInt8();
-        return [id, "extra", "data"];
+        // For example, return an array with a playerID and additional data.
+        return [id, "spectator", "extra info"];
       } catch (e) {
         throw e;
       }
     }
   };
 
-  // Minimal BinaryReader for our parsers.
-  class BinaryReader {
-    constructor(data) {
-      if (data instanceof ArrayBuffer) {
-        this.buffer = data;
-      } else if (data instanceof Uint8Array) {
-        this.buffer = data.buffer.slice(
-          data.byteOffset,
-          data.byteOffset + data.byteLength
-        );
-      } else {
-        throw new Error("Unsupported data type for BinaryReader");
-      }
-      this.view = new DataView(this.buffer);
-      this.offset = 0;
-      this.le = true; // little-endian
-    }
-    readUInt8() {
-      if (this.offset + 1 > this.view.byteLength)
-        throw new RangeError("Offset out of bounds");
-      const value = this.view.getUint8(this.offset);
-      this.offset++;
-      return value;
-    }
-    // Add other methods as needed…
-  }
-
-  // Hook the WebSocket "message" events so that our parsers update the gameState.
+  // Override WebSocket to intercept messages
   const OriginalWebSocket = window.WebSocket;
   const originalAddEventListener = OriginalWebSocket.prototype.addEventListener;
   OriginalWebSocket.prototype.addEventListener = function (type, listener, options) {
@@ -96,7 +94,7 @@
             const rawData = new Uint8Array(event.data);
             console.log("[Hook] Raw binary data received:", rawData);
 
-            // Use our parsers to update gameState.
+            // Try parsing auth data
             try {
               const authReader = new BinaryReader(event.data);
               const authData = deltaPacketParsers.auth(authReader);
@@ -106,10 +104,9 @@
                   window.gameState.players[authData.playerID] || {};
                 window.gameState.players[authData.playerID].auth = authData;
               }
-            } catch (e) {
-              // Not an auth packet.
-            }
+            } catch (e) { }
 
+            // Try parsing client registration
             try {
               const regReader = new BinaryReader(event.data);
               const regData = deltaPacketParsers.clientRegisterTab(regReader);
@@ -121,6 +118,7 @@
               }
             } catch (e) { }
 
+            // Try parsing client removal
             try {
               const remReader = new BinaryReader(event.data);
               const remData = deltaPacketParsers.clientRemoveTab(remReader);
@@ -131,6 +129,7 @@
               }
             } catch (e) { }
 
+            // Try parsing token/tag data
             try {
               const tokenReader = new BinaryReader(event.data);
               const tokenData = deltaPacketParsers.clientTokenTag(tokenReader);
@@ -142,6 +141,7 @@
               }
             } catch (e) { }
 
+            // Try parsing spectator (commander) data
             try {
               const commReader = new BinaryReader(event.data);
               const commData = deltaPacketParsers.commander(commReader);
@@ -164,7 +164,6 @@
     }
   };
 
-  // Override the onmessage property so assignments are hooked.
   Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
     set: function (fn) {
       this.addEventListener("message", fn);
@@ -176,111 +175,97 @@
 
   console.log("[Hook] Game state hook installed. Current game state:", window.gameState);
 
-  // ------------------------------
-  // UI CODE SECTION (Delayed by 6 seconds)
-  // ------------------------------
+  // ====================================================
+  // UI CODE SECTION (Delayed by 6 seconds after DOM ready)
+  // ====================================================
   function initUI() {
     console.log("[UI] Starting UI initialization...");
-    // For demonstration, we log the gameState.
     console.log("[UI] Current game state:", window.gameState);
-    // Call UI functions (like initSpectate) to build your UI.
-    initSpectate();
+    buildSpectatePanel();
   }
 
-  // UI functions (unchanged from your working code)
-  function initSpectate() {
-    try {
-      const spectateBtn = Array.from(document.querySelectorAll('div.btn-layer'))
-        .find(el => el.textContent.trim() === 'Spectate');
-      if (!spectateBtn) {
-        console.log("[UI] Spectate button not found, retrying in 500ms");
-        return setTimeout(initSpectate, 500);
-      }
-      spectateBtn.addEventListener('click', function () {
-        try {
-          openSpectateTab();
-        } catch (err) {
-          console.error("[SpectateButton] Error during click event:", err);
-        }
-      });
-    } catch (err) {
-      console.error("[initSpectate] Exception:", err);
-    }
-  }
+  function buildSpectatePanel() {
+    // Remove any existing panel first.
+    const oldPanel = document.getElementById("spectateTab");
+    if (oldPanel) oldPanel.remove();
 
-  function openSpectateTab() {
-    try {
-      if (document.getElementById('spectateTab')) {
-        document.getElementById('spectateTab').style.right = '0';
-        return;
-      }
-      const spectateTab = document.createElement('div');
-      spectateTab.id = 'spectateTab';
-      spectateTab.className = 'spectate-tab';
-      spectateTab.innerHTML = `
-        <div class="collapsible" onclick="toggleCollapse(this)">
-            Users (2) <span class="arrow">▶</span>
+    // Create a new panel container.
+    const panel = document.createElement("div");
+    panel.id = "spectateTab";
+    panel.className = "spectate-tab";
+
+    // Build dynamic content based on window.gameState
+    // Create a section for players
+    const playerSection = document.createElement("div");
+    playerSection.className = "content player-list";
+    const playerHeader = document.createElement("div");
+    playerHeader.className = "collapsible";
+    playerHeader.innerHTML = `Players (${Object.keys(window.gameState.players).length}) <span class="arrow">▶</span>`;
+    playerHeader.onclick = () => toggleCollapse(playerHeader);
+    panel.appendChild(playerHeader);
+    panel.appendChild(playerSection);
+
+    // Add each player dynamically
+    Object.values(window.gameState.players).forEach(player => {
+      const playerDiv = document.createElement("div");
+      playerDiv.className = "player";
+      playerDiv.innerHTML = `
+        <div class="player-info" onclick="copyPlayerInfo(event, this)">
+          <img src="https://via.placeholder.com/40" alt="User">
+          <span>${player.tag || "Player " + player.playerID}</span>
         </div>
-        <div class="content player-list">
-            <div class="player">
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                    <img src="https://via.placeholder.com/40" alt="User">
-                    <span>naze</span>
-                </div>
-                <span class="player-tag">naze</span>
-            </div>
-            <div class="player">
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                    <img src="https://via.placeholder.com/40" alt="User">
-                    <span>Hook</span>
-                </div>
-                <span class="player-tag">Hook</span>
-            </div>
-        </div>
-        <div class="collapsible" onclick="toggleCollapse(this)">
-            Teams (1) <span class="arrow">▶</span>
-        </div>
-        <div class="content team">
-            <div class="player">
-                <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                    <img src="https://via.placeholder.com/40" alt="User">
-                    <span>naze</span>
-                </div>
-                <span class="score">1</span>
-            </div>
-            <div class="player">
-                <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                    <img src="https://via.placeholder.com/40" alt="User">
-                    <span>Hook</span>
-                </div>
-                <span class="score">0</span>
-            </div>
-        </div>
-        <div class="button-container">
-            <div class="toggle-container">
-                <span>Spy Tag</span>
-                <div class="toggle" onclick="toggleSwitch(this)">OFF</div>
-            </div>
-            <div class="toggle-container">
-                <span>Cmd Chat</span>
-                <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
-            </div>
+        <span class="player-tag">${player.clanTag || ""}</span>
+      `;
+      playerSection.appendChild(playerDiv);
+    });
+
+    // Create a section for spectators
+    const specSection = document.createElement("div");
+    specSection.className = "content player-list";
+    const specHeader = document.createElement("div");
+    specHeader.className = "collapsible";
+    specHeader.innerHTML = `Spectators (${Object.keys(window.gameState.spectators).length}) <span class="arrow">▶</span>`;
+    specHeader.onclick = () => toggleCollapse(specHeader);
+    panel.appendChild(specHeader);
+    panel.appendChild(specSection);
+
+    // Add each spectator dynamically
+    Object.values(window.gameState.spectators).forEach(spec => {
+      const specDiv = document.createElement("div");
+      specDiv.className = "player";
+      // Assuming commData[1] holds some info; adjust as needed.
+      specDiv.innerHTML = `
+        <div class="player-info" onclick="copyPlayerInfo(event, this)">
+          <img src="https://via.placeholder.com/40" alt="User">
+          <span>Spectator ${spec[0]}</span>
         </div>
       `;
-      document.body.appendChild(spectateTab);
-      requestAnimationFrame(() => {
-        spectateTab.style.right = '0';
-      });
-    } catch (err) {
-      console.error("[openSpectateTab] Exception:", err);
-    }
+      specSection.appendChild(specDiv);
+    });
+
+    // Append the panel to the body.
+    document.body.appendChild(panel);
+    // Animate in:
+    requestAnimationFrame(() => {
+      panel.style.right = "0";
+    });
   }
 
+  function delayedUIInit() {
+    console.log("[UI] DOM ready; delaying UI init by 6 seconds.");
+    setTimeout(initUI, 6000);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", delayedUIInit);
+  } else {
+    delayedUIInit();
+  }
+
+  // UI helper functions (they remain mostly unchanged)
   window.toggleCollapse = function (element) {
     try {
-      element.classList.toggle('active');
+      element.classList.toggle("active");
       const content = element.nextElementSibling;
       content.style.display = content.style.display === "block" ? "none" : "block";
       element.querySelector(".arrow").style.transform =
@@ -292,11 +277,9 @@
 
   window.toggleSwitch = function (element) {
     try {
-      element.classList.toggle('active');
-      element.textContent = element.classList.contains('active') ? 'ON' : 'OFF';
-      if (element.id === 'cmdChatToggle') {
-        element.classList.contains('active') ? startCmdObserver() : stopCmdObserver();
-      }
+      element.classList.toggle("active");
+      element.textContent = element.classList.contains("active") ? "ON" : "OFF";
+      // If needed, start or stop command chat observer here.
     } catch (err) {
       console.error("[toggleSwitch] Exception:", err);
     }
@@ -304,7 +287,7 @@
 
   window.toggleTick = function (event, element) {
     try {
-      element.textContent = element.textContent.trim() === '✓' ? '☐' : '✓';
+      element.textContent = element.textContent.trim() === "✓" ? "☐" : "✓";
       event.stopPropagation();
     } catch (err) {
       console.error("[toggleTick] Exception:", err);
@@ -314,32 +297,35 @@
   window.copyPlayerInfo = function (event, container) {
     try {
       event.stopPropagation();
-      let textToCopy = '';
+      let textToCopy = "";
       const target = event.target;
-      if (target.tagName.toLowerCase() === 'img') {
+      if (target.tagName.toLowerCase() === "img") {
         textToCopy = target.src;
-      } else if (target.tagName.toLowerCase() === 'span') {
+      } else if (target.tagName.toLowerCase() === "span") {
         textToCopy = target.textContent.trim();
       } else {
-        const span = container.querySelector('span');
+        const span = container.querySelector("span");
         if (span) {
           textToCopy = span.textContent.trim();
         }
       }
       if (!textToCopy) return;
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(textToCopy).then(() => {
-          showCopyAlert(container, "Copied!");
-        }).catch(err => {
-          console.error("[copyPlayerInfo] Clipboard write failed:", err);
-        });
+        navigator.clipboard
+          .writeText(textToCopy)
+          .then(() => {
+            showCopyAlert(container, "Copied!");
+          })
+          .catch(err => {
+            console.error("[copyPlayerInfo] Clipboard write failed:", err);
+          });
       } else {
-        const textarea = document.createElement('textarea');
+        const textarea = document.createElement("textarea");
         textarea.value = textToCopy;
         document.body.appendChild(textarea);
         textarea.select();
         try {
-          document.execCommand('copy');
+          document.execCommand("copy");
           showCopyAlert(container, "Copied!");
         } catch (err) {
           console.error("[copyPlayerInfo] Fallback copy failed:", err);
@@ -353,9 +339,9 @@
 
   function showCopyAlert(parent, message) {
     try {
-      const alertEl = document.createElement('div');
+      const alertEl = document.createElement("div");
       alertEl.textContent = message;
-      alertEl.className = 'copy-alert';
+      alertEl.className = "copy-alert";
       parent.appendChild(alertEl);
       setTimeout(() => {
         alertEl.remove();
@@ -365,24 +351,8 @@
     }
   }
 
-  document.addEventListener('keydown', function (e) {
-    try {
-      if (e.key === 'Escape') {
-        const spectateTab = document.getElementById('spectateTab');
-        if (spectateTab) {
-          spectateTab.style.right = '-15vw';
-          setTimeout(() => {
-            spectateTab.remove();
-          }, 500);
-        }
-      }
-    } catch (err) {
-      console.error("[keydown] Exception:", err);
-    }
-  });
-
-  // Add custom styles for the UI.
-  const style = document.createElement('style');
+  // Append custom styles for the UI.
+  const style = document.createElement("style");
   style.innerHTML = `
     .spectate-tab {
         position: fixed;
@@ -515,22 +485,6 @@
     }
   `;
   document.head.appendChild(style);
-
-  // ------------------------------
-  // DELAY UI INIT UNTIL DOM IS READY, THEN WAIT 6 SECONDS
-  // ------------------------------
-  function delayedUIInit() {
-    console.log("[UI] DOM ready; delaying UI init by 6 seconds.");
-    setTimeout(() => {
-      initUI();
-    }, 6000);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", delayedUIInit);
-  } else {
-    delayedUIInit();
-  }
 
   console.log("[Combined Script] Finished initial setup.");
 })();
