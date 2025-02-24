@@ -1,7 +1,4 @@
 (function() {
-  // -------------------------------
-  // UI & Global error/observer setup
-  // -------------------------------
   function main() {
     // Global Error Handling & Logging
     window.onerror = function(message, source, lineno, colno, error) {
@@ -88,7 +85,6 @@
       }
     }
 
-    // Create or show the spectate panel.
     function openSpectateTab() {
       try {
         if (document.getElementById('spectateTab')) {
@@ -99,7 +95,7 @@
         const spectateTab = document.createElement('div');
         spectateTab.id = 'spectateTab';
         spectateTab.className = 'spectate-tab';
-        // Set up the HTML with two collapsible sections:
+        // Define three collapsible sections: Players, Spectators, and Teams.
         spectateTab.innerHTML = `
           <div class="collapsible" onclick="toggleCollapse(this)">
               Players (<span id="playerCount">0</span>) <span class="arrow">▶</span>
@@ -110,27 +106,9 @@
           </div>
           <div class="content spectator-list"></div>
           <div class="collapsible" onclick="toggleCollapse(this)">
-              Teams <span class="arrow">▶</span>
+              Teams (<span id="teamCount">0</span>) <span class="arrow">▶</span>
           </div>
-          <div class="content team">
-              <!-- Existing team content if any -->
-              <div class="player">
-                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                      <img src="https://via.placeholder.com/40" alt="User">
-                      <span>naze</span>
-                  </div>
-                  <span class="score">1</span>
-              </div>
-              <div class="player">
-                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                      <img src="https://via.placeholder.com/40" alt="User">
-                      <span>Hook</span>
-                  </div>
-                  <span class="score">0</span>
-              </div>
-          </div>
+          <div class="content team-list"></div>
           <div class="button-container">
               <div class="toggle-container">
                   <span>Spy Tag</span>
@@ -155,72 +133,87 @@
       }
     }
 
-    // -------------------------------
-    // New: Game state update logic
-    // -------------------------------
-    // This function updates the players and spectators list from window.gameState
+    // ================================
+    // Game-State Update (Team Filtering)
+    // ================================
     function updateSpectatePanel() {
       try {
         const spectateTab = document.getElementById('spectateTab');
         if (!spectateTab) return;
 
-        // Get the containers for players and spectators
+        // Get the containers for the three sections
         const playerList = spectateTab.querySelector('.player-list');
         const spectatorList = spectateTab.querySelector('.spectator-list');
+        const teamList = spectateTab.querySelector('.team-list');
 
         // Clear existing lists
         if (playerList) playerList.innerHTML = '';
         if (spectatorList) spectatorList.innerHTML = '';
+        if (teamList) teamList.innerHTML = '';
 
-        // Assume your game state hook sets window.gameState with players and spectators
-        const players = (window.gameState && window.gameState.players) || {};
-        const spectators = (window.gameState && window.gameState.spectators) || {};
+        // Assume window.gameState is updated by your hook with players and spectators.
+        const players = window.gameState && window.gameState.players ? window.gameState.players : {};
+        const spectators = window.gameState && window.gameState.spectators ? window.gameState.spectators : {};
 
-        // Update the players list:
-        Object.keys(players).forEach(playerId => {
-          const player = players[playerId];
-          const playerDiv = document.createElement('div');
-          playerDiv.className = 'player';
-          playerDiv.innerHTML = `
+        // Get your own team identifiers.
+        // For spectators, we assume that the 4th element (index 3) in the array is the team tag.
+        // For players, we assume that the callbackID property determines team membership.
+        const myTeamTag = window.myTeamTag; // You must set this from your client info.
+        const myCallbackID = window.myCallbackID; // Likewise, your own callbackID.
+
+        // For players, we now show only those that have the same callbackID as yours.
+        const teamPlayers = Object.values(players).filter(player => player.callbackID === myCallbackID);
+        // Also show all players in the normal players list (if desired) separately.
+        // Here we use the teamPlayers array for the "Teams" section.
+        teamPlayers.forEach(player => {
+          const div = document.createElement('div');
+          div.className = 'player';
+          div.innerHTML = `
             <div class="player-info" onclick="copyPlayerInfo(event, this)">
               <img src="https://via.placeholder.com/40" alt="Player">
               <span>Player ${player.playerID}</span>
             </div>
             <span class="player-tag">CBID: ${player.callbackID}</span>
           `;
-          if (playerList) playerList.appendChild(playerDiv);
+          if (teamList) teamList.appendChild(div);
         });
 
-        // Update the spectators list:
-        Object.keys(spectators).forEach(specId => {
-          const specData = spectators[specId]; // example: [15860, 49868, 11, 198330637, 737253372]
-          const specDiv = document.createElement('div');
-          specDiv.className = 'player';
-          specDiv.innerHTML = `
+        // Update the players header count (all players, if needed)
+        const playerCountEl = document.getElementById('playerCount');
+        if (playerCountEl) playerCountEl.textContent = Object.keys(players).length;
+
+        // For spectators, only include those with the same team tag as you.
+        const teamSpectators = Object.values(spectators).filter(spec => spec[3] === myTeamTag);
+        teamSpectators.forEach(spec => {
+          const div = document.createElement('div');
+          div.className = 'player';
+          div.innerHTML = `
             <div class="player-info" onclick="copyPlayerInfo(event, this)">
               <img src="https://via.placeholder.com/40" alt="Spectator">
-              <span>Spectator ${specData[0]}</span>
+              <span>Spectator ${spec[0]}</span>
             </div>
-            <span class="player-tag">Data: ${specData.join(', ')}</span>
+            <span class="player-tag">Data: ${spec.join(', ')}</span>
           `;
-          if (spectatorList) spectatorList.appendChild(specDiv);
+          if (spectatorList) spectatorList.appendChild(div);
         });
 
-        // Update counts in the collapsible headers:
-        const playerCountEl = document.getElementById('playerCount');
+        // Update the spectators header count with only team spectators
         const spectatorCountEl = document.getElementById('spectatorCount');
-        if (playerCountEl) playerCountEl.textContent = Object.keys(players).length;
-        if (spectatorCountEl) spectatorCountEl.textContent = Object.keys(spectators).length;
+        if (spectatorCountEl) spectatorCountEl.textContent = teamSpectators.length;
+
+        // Also update the team section header count
+        const teamCountEl = document.getElementById('teamCount');
+        if (teamCountEl) teamCountEl.textContent = teamPlayers.length;
       } catch (err) {
         console.error("[updateSpectatePanel] Exception:", err);
       }
     }
 
-    // Set an interval to update the panel every 2 seconds
+    // Update the spectate panel every 2 seconds.
     setInterval(updateSpectatePanel, 2000);
 
     // -------------------------------
-    // Existing UI functions below...
+    // Existing UI functions
     // -------------------------------
     window.toggleCollapse = function(element) {
       try {
@@ -472,11 +465,9 @@
     `;
     document.head.appendChild(style);
 
-    // Initialize observers and spectate panel
     initSpectate();
     startCmdObserver();
   }
 
-  // Delay the start of main() so that all game hooks are installed
   setTimeout(main, 8000);
 })();
