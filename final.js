@@ -1,23 +1,40 @@
 (function () {
   "use strict";
 
-  // ==================================================
-  // 1. Game State Hook (for parsing WebSocket binary messages)
-  // ==================================================
+  // ---------------------------------------------------
+  // Global Error Handling & Logging
+  // ---------------------------------------------------
+  window.onerror = function (message, source, lineno, colno, error) {
+    console.error("Global error caught:", message, "at", source, "line:", lineno, "col:", colno, "error:", error);
+  };
+
+  window.addEventListener('error', function (e) {
+    console.error("Error event caught:", e);
+  });
+
+  window.addEventListener('unhandledrejection', function (e) {
+    console.error("Unhandled rejection:", e.reason);
+  });
+
+  // ---------------------------------------------------
+  // 1. GAME STATE HOOK
+  // ---------------------------------------------------
+
   console.log("[Hook] Starting game state hook installation...");
 
   // Global game state object
   window.gameState = {
-    players: {},
-    spectators: {}
+    players: {},   // keyed by playerID; will hold registration and tag data
+    spectators: {} // keyed by playerID; used to store spectator info
   };
 
-  // Minimal BinaryReader (only the methods needed by your parsers)
+  // Define a full BinaryReader (with all needed methods)
   class BinaryReader {
     constructor(data) {
       if (data instanceof ArrayBuffer) {
         this.buffer = data;
       } else if (data instanceof Uint8Array) {
+        // Use a copy of the underlying ArrayBuffer
         this.buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
       } else {
         throw new Error("Unsupported data type for BinaryReader");
@@ -27,20 +44,36 @@
       this.le = true; // little-endian
     }
     readUInt8() {
+      if (this.offset + 1 > this.view.byteLength) throw new RangeError("Offset out of bounds");
       const value = this.view.getUint8(this.offset);
       this.offset++;
       return value;
     }
     readUInt16() {
+      if (this.offset + 2 > this.view.byteLength) throw new RangeError("Offset out of bounds");
       const value = this.view.getUint16(this.offset, this.le);
       this.offset += 2;
       return value;
     }
+    readUInt32() {
+      if (this.offset + 4 > this.view.byteLength) throw new RangeError("Offset out of bounds");
+      const value = this.view.getUint32(this.offset, this.le);
+      this.offset += 4;
+      return value;
+    }
     readInt16() {
+      if (this.offset + 2 > this.view.byteLength) throw new RangeError("Offset out of bounds");
       const value = this.view.getInt16(this.offset, this.le);
       this.offset += 2;
       return value;
     }
+    readInt32() {
+      if (this.offset + 4 > this.view.byteLength) throw new RangeError("Offset out of bounds");
+      const value = this.view.getInt32(this.offset, this.le);
+      this.offset += 4;
+      return value;
+    }
+    // Reads a null-terminated UTF-16 string.
     readUTF16StringZero() {
       let str = "";
       while (this.offset + 2 <= this.view.byteLength) {
@@ -50,9 +83,31 @@
       }
       return str;
     }
-    // Add additional methods as needed...
+    // Reads a length-prefixed UTF-16 string (first 16-bit length, then that many code units).
+    readUTF16StringLength() {
+      const len = this.readUInt16();
+      let str = "";
+      for (let i = 0; i < len; i++) {
+        if (this.offset + 2 > this.view.byteLength) throw new RangeError("Offset out of bounds in readUTF16StringLength");
+        const code = this.readUInt16();
+        str += String.fromCharCode(code);
+      }
+      return str;
+    }
+    // Reads a null-terminated UTF-8 string.
+    readUTF8StringZero() {
+      let str = "";
+      while (this.offset < this.view.byteLength) {
+        const byte = this.readUInt8();
+        if (byte === 0) break;
+        str += String.fromCharCode(byte);
+      }
+      return str;
+    }
+    // You can add additional methods as required by your parsers.
   }
 
+  // Install the WebSocket hook
   (function installGameStateHook() {
     console.log("[Hook] Installing WebSocket hook...");
     const OriginalWebSocket = window.WebSocket;
@@ -61,57 +116,57 @@
     OriginalWebSocket.prototype.addEventListener = function (type, listener, options) {
       if (type === "message") {
         const wrappedListener = function (event) {
+          // Process binary messages only
           if (event.data instanceof ArrayBuffer) {
             try {
               const rawData = new Uint8Array(event.data);
               console.log("[Hook] Raw binary data received:", rawData);
 
+              // If your delta_packet parser exists, process the packet.
               if (window.delta_packet && window.delta_packet.parse) {
                 const parsers = window.delta_packet.parse;
 
-                // Process auth events
+                // --- Auth Parsing ---
                 try {
                   const authReader = new BinaryReader(event.data);
                   const authData = parsers.auth(authReader);
                   console.log("[Hook] Auth data:", authData);
                   if (authData && authData.playerID) {
-                    window.gameState.players[authData.playerID] =
-                      window.gameState.players[authData.playerID] || {};
+                    window.gameState.players[authData.playerID] = window.gameState.players[authData.playerID] || {};
                     window.gameState.players[authData.playerID].auth = authData;
+                    // Save our own playerID if applicable
                     window.myPlayerID = authData.playerID;
                   }
                 } catch (err) {
                   console.warn("[Hook] Skipping auth parsing:", err.message);
                 }
 
-                // Process client registration
+                // --- Client Registration Parsing ---
                 try {
                   const regReader = new BinaryReader(event.data);
                   const regData = parsers.clientRegisterTab(regReader);
                   console.log("[Hook] Client register data:", regData);
                   if (regData && regData.playerID) {
-                    window.gameState.players[regData.playerID] =
-                      Object.assign(window.gameState.players[regData.playerID] || {}, regData);
+                    window.gameState.players[regData.playerID] = Object.assign(window.gameState.players[regData.playerID] || {}, regData);
                     window.myPlayerID = regData.playerID;
                   }
                 } catch (err) {
                   console.warn("[Hook] Skipping client register parsing:", err.message);
                 }
 
-                // Process server registration
+                // --- Server Registration Parsing ---
                 try {
                   const sRegReader = new BinaryReader(event.data);
                   const sRegData = parsers.serverRegisteredTab(sRegReader);
                   console.log("[Hook] Server register data:", sRegData);
                   if (sRegData && sRegData.playerID) {
-                    window.gameState.players[sRegData.playerID] =
-                      Object.assign(window.gameState.players[sRegData.playerID] || {}, sRegData);
+                    window.gameState.players[sRegData.playerID] = Object.assign(window.gameState.players[sRegData.playerID] || {}, sRegData);
                   }
                 } catch (err) {
                   // Ignore if not applicable
                 }
 
-                // Process removals
+                // --- Client Removal Parsing ---
                 try {
                   const remReader = new BinaryReader(event.data);
                   const remData = parsers.clientRemoveTab(remReader);
@@ -120,8 +175,9 @@
                     delete window.gameState.players[remData.playerID];
                     delete window.gameState.spectators[remData.playerID];
                   }
-                } catch (err) {}
+                } catch (err) { }
 
+                // --- Server Removal Parsing ---
                 try {
                   const sRemReader = new BinaryReader(event.data);
                   const sRemData = parsers.serverRemovedTab(sRemReader);
@@ -130,20 +186,19 @@
                     delete window.gameState.players[sRemData.playerID];
                     delete window.gameState.spectators[sRemData.playerID];
                   }
-                } catch (err) {}
+                } catch (err) { }
 
-                // Process token tag info
+                // --- Token/Tag Parsing ---
                 try {
                   const tokenReader = new BinaryReader(event.data);
                   const tokenData = parsers.clientTokenTag(tokenReader);
                   console.log("[Hook] Token tag data:", tokenData);
                   if (tokenData && tokenData.playerID) {
-                    window.gameState.players[tokenData.playerID] =
-                      Object.assign(window.gameState.players[tokenData.playerID] || {}, tokenData);
+                    window.gameState.players[tokenData.playerID] = Object.assign(window.gameState.players[tokenData.playerID] || {}, tokenData);
                   }
-                } catch (err) {}
+                } catch (err) { }
 
-                // Process spectator info (commander)
+                // --- Spectator Parsing (e.g. using the "commander" parser) ---
                 try {
                   const commReader = new BinaryReader(event.data);
                   const commData = parsers.commander(commReader);
@@ -152,7 +207,7 @@
                     const pid = commData[0];
                     window.gameState.spectators[pid] = commData;
                   }
-                } catch (err) {}
+                } catch (err) { }
               } else {
                 console.warn("[Hook] window.delta_packet.parse is not defined");
               }
@@ -160,7 +215,14 @@
               console.error("[Hook] Error processing WebSocket data:", processingError);
             }
           }
-          listener(event);
+          // Always call the original listener if it exists.
+          if (typeof listener === "function") {
+            try {
+              listener(event);
+            } catch (err) {
+              console.error("[Hook] Error in original listener:", err);
+            }
+          }
         };
         origAddEventListener.call(this, type, wrappedListener, options);
       } else {
@@ -168,9 +230,12 @@
       }
     };
 
+    // Override onmessage property so that setting it still uses our hook.
     Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
       set: function (fn) {
-        this.addEventListener("message", fn);
+        if (typeof fn === "function") {
+          this.addEventListener("message", fn);
+        }
       },
       get: function () {
         return null;
@@ -180,16 +245,16 @@
     console.log("[Hook] Game state hook installed. Current game state:", window.gameState);
   })();
 
-  // ==================================================
-  // 2. UI Code (Delayed Only)
-  // ==================================================
+  // ---------------------------------------------------
+  // 2. UI CODE (Delayed Only)
+  // ---------------------------------------------------
   function mainUI() {
     console.log("[UI] Starting UI initialization...");
 
-    // Call spectate initialization (this function is defined below)
+    // Initialize spectate panel (which also sets up its own event listeners)
     initSpectate();
 
-    // Update spectate panel every 2 seconds.
+    // Update the spectate panel every 2 seconds with info from window.gameState
     setInterval(updateSpectatePanel, 2000);
   }
 
@@ -201,14 +266,15 @@
       return;
     }
 
-    // Get my tag from my player registration (if available)
+    // Get our own tag from our player registration (if available)
     const myPlayer = window.gameState.players[window.myPlayerID];
     const myTag = myPlayer && myPlayer.tag ? myPlayer.tag : null;
+
     let userHtml = "";
     let userCount = 0;
     for (const pid in window.gameState.spectators) {
       const spec = window.gameState.spectators[pid];
-      // Only show spectators who have the same tag as us (if available)
+      // Only show spectators with the same tag as ours (if we have one)
       if (myTag && spec[1] === myTag) {
         userCount++;
         userHtml += `<div class="player">
@@ -225,7 +291,7 @@
     let teamCount = 0;
     for (const pid in window.gameState.players) {
       const player = window.gameState.players[pid];
-      // Only show players in our team (if available). Adjust property names as needed.
+      // Only show players in our team (adjust the property name as needed)
       if (myTag && player.team === myTag) {
         teamCount++;
         teamHtml += `<div class="player">
@@ -239,20 +305,18 @@
       }
     }
 
-    // Update the collapsible titles and content.
+    // Update collapsible headers and content
     const userCollapsible = spectateTab.querySelector(".collapsible");
     if (userCollapsible) {
-      userCollapsible.textContent = `Users (${userCount})`;
-      userCollapsible.innerHTML += `<span class="arrow">▶</span>`;
+      userCollapsible.innerHTML = `Users (${userCount}) <span class="arrow">▶</span>`;
     }
     const userList = spectateTab.querySelector(".content.player-list");
     if (userList) {
       userList.innerHTML = userHtml;
     }
-    const collapsibles = spectateTab.querySelectorAll(".collapsible");
-    if (collapsibles.length >= 2) {
-      collapsibles[1].textContent = `Teams (${teamCount})`;
-      collapsibles[1].innerHTML += `<span class="arrow">▶</span>`;
+    const teamCollapsible = spectateTab.querySelectorAll(".collapsible")[1];
+    if (teamCollapsible) {
+      teamCollapsible.innerHTML = `Teams (${teamCount}) <span class="arrow">▶</span>`;
     }
     const teamList = spectateTab.querySelector(".content.team");
     if (teamList) {
@@ -260,9 +324,9 @@
     }
   }
 
-  // --------------------------------------------------
-  // 3. UI Functions (Chat observer, spectate panel, toggles, copy, etc.)
-  // --------------------------------------------------
+  // ---------------------------------------------------
+  // 3. UI FUNCTIONS (Spectate panel, chat observer, toggles, copy, etc.)
+  // ---------------------------------------------------
   let cmdObserver = null;
   function initChatObserver() {
     try {
@@ -609,10 +673,9 @@
   `;
   document.head.appendChild(style);
 
-  // ==================================================
-  // 4. Delay Only the UI Initialization by 6 Seconds
-  // (Do not delay the game state hook.)
-  // ==================================================
+  // ---------------------------------------------------
+  // 4. Delay UI Initialization ONLY (6 seconds)
+  // ---------------------------------------------------
   if (document.readyState === "complete" || document.readyState === "interactive") {
     console.log("[UI] DOM ready; delaying UI init by 6 seconds.");
     setTimeout(mainUI, 6000);
