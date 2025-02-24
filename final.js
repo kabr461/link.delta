@@ -229,6 +229,23 @@
       }
     }
 
+function pollGameState() {
+  if (!window.gameState) {
+    console.log("Game state is still undefined.");
+    return setTimeout(pollGameState, 1000);
+  }
+  console.log("Game state found:", window.gameState);
+  updateSpectatePanel();
+  setInterval(updateSpectatePanel, 1000);
+}
+pollGameState();
+
+
+    console.log("Players:", window.gameState.players);
+console.log("Spectators:", window.gameState.spectators);
+
+    
+
     window.toggleCollapse = function(element) {
       try {
         element.classList.toggle('active');
