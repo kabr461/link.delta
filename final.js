@@ -678,11 +678,11 @@
   // ---------------------------------------------------
   if (document.readyState === "complete" || document.readyState === "interactive") {
     console.log("[UI] DOM ready; delaying UI init by 6 seconds.");
-    setTimeout(mainUI, 6000);
+    setTimeout(mainUI, 8000);
   } else {
     window.addEventListener("DOMContentLoaded", function () {
       console.log("[UI] DOMContentLoaded fired; delaying UI init by 6 seconds.");
-      setTimeout(mainUI, 6000);
+      setTimeout(mainUI, 8000);
     });
   }
 
