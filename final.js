@@ -1,5 +1,4 @@
 
-S
 (function () {
   "use strict";
 
