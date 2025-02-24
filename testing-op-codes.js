@@ -7,7 +7,7 @@
       if (data instanceof ArrayBuffer) {
         this.buffer = data;
       } else if (data instanceof Uint8Array) {
-        // Use the slice of the underlying ArrayBuffer
+        // Use a slice of the underlying ArrayBuffer
         this.buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
       } else {
         throw new Error("Unsupported data type for BinaryReader");
@@ -61,9 +61,10 @@
       }
       return str;
     }
-    // Reads a length-prefixed UTF-16 string (first 16-bit length, then that many code units).
+    // Reads a length-prefixed UTF-16 string:
+    // First an 8-bit length (number of characters) then that many 16-bit codes.
     readUTF16StringLength() {
-      const len = this.readUInt16();
+      const len = this.readUInt8(); // assume one byte length
       let str = "";
       for (let i = 0; i < len; i++) {
         if (this.offset + 2 > this.view.byteLength)
@@ -83,19 +84,19 @@
       }
       return str;
     }
-    // (Additional methods can be added as needed.)
+    // (Additional methods can be added as needed)
   }
 
   // --- Global game state for tracking players and spectators ---
   window.gameState = {
-    players: {},    // e.g. { 123: { playerID: 123, name:"Alice", skin:"https://...", clanTag:"XYZ", ... } }
-    spectators: {}  // e.g. { 456: { playerID: 456, name:"SpectatorName", skin:"https://...", ... } }
+    players: {},    // keyed by playerID; holds registration/token data
+    spectators: {}  // keyed by playerID; holds spectator info
   };
 
-  // --- Delta Packet Parsers ---
-  // (Replace these dummy parsers with your actual protocol logic.)
+  // --- Delta packet parsers ---
+  // Adjusted to decode text values for name and skin.
   const deltaPacketParsers = {
-    // For auth events, simply read one byte as playerID.
+    // Auth parser: simply reads one byte as playerID.
     auth(reader) {
       try {
         return { playerID: reader.readUInt8() };
@@ -103,21 +104,19 @@
         throw err;
       }
     },
-    // For client registration, read:
-    // • an 8-bit playerID,
-    // • a null-terminated UTF-16 string for the player's in-game name,
-    // • a null-terminated UTF-16 string for the player's skin URL.
+    // Registration parser: reads playerID, then an 8-bit length and that many 16-bit codes for the name,
+    // and then an 8-bit length and that many 16-bit codes for the skin.
     clientRegisterTab(reader) {
       try {
         const playerID = reader.readUInt8();
-        const name = reader.readUTF16StringZero(); // e.g., "Alice"
-        const skin = reader.readUTF16StringZero(); // e.g., "https://example.com/skin.png"
+        const name = reader.readUTF16StringLength();
+        const skin = reader.readUTF16StringLength();
         return { playerID, name, skin };
       } catch (err) {
         throw err;
       }
     },
-    // For player removals, just read the playerID.
+    // Removal parser: reads the playerID.
     clientRemoveTab(reader) {
       try {
         const playerID = reader.readUInt8();
@@ -126,38 +125,35 @@
         throw err;
       }
     },
-    // For token/tag info, read the playerID and clan tag.
+    // Token/Tag parser: reads playerID and then a length-prefixed clan tag.
     clientTokenTag(reader) {
       try {
         const playerID = reader.readUInt8();
-        const clanTag = reader.readUTF16StringZero(); // e.g., "XYZ"
+        const clanTag = reader.readUTF16StringLength();
         return { playerID, clanTag };
       } catch (err) {
         throw err;
       }
     },
-    // For spectator packets (using the “commander” parser), read:
-    // • an 8-bit playerID,
-    // • a null-terminated UTF-16 string for name,
-    // • a null-terminated UTF-16 string for skin.
+    // Commander parser (for spectator info): reads playerID, then a length-prefixed name and skin.
     commander(reader) {
       try {
         const playerID = reader.readUInt8();
-        const name = reader.readUTF16StringZero();
-        const skin = reader.readUTF16StringZero();
+        const name = reader.readUTF16StringLength();
+        const skin = reader.readUTF16StringLength();
         return [playerID, name, skin];
       } catch (err) {
         throw err;
       }
     }
+    // (You can add additional parsers if needed.)
   };
 
-  // --- Helper Functions to Update Game State ---
+  // --- Helper functions to update game state ---
   function updatePlayerFromRegister(regData) {
     if (regData.playerID) {
       const id = regData.playerID;
       window.gameState.players[id] = window.gameState.players[id] || {};
-      // Update the player object with registration info.
       window.gameState.players[id].playerID = id;
       if (regData.name) window.gameState.players[id].name = regData.name;
       if (regData.skin) window.gameState.players[id].skin = regData.skin;
@@ -181,7 +177,7 @@
   }
 
   function updateSpectator(specData) {
-    // Expecting an array: [playerID, name, skin]
+    // Expects an array: [playerID, name, skin]
     if (Array.isArray(specData) && specData.length > 0) {
       const playerID = specData[0];
       window.gameState.spectators[playerID] = {
@@ -193,7 +189,7 @@
     }
   }
 
-  // --- Override WebSocket to Intercept Messages ---
+  // --- Override WebSocket to intercept messages ---
   const OriginalWebSocket = window.WebSocket;
   const originalAddEventListener = OriginalWebSocket.prototype.addEventListener;
 
@@ -209,7 +205,7 @@
             if (window.delta_packet && window.delta_packet.parse) {
               const parsers = window.delta_packet.parse;
 
-              // Process auth events.
+              // Auth event.
               try {
                 const authReader = new BinaryReader(event.data);
                 const authData = parsers.auth(authReader);
@@ -218,25 +214,25 @@
                   window.gameState.players[authData.playerID] = window.gameState.players[authData.playerID] || {};
                   window.gameState.players[authData.playerID].auth = authData;
                 }
-              } catch (err) { /* skip if not applicable */ }
+              } catch (err) { /* skip */ }
 
-              // Process player registration.
+              // Player registration.
               try {
                 const regReader = new BinaryReader(event.data);
                 const regData = parsers.clientRegisterTab(regReader);
                 console.log("[Hook] Client register data:", regData);
                 updatePlayerFromRegister(regData);
-              } catch (err) { /* skip if not applicable */ }
+              } catch (err) { /* skip */ }
               try {
+                const sRegReader = new BinaryReader(event.data);
                 if (parsers.serverRegisteredTab) {
-                  const sRegReader = new BinaryReader(event.data);
                   const sRegData = parsers.serverRegisteredTab(sRegReader);
                   console.log("[Hook] Server register data:", sRegData);
                   updatePlayerFromRegister(sRegData);
                 }
               } catch (err) { /* skip */ }
 
-              // Process player removals.
+              // Player removal.
               try {
                 const remReader = new BinaryReader(event.data);
                 const remData = parsers.clientRemoveTab(remReader);
@@ -246,8 +242,8 @@
                 }
               } catch (err) { /* skip */ }
               try {
+                const sRemReader = new BinaryReader(event.data);
                 if (parsers.serverRemovedTab) {
-                  const sRemReader = new BinaryReader(event.data);
                   const sRemData = parsers.serverRemovedTab(sRemReader);
                   console.log("[Hook] Server remove data:", sRemData);
                   if (sRemData && sRemData.playerID) {
@@ -256,7 +252,7 @@
                 }
               } catch (err) { /* skip */ }
 
-              // Process token/tag info.
+              // Token/Tag info.
               try {
                 const tokenReader = new BinaryReader(event.data);
                 const tokenData = parsers.clientTokenTag(tokenReader);
@@ -266,7 +262,7 @@
                 }
               } catch (err) { /* skip */ }
 
-              // Process spectator info.
+              // Spectator info.
               try {
                 const commReader = new BinaryReader(event.data);
                 const commData = parsers.commander(commReader);
@@ -286,7 +282,7 @@
     }
   };
 
-  // Also override onmessage property.
+  // Override onmessage property.
   Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
     set: function (fn) {
       this.addEventListener("message", fn);
