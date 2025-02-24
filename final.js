@@ -1,16 +1,11 @@
 (function () {
   "use strict";
+  console.log("[Hook] Starting game state hook installation...");
 
-  // ========================
-  // 1. Install the Game State Hook Immediately
-  // ========================
-  // Ensure a global gameState object exists
   window.gameState = {
-    players: {},    // player registration info keyed by playerID
-    spectators: {}  // spectator info keyed by playerID
+    players: {},
+    spectators: {}
   };
-
-  console.log("Game state hook initializing...");
 
   // Minimal BinaryReader (only needed methods for our parsers)
   class BinaryReader {
@@ -24,7 +19,7 @@
       }
       this.view = new DataView(this.buffer);
       this.offset = 0;
-      this.le = true;
+      this.le = true; // little-endian
     }
     readUInt8() {
       const value = this.view.getUint8(this.offset);
@@ -41,7 +36,6 @@
       this.offset += 2;
       return value;
     }
-    // Reads a null-terminated UTF-16 string.
     readUTF16StringZero() {
       let str = "";
       while (this.offset + 2 <= this.view.byteLength) {
@@ -53,13 +47,8 @@
     }
   }
 
-  // (Assuming that your game’s parser functions exist under window.delta_packet.parse)
-  // The hook intercepts WebSocket messages and calls parser functions.
   (function installGameStateHook() {
-    // Log that the hook is being installed
-    console.log("Installing WebSocket hook to capture game state...");
-
-    // Override WebSocket addEventListener to wrap "message" events.
+    console.log("[Hook] Installing WebSocket hook...");
     const OriginalWebSocket = window.WebSocket;
     const originalAddEventListener = OriginalWebSocket.prototype.addEventListener;
 
@@ -68,101 +57,98 @@
         const wrappedListener = function (event) {
           if (event.data instanceof ArrayBuffer) {
             try {
-              // Log the raw binary data for debugging
               const rawData = new Uint8Array(event.data);
-              console.log("Raw binary data:", rawData);
+              console.log("[Hook] Raw binary data received:", rawData);
 
               if (window.delta_packet && window.delta_packet.parse) {
                 const parsers = window.delta_packet.parse;
+                // Process different packet types. Each block is wrapped in try/catch.
 
-                // Process auth events
                 try {
                   const authReader = new BinaryReader(event.data);
                   const authData = parsers.auth(authReader);
-                  console.log("Auth data:", authData);
+                  console.log("[Hook] Auth data:", authData);
                   if (authData && authData.playerID) {
                     window.gameState.players[authData.playerID] =
                       window.gameState.players[authData.playerID] || {};
                     window.gameState.players[authData.playerID].auth = authData;
-                    // Optionally, save our own playerID if this is our registration
                     window.myPlayerID = authData.playerID;
                   }
-                } catch (err) { /* ignore if not applicable */ }
+                } catch (err) {
+                  console.warn("[Hook] Skipping auth parsing:", err);
+                }
 
-                // Process client registration
                 try {
                   const regReader = new BinaryReader(event.data);
                   const regData = parsers.clientRegisterTab(regReader);
-                  console.log("Client register data:", regData);
+                  console.log("[Hook] Client register data:", regData);
                   if (regData && regData.playerID) {
                     window.gameState.players[regData.playerID] =
                       Object.assign(window.gameState.players[regData.playerID] || {}, regData);
-                    // Mark this as our own player registration if needed
                     window.myPlayerID = regData.playerID;
                   }
-                } catch (err) { /* not every packet is a registration */ }
+                } catch (err) {
+                  console.warn("[Hook] Skipping client register parsing:", err);
+                }
 
-                // Process server registration (if available)
                 try {
                   const sRegReader = new BinaryReader(event.data);
                   const sRegData = parsers.serverRegisteredTab(sRegReader);
-                  console.log("Server register data:", sRegData);
+                  console.log("[Hook] Server register data:", sRegData);
                   if (sRegData && sRegData.playerID) {
                     window.gameState.players[sRegData.playerID] =
                       Object.assign(window.gameState.players[sRegData.playerID] || {}, sRegData);
                   }
-                } catch (err) { }
+                } catch (err) {
+                  // Ignore if not applicable.
+                }
 
-                // Process player removals (client side)
                 try {
                   const remReader = new BinaryReader(event.data);
                   const remData = parsers.clientRemoveTab(remReader);
-                  console.log("Client remove data:", remData);
+                  console.log("[Hook] Client remove data:", remData);
                   if (remData && remData.playerID) {
                     delete window.gameState.players[remData.playerID];
                     delete window.gameState.spectators[remData.playerID];
                   }
-                } catch (err) { }
+                } catch (err) {}
 
-                // Process player removals (server side)
                 try {
                   const sRemReader = new BinaryReader(event.data);
                   const sRemData = parsers.serverRemovedTab(sRemReader);
-                  console.log("Server remove data:", sRemData);
+                  console.log("[Hook] Server remove data:", sRemData);
                   if (sRemData && sRemData.playerID) {
                     delete window.gameState.players[sRemData.playerID];
                     delete window.gameState.spectators[sRemData.playerID];
                   }
-                } catch (err) { }
+                } catch (err) {}
 
-                // Process token/tag events
                 try {
                   const tokenReader = new BinaryReader(event.data);
                   const tokenData = parsers.clientTokenTag(tokenReader);
-                  console.log("Token tag data:", tokenData);
+                  console.log("[Hook] Token tag data:", tokenData);
                   if (tokenData && tokenData.playerID) {
                     window.gameState.players[tokenData.playerID] =
                       Object.assign(window.gameState.players[tokenData.playerID] || {}, tokenData);
                   }
-                } catch (err) { }
+                } catch (err) {}
 
-                // Process spectator info via the "commander" parser
                 try {
                   const commReader = new BinaryReader(event.data);
                   const commData = parsers.commander(commReader);
-                  console.log("Commander (spectator) data:", commData);
-                  // Here we assume commData is an array whose first element is the playerID
+                  console.log("[Hook] Commander (spectator) data:", commData);
                   if (Array.isArray(commData) && commData.length > 0) {
                     const pid = commData[0];
                     window.gameState.spectators[pid] = commData;
                   }
-                } catch (err) { }
+                } catch (err) {}
+              } else {
+                console.warn("[Hook] window.delta_packet.parse is not defined");
               }
             } catch (processingError) {
-              console.error("Error processing WebSocket data for game state:", processingError);
+              console.error("[Hook] Error processing WebSocket data:", processingError);
             }
           }
-          // Forward the event to the original listener
           listener(event);
         };
         originalAddEventListener.call(this, type, wrappedListener, options);
@@ -171,7 +157,6 @@
       }
     };
 
-    // Also override the onmessage property so that setting it uses our wrapped listener.
     Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
       set: function (fn) {
         this.addEventListener("message", fn);
@@ -181,37 +166,36 @@
       }
     });
 
-    console.log("Game state hook installed. Current game state:", window.gameState);
+    console.log("[Hook] Game state hook installed. Current game state:", window.gameState);
   })();
 
   // ========================
   // 2. UI Code (Delayed by 6 seconds)
   // ========================
   function mainUI() {
-    console.log("Starting UI initialization...");
+    console.log("[UI] Starting UI initialization...");
 
-    // Initialize the spectate panel
+    // Call the spectate initialization functions
     initSpectate();
 
-    // Start updating the spectate panel periodically (every 2 seconds)
+    // Periodically update the spectate panel every 2 seconds.
     setInterval(updateSpectatePanel, 2000);
   }
 
-  // Function to update the spectate panel using window.gameState data.
-  // Only shows spectators and team players whose "tag" equals our own player's tag.
   function updateSpectatePanel() {
-    // For demonstration, assume our own player's tag is stored as gameState.players[myPlayerID].tag
+    // For example: use our own player's tag from registration (if available)
     const myPlayer = window.gameState.players[window.myPlayerID];
     const myTag = myPlayer && myPlayer.tag ? myPlayer.tag : null;
     const spectateTab = document.getElementById("spectateTab");
-    if (!spectateTab) return;
-
-    // Build the "Users" list from spectators with matching tag.
+    if (!spectateTab) {
+      console.warn("[UI] Spectate panel not found");
+      return;
+    }
     let userHtml = "";
     let userCount = 0;
     for (const pid in window.gameState.spectators) {
       const spec = window.gameState.spectators[pid];
-      // (Assume that the tag is stored in spec[?]. For example, here we assume spec[1] holds the tag.)
+      // Adjust the index below based on where your tag is stored in spec.
       if (myTag && spec[1] === myTag) {
         userCount++;
         userHtml += `<div class="player">
@@ -224,12 +208,11 @@
       }
     }
 
-    // Build the "Teams" list from players whose team equals our tag.
     let teamHtml = "";
     let teamCount = 0;
     for (const pid in window.gameState.players) {
       const player = window.gameState.players[pid];
-      // (Assume that the player's team is stored in player.team.)
+      // Adjust the property name (e.g., player.team) based on your parser.
       if (myTag && player.team === myTag) {
         teamCount++;
         teamHtml += `<div class="player">
@@ -243,7 +226,6 @@
       }
     }
 
-    // Update the UI elements.
     const userCollapsible = spectateTab.querySelector(".collapsible");
     if (userCollapsible) {
       userCollapsible.textContent = `Users (${userCount})`;
@@ -264,7 +246,9 @@
     }
   }
 
-  // UI functions from your working code:
+  // ------------------
+  // UI Functions (Chat observer, spectate panel, toggles, etc.)
+  // ------------------
 
   let cmdObserver = null;
   function initChatObserver() {
@@ -285,7 +269,7 @@
                 }
               }
             } catch (err) {
-              console.error("[MutationObserver] Error processing added node:", err);
+              console.error("[MutationObserver] Error processing node:", err);
             }
           });
         });
@@ -318,7 +302,7 @@
         try {
           openSpectateTab();
         } catch (err) {
-          console.error("[SpectateButton] Error during click event:", err);
+          console.error("[SpectateButton] Error during click:", err);
         }
       });
     } catch (err) {
@@ -339,13 +323,11 @@
         <div class="collapsible" onclick="toggleCollapse(this)">
             Users (0) <span class="arrow">▶</span>
         </div>
-        <div class="content player-list">
-        </div>
+        <div class="content player-list"></div>
         <div class="collapsible" onclick="toggleCollapse(this)">
             Teams (0) <span class="arrow">▶</span>
         </div>
-        <div class="content team">
-        </div>
+        <div class="content team"></div>
         <div class="button-container">
             <div class="toggle-container">
                 <span>Spy Tag</span>
@@ -362,7 +344,7 @@
         try {
           spectateTab.style.right = "0";
         } catch (err) {
-          console.error("[openSpectateTab] Error during animation:", err);
+          console.error("[openSpectateTab] Animation error:", err);
         }
       });
     } catch (err) {
@@ -418,18 +400,12 @@
           textToCopy = span.textContent.trim();
         }
       }
-      if (!textToCopy) {
-        return;
-      }
+      if (!textToCopy) return;
       if (navigator.clipboard) {
         navigator.clipboard
           .writeText(textToCopy)
-          .then(() => {
-            showCopyAlert(container, "Copied!");
-          })
-          .catch((err) => {
-            console.error("[copyPlayerInfo] Clipboard write failed:", err);
-          });
+          .then(() => showCopyAlert(container, "Copied!"))
+          .catch(err => console.error("[copyPlayerInfo] Clipboard error:", err));
       } else {
         const textarea = document.createElement("textarea");
         textarea.value = textToCopy;
@@ -621,15 +597,17 @@
   document.head.appendChild(style);
 
   // ========================
-  // 3. Start UI Code after 6 seconds delay
+  // 3. Delay UI Initialization by 6 seconds (UI only, not game state hook)
   // ========================
   if (document.readyState === "complete" || document.readyState === "interactive") {
-    console.log("DOM already ready; delaying UI init by 6 seconds.");
+    console.log("[UI] DOM ready; delaying UI init by 6 seconds.");
     setTimeout(mainUI, 6000);
   } else {
     window.addEventListener("DOMContentLoaded", function () {
-      console.log("DOMContentLoaded fired; delaying UI init by 6 seconds.");
+      console.log("[UI] DOMContentLoaded fired; delaying UI init by 6 seconds.");
       setTimeout(mainUI, 6000);
     });
   }
+
+  console.log("[Combined Script] Finished initial setup.");
 })();
