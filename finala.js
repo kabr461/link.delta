@@ -625,11 +625,11 @@
   // ========================
   if (document.readyState === "complete" || document.readyState === "interactive") {
     console.log("DOM already ready; delaying UI init by 6 seconds.");
-    setTimeout(mainUI, 8000);
+    setTimeout(mainUI, 10000);
   } else {
     window.addEventListener("DOMContentLoaded", function () {
       console.log("DOMContentLoaded fired; delaying UI init by 6 seconds.");
-      setTimeout(mainUI, 8000);
+      setTimeout(mainUI, 10000);
     });
   }
 })();
