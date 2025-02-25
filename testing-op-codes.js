@@ -92,11 +92,13 @@
     spectators: {}  // For spectator data.
   };
 
-  // Helper function to log the players table.
-  function logPlayersTable() {
+  // Helper function to log the current game state every 10 seconds.
+  function logGameState() {
     console.clear();
     console.table(Object.values(window.gameState.players));
+    console.table(Object.values(window.gameState.spectators));
   }
+  setInterval(logGameState, 10000);
 
   // Dummy delta packet parsers.
   // Replace these with your actual protocol parsing logic.
@@ -162,15 +164,12 @@
       window.gameState.players[id].playerID = id;
       if (regData.name) window.gameState.players[id].name = regData.name;
       if (regData.skin) window.gameState.players[id].skin = regData.skin;
-      // Log the table after update.
-      logPlayersTable();
     }
   }
 
   function removePlayer(playerID) {
     delete window.gameState.players[playerID];
     delete window.gameState.spectators[playerID];
-    logPlayersTable();
   }
 
   function updatePlayerToken(tokenData) {
@@ -178,7 +177,6 @@
       const id = tokenData.playerID;
       window.gameState.players[id] = window.gameState.players[id] || {};
       if (tokenData.clanTag) window.gameState.players[id].clanTag = tokenData.clanTag;
-      logPlayersTable();
     }
   }
 
@@ -191,8 +189,6 @@
         name: specData[1] || "",
         skin: specData[2] || ""
       };
-      // Optionally log spectator info if needed.
-      // console.table(Object.values(window.gameState.spectators));
     }
   }
 
@@ -207,7 +203,7 @@
         if (event.data instanceof ArrayBuffer) {
           try {
             const rawData = new Uint8Array(event.data);
-            // (No debug logging here to keep console clean)
+            // No extra debug logging here.
             if (window.delta_packet && window.delta_packet.parse) {
               const parsers = window.delta_packet.parse;
 
