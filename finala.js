@@ -1,10 +1,3 @@
-// ==UserScript==
-// @name         Delta Real-Time Data Grabber
-// @match        *://agar.io/*
-// @grant        none
-// @run-at       document-start
-// ==/UserScript==
-
 (function() {
   'use strict';
 
