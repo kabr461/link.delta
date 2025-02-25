@@ -7,7 +7,7 @@
       if (data instanceof ArrayBuffer) {
         this.buffer = data;
       } else if (data instanceof Uint8Array) {
-        // Use the slice of the underlying ArrayBuffer
+        // Use a slice of the underlying ArrayBuffer
         this.buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
       } else {
         throw new Error("Unsupported data type for BinaryReader");
@@ -61,7 +61,7 @@
       }
       return str;
     }
-    // Reads a length-prefixed UTF-16 string (first 16-bit length, then that many code units).
+    // Reads a length-prefixed UTF-16 string.
     readUTF16StringLength() {
       const len = this.readUInt16();
       let str = "";
@@ -88,22 +88,13 @@
 
   // --- Global game state for tracking players and spectators ---
   window.gameState = {
-    players: {},    // Will hold objects keyed by playerID.
-    spectators: {}  // For spectator data.
+    players: {},    // Will hold objects keyed by playerID (each object will include playerID, name, skin, etc.)
+    spectators: {}  // Will hold spectator data keyed by playerID.
   };
 
-  // Helper function to log the current game state every 10 seconds.
-  function logGameState() {
-    console.clear();
-    console.table(Object.values(window.gameState.players));
-    console.table(Object.values(window.gameState.spectators));
-  }
-  setInterval(logGameState, 10000);
-
-  // Dummy delta packet parsers.
-  // Replace these with your actual protocol parsing logic.
+  // Delta packet parsers.
+  // Replace these dummy implementations with your real protocol parsers as needed.
   const deltaPacketParsers = {
-    // For auth: simply read one byte as playerID.
     auth(reader) {
       try {
         return { playerID: reader.readUInt8() };
@@ -111,19 +102,16 @@
         throw err;
       }
     },
-    // For registration: read an 8-bit id, then a length-prefixed UTF-16 string for name,
-    // and another length-prefixed UTF-16 string for skin.
     clientRegisterTab(reader) {
       try {
         const playerID = reader.readUInt8();
-        const name = reader.readUTF16StringLength();
-        const skin = reader.readUTF16StringLength();
+        const name = reader.readUTF16StringZero(); // Read player's name
+        const skin = reader.readUTF16StringZero(); // Read skin URL or identifier
         return { playerID, name, skin };
       } catch (err) {
         throw err;
       }
     },
-    // For removal, just read the playerID.
     clientRemoveTab(reader) {
       try {
         const playerID = reader.readUInt8();
@@ -132,7 +120,6 @@
         throw err;
       }
     },
-    // For token/tag info: read playerID and a clan tag.
     clientTokenTag(reader) {
       try {
         const playerID = reader.readUInt8();
@@ -142,13 +129,11 @@
         throw err;
       }
     },
-    // For spectator packets: read an 8-bit playerID, then a length-prefixed UTF-16 string for name,
-    // and a length-prefixed UTF-16 string for skin.
     commander(reader) {
       try {
         const playerID = reader.readUInt8();
-        const name = reader.readUTF16StringLength();
-        const skin = reader.readUTF16StringLength();
+        const name = reader.readUTF16StringZero();
+        const skin = reader.readUTF16StringZero();
         return [playerID, name, skin];
       } catch (err) {
         throw err;
@@ -164,10 +149,13 @@
       window.gameState.players[id].playerID = id;
       if (regData.name) window.gameState.players[id].name = regData.name;
       if (regData.skin) window.gameState.players[id].skin = regData.skin;
+      // Note: Ensure name and skin are strings.
+      console.log("[Hook] Updated player registration:", window.gameState.players[id]);
     }
   }
 
   function removePlayer(playerID) {
+    console.log("[Hook] Removing player:", playerID);
     delete window.gameState.players[playerID];
     delete window.gameState.spectators[playerID];
   }
@@ -177,11 +165,12 @@
       const id = tokenData.playerID;
       window.gameState.players[id] = window.gameState.players[id] || {};
       if (tokenData.clanTag) window.gameState.players[id].clanTag = tokenData.clanTag;
+      console.log("[Hook] Updated player token tags:", window.gameState.players[id]);
     }
   }
 
   function updateSpectator(specData) {
-    // Expecting an array: [playerID, name, skin]
+    // Expecting specData to be an array: [playerID, name, skin]
     if (Array.isArray(specData) && specData.length > 0) {
       const playerID = specData[0];
       window.gameState.spectators[playerID] = {
@@ -189,6 +178,7 @@
         name: specData[1] || "",
         skin: specData[2] || ""
       };
+      console.log("[Hook] Updated spectator info for player", playerID, ":", window.gameState.spectators[playerID]);
     }
   }
 
@@ -202,11 +192,14 @@
         // Process only binary messages.
         if (event.data instanceof ArrayBuffer) {
           try {
-            const rawData = new Uint8Array(event.data);
-            // No extra debug logging here.
+            // (Optional: remove or comment out the raw data log to keep console clean)
+            // const rawData = new Uint8Array(event.data);
+            // console.log("[Hook] Raw binary data received:", rawData);
+
             if (window.delta_packet && window.delta_packet.parse) {
               const parsers = window.delta_packet.parse;
 
+              // Process auth events.
               try {
                 const authReader = new BinaryReader(event.data);
                 const authData = parsers.auth(authReader);
@@ -216,6 +209,7 @@
                 }
               } catch (err) { /* skip */ }
 
+              // Process client registration.
               try {
                 const regReader = new BinaryReader(event.data);
                 const regData = parsers.clientRegisterTab(regReader);
@@ -229,6 +223,7 @@
                 }
               } catch (err) { /* skip */ }
 
+              // Process player removals.
               try {
                 const remReader = new BinaryReader(event.data);
                 const remData = parsers.clientRemoveTab(remReader);
@@ -244,6 +239,7 @@
                 }
               } catch (err) { /* skip */ }
 
+              // Process token/tag info.
               try {
                 const tokenReader = new BinaryReader(event.data);
                 const tokenData = parsers.clientTokenTag(tokenReader);
@@ -252,6 +248,7 @@
                 }
               } catch (err) { /* skip */ }
 
+              // Process spectator info.
               try {
                 const commReader = new BinaryReader(event.data);
                 const commData = parsers.commander(commReader);
@@ -270,7 +267,6 @@
     }
   };
 
-  // Also override the onmessage property.
   Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
     set: function (fn) {
       this.addEventListener("message", fn);
@@ -279,6 +275,12 @@
       return null;
     }
   });
+
+  // Print the consolidated gameState every 10 seconds.
+  setInterval(function() {
+    console.clear();
+    console.log("Current gameState:", window.gameState);
+  }, 10000);
 
   console.log("[Hook] Game state hook installed. Current game state:", window.gameState);
 })();
