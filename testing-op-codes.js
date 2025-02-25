@@ -88,13 +88,14 @@
 
   // --- Global game state for tracking players and spectators ---
   window.gameState = {
-    players: {},    // Will hold objects keyed by playerID (each object will include playerID, name, skin, etc.)
-    spectators: {}  // Will hold spectator data keyed by playerID.
+    players: {},    // Each key is a playerID; value is an object like {playerID, name, skin, clanTag, …}
+    spectators: {}  // Each key is a playerID; value is an object like {playerID, name, skin, …}
   };
 
   // Delta packet parsers.
-  // Replace these dummy implementations with your real protocol parsers as needed.
+  // (Replace these dummy implementations with your actual protocol parsers if available.)
   const deltaPacketParsers = {
+    // For auth events: simply read one byte as playerID.
     auth(reader) {
       try {
         return { playerID: reader.readUInt8() };
@@ -102,16 +103,19 @@
         throw err;
       }
     },
+    // For registration: read an 8‑bit playerID, then a UTF‑16 zero‑terminated string for name,
+    // then another for skin (which might be a URL or skin identifier).
     clientRegisterTab(reader) {
       try {
         const playerID = reader.readUInt8();
-        const name = reader.readUTF16StringZero(); // Read player's name
-        const skin = reader.readUTF16StringZero(); // Read skin URL or identifier
+        const name = reader.readUTF16StringZero();
+        const skin = reader.readUTF16StringZero();
         return { playerID, name, skin };
       } catch (err) {
         throw err;
       }
     },
+    // For removal events: read the playerID.
     clientRemoveTab(reader) {
       try {
         const playerID = reader.readUInt8();
@@ -120,6 +124,7 @@
         throw err;
       }
     },
+    // For token/tag info: read an 8‑bit playerID then a UTF‑16 zero‑terminated clan tag.
     clientTokenTag(reader) {
       try {
         const playerID = reader.readUInt8();
@@ -129,6 +134,7 @@
         throw err;
       }
     },
+    // For spectator packets: return an array [playerID, name, skin]
     commander(reader) {
       try {
         const playerID = reader.readUInt8();
@@ -139,6 +145,7 @@
         throw err;
       }
     }
+    // (Other packet types can be added here as needed.)
   };
 
   // Helper functions to update gameState.
@@ -149,7 +156,6 @@
       window.gameState.players[id].playerID = id;
       if (regData.name) window.gameState.players[id].name = regData.name;
       if (regData.skin) window.gameState.players[id].skin = regData.skin;
-      // Note: Ensure name and skin are strings.
       console.log("[Hook] Updated player registration:", window.gameState.players[id]);
     }
   }
@@ -170,7 +176,7 @@
   }
 
   function updateSpectator(specData) {
-    // Expecting specData to be an array: [playerID, name, skin]
+    // Expecting an array: [playerID, name, skin]
     if (Array.isArray(specData) && specData.length > 0) {
       const playerID = specData[0];
       window.gameState.spectators[playerID] = {
@@ -192,7 +198,7 @@
         // Process only binary messages.
         if (event.data instanceof ArrayBuffer) {
           try {
-            // (Optional: remove or comment out the raw data log to keep console clean)
+            // (Optional: Remove or comment out the raw data log to keep the console clean.)
             // const rawData = new Uint8Array(event.data);
             // console.log("[Hook] Raw binary data received:", rawData);
 
@@ -267,6 +273,7 @@
     }
   };
 
+  // Also override the onmessage property.
   Object.defineProperty(OriginalWebSocket.prototype, "onmessage", {
     set: function (fn) {
       this.addEventListener("message", fn);
@@ -276,8 +283,8 @@
     }
   });
 
-  // Print the consolidated gameState every 10 seconds.
-  setInterval(function() {
+  // Every 10 seconds, clear the console and print the complete gameState.
+  setInterval(function () {
     console.clear();
     console.log("Current gameState:", window.gameState);
   }, 10000);
