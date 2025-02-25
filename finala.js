@@ -1,38 +1,34 @@
 (function(){
-  // Patch webpack push to capture the Delta instance when loaded
-  const originalPush = window.webpackChunkdeltav7.push;
-  window.webpackChunkdeltav7.push = function(modules) {
-    const result = originalPush.apply(this, arguments);
-    // Loop through the module definitions
-    for (let id in modules[1]) {
-      const mod = modules[1][id];
-      if (mod && mod.exports && mod.exports.client) {
-        const client = mod.exports.client;
-        if (client.stores && typeof client.stores.getPlayer === "function" &&
-            client.unitManager) {
-          window.deltaInstance = mod.exports;
-          console.log("Delta instance captured:", window.deltaInstance);
-          break;
-        }
+  // Run this as early as possible—ideally injected in the page's head.
+  if (typeof window.webpackChunkdeltav7 !== "undefined") {
+    // Save the original Delta module constructor (assumed exported as $)
+    const OriginalDelta = window.Delta; // Or whatever the module export is
+    if (OriginalDelta) {
+      function PatchedDelta(...args) {
+        const instance = new OriginalDelta(...args);
+        // Expose the instance globally
+        window.deltaInstance = instance;
+        console.log("Delta instance captured:", instance);
+        return instance;
       }
+      PatchedDelta.prototype = OriginalDelta.prototype;
+      window.Delta = PatchedDelta;
     }
-    return result;
-  };
-
-  // After Delta loads, log the stored data
+  } else {
+    console.warn("Webpack Chunk for Delta not available!");
+  }
+  
+  // Periodically check and log the internal data
   setTimeout(() => {
     if (window.deltaInstance && window.deltaInstance.client) {
       const { stores, unitManager } = window.deltaInstance.client;
       console.log("Stores:", stores);
       console.log("UnitManager:", unitManager);
-      // Log all player objects from stores
-      if (stores.players) {
-        console.log("All players data:", stores.players);
-      } else {
-        console.log("Player data not found in stores.");
+      if (stores && stores.players) {
+        console.log("Player Data:", stores.players);
       }
     } else {
-      console.log("Delta instance not captured.");
+      console.warn("Delta instance not captured. Make sure your script loads before Delta.");
     }
   }, 5000);
 })();
