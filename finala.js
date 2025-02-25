@@ -1,31 +1,31 @@
 (function() {
   'use strict';
 
-  // Function to inject script into iframe
-  function injectIntoIframe() {
-    const iframes = document.getElementsByTagName('iframe');
-    let gameIframe = null;
-
-    // Find the game iframe (often the main canvas iframe)
-    for (let iframe of iframes) {
-      if (iframe.src.includes('agar.io') || iframe.contentWindow.document.querySelector('canvas')) {
-        gameIframe = iframe;
+  function injectDataGrabber() {
+    const canvas = document.querySelector('.canvas'); // Target by class
+    const scripts = document.getElementsByTagName('script');
+    let gameScript = null;
+    for (let script of scripts) {
+      if (script.src.includes('516.js')) { // Match your script
+        gameScript = script;
         break;
       }
     }
 
-    if (!gameIframe) {
-      console.log('Game iframe not found yet, retrying...');
+    if (!canvas || !gameScript) {
+      console.log('[Delta Grabber] Canvas or 516.js not found yet, retrying...');
       return false;
     }
 
-    // Inject script into iframe
+    console.log('[Delta Grabber] Found canvas and 516.js:', canvas, gameScript.src);
+
+    // Inject script in this context
     const script = document.createElement('script');
     script.textContent = `
       (function() {
-        // Run in iframe context
         function exposeData() {
           const delta = window.delta || window.game || window.agar || null;
+          console.log('[Delta Grabber] Delta context:', delta);
           if (!delta || !delta.stores || !delta.client) return;
 
           setInterval(() => {
@@ -33,13 +33,13 @@
             const players = [];
             const playerStore = delta.stores;
             if (playerStore && typeof playerStore.getPlayer === 'function') {
-              const clientId = delta.client.id || 0; // Adjust if ID known
+              const clientId = delta.client.id || 0; // Fallback, adjust if needed
               const player = playerStore.getPlayer(clientId);
               if (player) {
                 players.push({
                   nick: player.nick || 'Unknown',
                   skin: player.skin || '',
-                  tag: player.tag || '', // Disciplined field
+                  tag: player.tag || '',
                   color: player.color || '#FFFFFF',
                   mass: player.mass || 0,
                   x: player.x || 0,
@@ -68,41 +68,33 @@
               y: activeUnit.y || 0
             };
 
-            // Send to top-level window
-            window.top.postMessage({
-              deltaExposed: {
-                players: players.length ? players : [{ nick: 'N/A', skin: '', tag: '' }],
-                cells: cells,
-                activeUnit: activeUnitData
-              }
-            }, 'https://agar.io');
+            // Expose globally
+            window.deltaExposed = {
+              players: players.length ? players : [{ nick: 'N/A', skin: '', tag: '' }],
+              cells: cells,
+              activeUnit: activeUnitData
+            };
+            console.log('[Delta Grabber] Data exposed:', window.deltaExposed);
           }, 100);
         }
 
-        // Poll until delta is available
         const poll = setInterval(() => {
           if (window.delta || window.game || window.agar) {
+            console.log('[Delta Grabber] Delta found');
             clearInterval(poll);
             exposeData();
           }
         }, 500);
       })();
     `;
-    gameIframe.contentWindow.document.head.appendChild(script);
+    document.head.appendChild(script);
     return true;
   }
 
-  // Wait for iframe to load
-  const iframePoll = setInterval(() => {
-    if (injectIntoIframe()) {
-      clearInterval(iframePoll);
+  // Poll until ready
+  const poll = setInterval(() => {
+    if (injectDataGrabber()) {
+      clearInterval(poll);
     }
   }, 500);
-
-  // Receive data in top-level window
-  window.addEventListener('message', (event) => {
-    if (event.origin === 'https://agar.io' && event.data.deltaExposed) {
-      window.deltaExposed = event.data.deltaExposed;
-    }
-  });
 })();
