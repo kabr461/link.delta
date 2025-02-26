@@ -11,7 +11,7 @@ window.deltaexpose = window.deltaexpose || {};
 
   1334: (t, e, n) => {
       "use strict";
-      console.log("Global logging is active2");
+      console.log("Global logging is active");
       function r(t, e, n) {
           e /= 100,
           n /= 100;
@@ -8731,7 +8731,29 @@ window.deltaexpose.getPlayerInfo = (playerId) => {
               }
               this.client.emit("gameMode", this),
               this.client.setMapOffset(this.client.viewMinX, this.client.viewMinY, this.client.viewMaxX, this.client.viewMaxY),
-              this.onEstablished();
+              this.onEstablished = function() {
+                // (Existing logic in onEstablished, if any)
+              
+                // Now, assign the global function:
+                const clientInstance = this.client;  // capture the client reference
+              
+                window.deltaexpose.getPlayerInfo = (playerId) => {
+                  const store = clientInstance.stores.getPlayer(playerId);
+                  console.log("Fetching player info for ID:", playerId, store);
+                  if (!store) {
+                    console.warn("No player store found for id:", playerId);
+                    return null;
+                  }
+                  return {
+                    name: store.nick,
+                    skinUrl: store.skin,
+                    tag: store.tag || null
+                  };
+                };
+              
+                console.log("deltaexpose.getPlayerInfo has been defined.");
+              };
+              
               break;
           case 103:
               this.accessTokenSent = !0;
