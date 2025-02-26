@@ -1421,8 +1421,6 @@ var detaexpose = {
   }
 };
 
-export default detaexpose;
-
 
 
               break;
