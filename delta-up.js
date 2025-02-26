@@ -8732,11 +8732,12 @@ window.deltaexpose.getPlayerInfo = (playerId) => {
               this.client.emit("gameMode", this),
               this.client.setMapOffset(this.client.viewMinX, this.client.viewMinY, this.client.viewMaxX, this.client.viewMaxY),
               this.onEstablished = function() {
-                // (Existing logic in onEstablished, if any)
+                // … other connection setup code …
               
-                // Now, assign the global function:
-                const clientInstance = this.client;  // capture the client reference
+                // Capture the client instance locally.
+                const clientInstance = this.client;
               
+                // Expose just the getPlayerInfo function globally.
                 window.deltaexpose.getPlayerInfo = (playerId) => {
                   const store = clientInstance.stores.getPlayer(playerId);
                   console.log("Fetching player info for ID:", playerId, store);
