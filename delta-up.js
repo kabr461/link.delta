@@ -4,12 +4,14 @@ window.deltaexpose = window.deltaexpose || {};
 (self.webpackChunkdeltav7 = self.webpackChunkdeltav7 || []).push([[647], {
   1327: (t, e, n) => {
       t.exports = n.p + "df7601f4e0b306d85170.wasm";
+      console.log("Global logging is active1");
 
   }
 ,
 
   1334: (t, e, n) => {
       "use strict";
+      console.log("Global logging is active2");
       function r(t, e, n) {
           e /= 100,
           n /= 100;
