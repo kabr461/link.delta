@@ -80798,3 +80798,17 @@ window.deltaexpose.getPlayerInfo = (playerId) => {
       a.i2)("app", fE, !1)
   }
 }]);
+setTimeout(function() {
+    console.log("Delayed check: assigning deltaexpose.getPlayerInfo");
+    if (window.client && window.client.stores && typeof window.client.stores.getPlayer === "function") {
+      window.deltaexpose.getPlayerInfo = function(playerId) {
+        const store = window.client.stores.getPlayer(playerId);
+        console.log("Fetching player info for ID:", playerId, store);
+        return store ? { name: store.nick, skinUrl: store.skin, tag: store.tag || null } : null;
+      };
+      console.log("deltaexpose.getPlayerInfo is now defined.");
+    } else {
+      console.warn("Client or client.stores not available.");
+    }
+  }, 3000);
+  
