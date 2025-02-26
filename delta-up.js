@@ -1410,21 +1410,26 @@ window.deltaexpose = window.deltaexpose || {};
               this.client.emit("gameMode", this.client),
               this.onEstablished();
               
-// Inside the connection-established handler (case 64), after the client is fully set up:
-const client = this.client; // capture client reference
+// Inside the onEstablished (or case 64) block, capture the client reference:
+const client = this.client;
 
+// Define the global function with additional logging:
 window.deltaexpose.getPlayerInfo = (playerId) => {
   const store = client.stores.getPlayer(playerId);
+  console.log('Fetching store for playerId:', playerId, store);
+  
   if (!store) {
-    console.warn("Player store not found for id:", playerId);
+    console.warn("No player store found for id:", playerId);
     return null;
   }
+  
   return {
     name: store.nick,
     skinUrl: store.skin,
     tag: store.tag || null
   };
 };
+
 
               break;
 
