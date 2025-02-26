@@ -1,10 +1,11 @@
 //enjoy life man
 
 /*! For license information please see 647.js.LICENSE.txt */
+export default detaexpose;
 (self.webpackChunkdeltav7 = self.webpackChunkdeltav7 || []).push([[647], {
   1327: (t, e, n) => {
-      "use strict";
-      t.exports = n.p + "df7601f4e0b306d85170.wasm"
+      t.exports = n.p + "df7601f4e0b306d85170.wasm";
+
   }
   ,
   1334: (t, e, n) => {
@@ -1408,10 +1409,10 @@
               this.client.emit("estabilished", this.client),
               this.client.emit("gameMode", this.client),
               this.onEstablished();
-window.detaexpose = {
+var detaexpose = {
   getPlayerInfo: (playerId) => {
     // MAKE SURE you use the correct variable name if it's "this.client" etc.
-    const store = this.client.stores.getPlayer(playerId);
+   var store = this.client.stores.getPlayer(playerId);
     if (!store) return null;
     return {
       name: store.nick,
@@ -1420,6 +1421,8 @@ window.detaexpose = {
     };
   }
 };
+
+export default detaexpose;
 
 
 
