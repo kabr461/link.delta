@@ -1,3 +1,5 @@
+//enjoy life man
+
 /*! For license information please see 647.js.LICENSE.txt */
 (self.webpackChunkdeltav7 = self.webpackChunkdeltav7 || []).push([[647], {
     1327: (t, e, n) => {
