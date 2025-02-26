@@ -1337,6 +1337,9 @@ window.deltaexpose = window.deltaexpose || {};
           e.setMapOffset(e.viewMinX, e.viewMinY, e.viewMaxX, e.viewMaxY)
       }
       function O(t) {
+
+        console.log("Received message with opcode:", t.readUInt8());
+
           var e = this.client
             , n = t.readUInt8();
           switch (n) {
