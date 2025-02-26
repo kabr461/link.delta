@@ -1,100 +1,38 @@
 (function() {
   'use strict';
 
-  function injectDataGrabber() {
-    const canvas = document.querySelector('.canvas'); // Target by class
-    const scripts = document.getElementsByTagName('script');
-    let gameScript = null;
-    for (let script of scripts) {
-      if (script.src.includes('516.js')) { // Match your script
-        gameScript = script;
-        break;
+  // 1. Identify a unique code fragment from your references.
+  const uniqueFragment = "this.stores.getPlayer(P)";
+
+  // 2. Save the original push method.
+  const originalPush = self.webpackChunkdeltav7.push.bind(self.webpackChunkdeltav7);
+
+  // 3. Override the push method to intercept chunks as they load.
+  self.webpackChunkdeltav7.push = function(chunk) {
+    // chunk[1] holds the modules object: { moduleId: moduleFunction, ... }
+    if (chunk && chunk[1]) {
+      for (const moduleId in chunk[1]) {
+        // Convert the module function to string.
+        const moduleFuncStr = chunk[1][moduleId].toString();
+        // Check if this is our target module (or one that contains our unique fragment).
+        if (moduleFuncStr.includes(uniqueFragment)) {
+          console.log(`Module ${moduleId} contains the unique fragment "${uniqueFragment}".`);
+          // Here you can patch the module.
+          // For example, wrap the original module function:
+          const originalModuleFunc = chunk[1][moduleId];
+          chunk[1][moduleId] = function(module, exports, __webpack_require__) {
+            // Optionally, patch before the original function executes.
+            console.log(`Patching module ${moduleId}...`);
+            // Call the original function.
+            originalModuleFunc(module, exports, __webpack_require__);
+            // After execution, you could modify exports or hook into functions as needed.
+          };
+        }
       }
     }
+    // Call the original push method to continue loading the chunk.
+    return originalPush(chunk);
+  };
 
-    if (!canvas || !gameScript) {
-      console.log('[Delta Grabber] Canvas or 516.js not found yet, retrying...');
-      return false;
-    }
-
-    console.log('[Delta Grabber] Found canvas and 516.js:', canvas, gameScript.src);
-
-    // Inject script in this context
-    const script = document.createElement('script');
-    script.textContent = `
-      (function() {
-        function exposeData() {
-          const delta = window.delta || window.game || window.agar || null;
-          console.log('[Delta Grabber] Delta context:', delta);
-          if (!delta || !delta.stores || !delta.client) return;
-
-          setInterval(() => {
-            // Player data
-            const players = [];
-            const playerStore = delta.stores;
-            if (playerStore && typeof playerStore.getPlayer === 'function') {
-              const clientId = delta.client.id || 0; // Fallback, adjust if needed
-              const player = playerStore.getPlayer(clientId);
-              if (player) {
-                players.push({
-                  nick: player.nick || 'Unknown',
-                  skin: player.skin || '',
-                  tag: player.tag || '',
-                  color: player.color || '#FFFFFF',
-                  mass: player.mass || 0,
-                  x: player.x || 0,
-                  y: player.y || 0
-                });
-              }
-            }
-
-            // Unit manager data
-            const unitManager = delta.client.unitManager;
-            const cells = [];
-            if (unitManager && unitManager.unitMap) {
-              unitManager.unitMap.forEach((unit) => {
-                cells.push({
-                  size: unit.size || 0,
-                  x: unit.x || 0,
-                  y: unit.y || 0
-                });
-              });
-            }
-            const activeUnit = unitManager.activeUnit || {};
-            const activeUnitData = {
-              nick: activeUnit.profile ? activeUnit.profile.nick : 'Unknown',
-              size: activeUnit.size || 0,
-              x: activeUnit.x || 0,
-              y: activeUnit.y || 0
-            };
-
-            // Expose globally
-            window.deltaExposed = {
-              players: players.length ? players : [{ nick: 'N/A', skin: '', tag: '' }],
-              cells: cells,
-              activeUnit: activeUnitData
-            };
-            console.log('[Delta Grabber] Data exposed:', window.deltaExposed);
-          }, 100);
-        }
-
-        const poll = setInterval(() => {
-          if (window.delta || window.game || window.agar) {
-            console.log('[Delta Grabber] Delta found');
-            clearInterval(poll);
-            exposeData();
-          }
-        }, 500);
-      })();
-    `;
-    document.head.appendChild(script);
-    return true;
-  }
-
-  // Poll until ready
-  const poll = setInterval(() => {
-    if (injectDataGrabber()) {
-      clearInterval(poll);
-    }
-  }, 500);
+  console.log('Webpack chunk push overridden to intercept modules for patching.');
 })();
