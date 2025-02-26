@@ -1,7 +1,6 @@
 //enjoy life man
 
 /*! For license information please see 647.js.LICENSE.txt */
-export default detaexpose;
 (self.webpackChunkdeltav7 = self.webpackChunkdeltav7 || []).push([[647], {
   1327: (t, e, n) => {
       t.exports = n.p + "df7601f4e0b306d85170.wasm";
