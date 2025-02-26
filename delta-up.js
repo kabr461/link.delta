@@ -1409,7 +1409,7 @@ window.deltaexpose = window.deltaexpose || {};
               this.client.emit("estabilished", this.client),
               this.client.emit("gameMode", this.client),
               this.onEstablished();
-              
+              console.log("case64loaded");
 // Inside the onEstablished (or case 64) block, capture the client reference:
 const client = this.client;
 
