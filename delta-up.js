@@ -1408,21 +1408,6 @@
               this.client.emit("estabilished", this.client),
               this.client.emit("gameMode", this.client),
               this.onEstablished();
-              window.detaexpose = {
-                getPlayerInfo: (playerId) => {
-                  // MAKE SURE you use the correct variable name if it's "this.client" etc.
-                  const store = this.client.stores.getPlayer(playerId);
-                  if (!store) return null;
-                  return {
-                    name: store.nick,
-                    skinUrl: store.skin,
-                    tag: store.tag || null
-                  };
-                }
-              };
-              
-
-
               break;
 
 
