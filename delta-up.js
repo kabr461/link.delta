@@ -1,12 +1,13 @@
 //enjoy life man
-
+window.deltaexpose = window.deltaexpose || {}; 
 /*! For license information please see 647.js.LICENSE.txt */
 (self.webpackChunkdeltav7 = self.webpackChunkdeltav7 || []).push([[647], {
   1327: (t, e, n) => {
       t.exports = n.p + "df7601f4e0b306d85170.wasm";
 
   }
-  ,
+,
+
   1334: (t, e, n) => {
       "use strict";
       function r(t, e, n) {
@@ -1408,20 +1409,17 @@
               this.client.emit("estabilished", this.client),
               this.client.emit("gameMode", this.client),
               this.onEstablished();
-var detaexpose = {
-  getPlayerInfo: (playerId) => {
-    // MAKE SURE you use the correct variable name if it's "this.client" etc.
-   var store = this.client.stores.getPlayer(playerId);
+              
+// ... Inside the onEstablished/case 64 block ...
+window.deltaexpose.getPlayerInfo = (playerId) => {
+    const store = this.client.stores.getPlayer(playerId);
     if (!store) return null;
     return {
       name: store.nick,
       skinUrl: store.skin,
       tag: store.tag || null
     };
-  }
-};
-
-
+  };
 
               break;
 
