@@ -80799,6 +80799,8 @@ window.deltaexpose.getPlayerInfo = (playerId) => {
       a.i2)("app", fE, !1)
   }
 }]);
+window.client = this; // inside your client constructor or initialization
+
 setTimeout(function() {
     console.log("Delayed check: assigning deltaexpose.getPlayerInfo");
     if (window.client && window.client.stores && typeof window.client.stores.getPlayer === "function") {
