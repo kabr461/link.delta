@@ -1,12 +1,3 @@
-// ==UserScript==
-// @name         Delta Player Data Interceptor
-// @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  Intercept and log player info data from Delta's processed messages.
-// @author       
-// @match        https://your-game-server.example.com/*
-// @run-at       document-start
-// ==/UserScript==
 
 (function() {
     'use strict';
