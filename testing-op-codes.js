@@ -1,63 +1,60 @@
 (function() {
-  'use strict';
-  console.log("[DeltaDecompressor] Script loaded.");
+    console.log("✅ Delta Message Interceptor Injected");
 
-  // Function to search through the webpack bundle for a candidate decompress function.
-  function findDecompressFunction() {
-    if (!window.webpackChunkdeltav7) {
-      console.error("[DeltaDecompressor] webpackChunkdeltav7 not available.");
-      return null;
-    }
-    for (const chunk of window.webpackChunkdeltav7) {
-      if (chunk && chunk[1]) {
-        const modules = chunk[1];
-        for (const key in modules) {
-          const mod = modules[key];
-          if (typeof mod === "function") {
-            const code = mod.toString();
-            // Look for a clue in the code that this is the decompress function.
-            if (code.indexOf("_decompress") > -1 || code.indexOf("l._decompress") > -1) {
-              console.log("[DeltaDecompressor] Found potential decompress function:", mod);
-              return mod;
+    // Store the original WebSocket constructor
+    const OriginalWebSocket = window.WebSocket;
+
+    // Override WebSocket to intercept incoming messages
+    window.WebSocket = function(url, protocols) {
+        const ws = new OriginalWebSocket(url, protocols);
+
+        // Hook into the 'onmessage' event to capture incoming data
+        ws.addEventListener("message", function(event) {
+            try {
+                let decompressedData = event.data;  // The message received from the server
+                let parsedData;
+
+                console.log("📥 [RAW Incoming WebSocket Message]:", decompressedData);
+
+                // Detect message type
+                if (typeof decompressedData === "string") {
+                    // Likely JSON-based message
+                    try {
+                        parsedData = JSON.parse(decompressedData);
+                        console.log("📂 [Extracted JSON Decompressed Message BEFORE Delta Processing]:", parsedData);
+                    } catch (jsonErr) {
+                        console.warn("⚠️ JSON Parsing Failed, Raw String Data:", decompressedData);
+                    }
+                } else if (decompressedData instanceof Blob || decompressedData instanceof ArrayBuffer) {
+                    // Binary message (Blob or ArrayBuffer)
+                    console.log("🔵 Binary Data Detected! Attempting to Decode...");
+
+                    let reader = new FileReader();
+                    reader.onload = function() {
+                        let binaryText = new Uint8Array(reader.result);
+                        console.log("📂 [Extracted Binary Decompressed Message BEFORE Delta Processing]:", binaryText);
+
+                        // Try converting binary to a readable string (UTF-8)
+                        try {
+                            let decodedText = new TextDecoder("utf-8").decode(binaryText);
+                            console.log("📝 [Decoded Binary to Text]:", decodedText);
+                        } catch (decodeErr) {
+                            console.warn("⚠️ Failed to Decode Binary Data to Text");
+                        }
+                    };
+
+                    // Read as an ArrayBuffer
+                    reader.readAsArrayBuffer(new Blob([decompressedData]));
+                } else {
+                    console.warn("⚠️ Unknown Message Type:", decompressedData);
+                }
+
+            } catch (error) {
+                console.error("❌ Error Intercepting Delta Messages:", error);
             }
-          }
-        }
-      }
-    }
-    console.warn("[DeltaDecompressor] Decompress function not found.");
-    return null;
-  }
+        });
 
-  // Attempt to locate the internal decompress function.
-  const internalDecompress = findDecompressFunction();
-  if (internalDecompress) {
-    // Attach it to a global variable for easier access.
-    window.deltaDecompress = internalDecompress;
-    console.log("[DeltaDecompressor] Exposed as window.deltaDecompress.");
-
-    // Create a wrapper that mimics decompressFromBase64.
-    // Delta's own implementation likely calls the internal decompress function like:
-    //    _decompress(encoded.length, 32, lookupFunction)
-    // where 32 is the bit parameter for base64 and lookupFunction returns the character
-    // from the base64 alphabet at a given index.
-    window.deltaDecompressFromBase64 = function(encoded) {
-      if (encoded == null) return "";
-      if (encoded === "") return null;
-      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-      // Call the internal decompress function with:
-      // - encoded.length as the length,
-      // - 32 as the bit parameter (for base64),
-      // - a lookup function that maps index to the corresponding character from alphabet.
-      return window.deltaDecompress(encoded.length, 32, function(idx) {
-        return alphabet.charAt(idx);
-      });
+        return ws;
     };
 
-    console.log("[DeltaDecompressor] Wrapper function deltaDecompressFromBase64 is available.");
-    // You can test it with a known encoded string:
-    // let testEncoded = "yourBase64EncodedStringHere";
-    // console.log("Decompressed result:", window.deltaDecompressFromBase64(testEncoded));
-  } else {
-    console.error("[DeltaDecompressor] Unable to find the internal decompress function.");
-  }
 })();
