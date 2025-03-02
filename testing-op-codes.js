@@ -1,32 +1,42 @@
 (function() {
-    console.log("✅ Injecting Delta Decompression Hook");
+    console.log("✅ Injecting Webpack Hook to Extract Delta’s Decompression Function");
 
     let deltaDecompress = null;
 
-    try {
-        // Search for Delta’s decompression function
-        for (let key in window) {
-            if (window.hasOwnProperty(key) && typeof window[key] === "object") {
-                for (let subKey in window[key]) {
-                    if (typeof window[key][subKey] === "function" && window[key][subKey].toString().includes("_decompress")) {
-                        deltaDecompress = window[key][subKey];
-                        console.log("✅ Found Delta's Decompression Function:", deltaDecompress);
-                        window.exposedDeltaDecompress = deltaDecompress;
-                        break;
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.warn("⚠️ Failed to extract Delta's decompression function:", error);
-    }
+    // Webpack Module Hook
+    const webpackRequire = window.webpackJsonp 
+        ? window.webpackJsonp.push([[], { '': (_, __, r) => r }, [['']]])
+        : window.webpackChunkbuild;
 
-    if (!deltaDecompress) {
-        console.error("❌ Delta Decompression Function NOT Found. Hook Failed!");
+    if (!webpackRequire) {
+        console.error("❌ Webpack Module System Not Found! Hook Failed.");
         return;
     }
 
-    // Override WebSocket to use Delta’s decompression
+    // Intercept Webpack Modules
+    const modules = Object.keys(webpackRequire.m);
+    for (let moduleId of modules) {
+        try {
+            const moduleExports = webpackRequire(moduleId);
+            for (let key in moduleExports) {
+                if (typeof moduleExports[key] === "function" && moduleExports[key].toString().includes("_decompress")) {
+                    deltaDecompress = moduleExports[key];
+                    console.log("✅ Successfully Extracted Delta’s Decompression Function!", deltaDecompress);
+                    window.exposedDeltaDecompress = deltaDecompress;
+                    break;
+                }
+            }
+        } catch (error) {
+            continue;
+        }
+    }
+
+    if (!deltaDecompress) {
+        console.error("❌ Delta’s Decompression Function Not Found in Webpack Modules. Hook Failed!");
+        return;
+    }
+
+    // Override WebSocket to Use Extracted Delta Decompression
     const OriginalWebSocket = window.WebSocket;
 
     window.WebSocket = function(url, protocols) {
@@ -39,7 +49,7 @@
 
                 if (rawData instanceof ArrayBuffer) {
                     let binaryData = new Uint8Array(rawData);
-                    console.log("🔵 Binary Data Detected! Passing to Delta Decompression...");
+                    console.log("🔵 Binary Data Detected! Passing to Delta’s Decompression...");
 
                     let decodedData = deltaDecompress(binaryData);
                     console.log("📂 [Decompressed Data from Delta]:", decodedData);
