@@ -1,20 +1,28 @@
 (function() {
     console.log("✅ Injecting Webpack Hook to Extract Delta’s Decompression Function");
 
+    // Ensure Webpack module system exists
+    if (!window.webpackChunkdeltav7) {
+        console.error("❌ Webpack Chunk System Not Found! Hook Failed.");
+        return;
+    }
+
     // Hook into Webpack's module system
     let webpackModules = {};
     try {
         window.webpackChunkdeltav7.push([
             [Math.random()], 
-            {},
+            {}, 
             (modules) => { webpackModules = modules; }
         ]);
     } catch (error) {
-        console.error("❌ Webpack Module System Not Found! Hook Failed.");
+        console.error("❌ Failed to Hook Webpack Chunk System:", error);
         return;
     }
 
-    // Locate module 1956 (decompression module)
+    console.log("🔍 Webpack Modules Extracted:", Object.keys(webpackModules));
+
+    // Locate Delta's decompression function inside the extracted modules
     let deltaDecompress = null;
     for (let moduleId in webpackModules) {
         try {
