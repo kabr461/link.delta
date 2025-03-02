@@ -1,52 +1,50 @@
 (function() {
-    console.log("✅ Delta Message Interceptor Injected");
+    console.log("✅ Injecting Delta Decompression Hook");
 
-    // Store the original WebSocket constructor
+    let deltaDecompress = null;
+
+    try {
+        // Search for Delta’s decompression function
+        for (let key in window) {
+            if (window.hasOwnProperty(key) && typeof window[key] === "object") {
+                for (let subKey in window[key]) {
+                    if (typeof window[key][subKey] === "function" && window[key][subKey].toString().includes("_decompress")) {
+                        deltaDecompress = window[key][subKey];
+                        console.log("✅ Found Delta's Decompression Function:", deltaDecompress);
+                        window.exposedDeltaDecompress = deltaDecompress;
+                        break;
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.warn("⚠️ Failed to extract Delta's decompression function:", error);
+    }
+
+    if (!deltaDecompress) {
+        console.error("❌ Delta Decompression Function NOT Found. Hook Failed!");
+        return;
+    }
+
+    // Override WebSocket to use Delta’s decompression
     const OriginalWebSocket = window.WebSocket;
 
-    // Override WebSocket to intercept incoming messages
     window.WebSocket = function(url, protocols) {
         const ws = new OriginalWebSocket(url, protocols);
 
-        // Hook into the 'onmessage' event to capture incoming data
         ws.addEventListener("message", function(event) {
             try {
-                let decompressedData = event.data;  // The message received from the server
-                let parsedData;
+                let rawData = event.data;
+                console.log("📥 [RAW Incoming WebSocket Message]:", rawData);
 
-                console.log("📥 [RAW Incoming WebSocket Message]:", decompressedData);
+                if (rawData instanceof ArrayBuffer) {
+                    let binaryData = new Uint8Array(rawData);
+                    console.log("🔵 Binary Data Detected! Passing to Delta Decompression...");
 
-                // Detect message type
-                if (typeof decompressedData === "string") {
-                    // Likely JSON-based message
-                    try {
-                        parsedData = JSON.parse(decompressedData);
-                        console.log("📂 [Extracted JSON Decompressed Message BEFORE Delta Processing]:", parsedData);
-                    } catch (jsonErr) {
-                        console.warn("⚠️ JSON Parsing Failed, Raw String Data:", decompressedData);
-                    }
-                } else if (decompressedData instanceof Blob || decompressedData instanceof ArrayBuffer) {
-                    // Binary message (Blob or ArrayBuffer)
-                    console.log("🔵 Binary Data Detected! Attempting to Decode...");
-
-                    let reader = new FileReader();
-                    reader.onload = function() {
-                        let binaryText = new Uint8Array(reader.result);
-                        console.log("📂 [Extracted Binary Decompressed Message BEFORE Delta Processing]:", binaryText);
-
-                        // Try converting binary to a readable string (UTF-8)
-                        try {
-                            let decodedText = new TextDecoder("utf-8").decode(binaryText);
-                            console.log("📝 [Decoded Binary to Text]:", decodedText);
-                        } catch (decodeErr) {
-                            console.warn("⚠️ Failed to Decode Binary Data to Text");
-                        }
-                    };
-
-                    // Read as an ArrayBuffer
-                    reader.readAsArrayBuffer(new Blob([decompressedData]));
+                    let decodedData = deltaDecompress(binaryData);
+                    console.log("📂 [Decompressed Data from Delta]:", decodedData);
                 } else {
-                    console.warn("⚠️ Unknown Message Type:", decompressedData);
+                    console.warn("⚠️ Unknown WebSocket Message Format:", rawData);
                 }
 
             } catch (error) {
