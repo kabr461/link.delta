@@ -1,23 +1,24 @@
 (function() {
     console.log("✅ Injecting Webpack Hook to Extract Delta’s Decompression Function");
 
-    let deltaDecompress = null;
-
-    // Webpack Module Hook
-    const webpackRequire = window.webpackJsonp 
-        ? window.webpackJsonp.push([[], { '': (_, __, r) => r }, [['']]])
-        : window.webpackChunkbuild;
-
-    if (!webpackRequire) {
+    // Hook into Webpack's module system
+    let webpackModules = {};
+    try {
+        window.webpackChunkdeltav7.push([
+            [Math.random()], 
+            {},
+            (modules) => { webpackModules = modules; }
+        ]);
+    } catch (error) {
         console.error("❌ Webpack Module System Not Found! Hook Failed.");
         return;
     }
 
-    // Intercept Webpack Modules
-    const modules = Object.keys(webpackRequire.m);
-    for (let moduleId of modules) {
+    // Locate module 1956 (decompression module)
+    let deltaDecompress = null;
+    for (let moduleId in webpackModules) {
         try {
-            const moduleExports = webpackRequire(moduleId);
+            let moduleExports = webpackModules[moduleId]();
             for (let key in moduleExports) {
                 if (typeof moduleExports[key] === "function" && moduleExports[key].toString().includes("_decompress")) {
                     deltaDecompress = moduleExports[key];
