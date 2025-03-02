@@ -1,32 +1,26 @@
 (function() {
     console.log("✅ Injecting Webpack Hook to Extract Delta’s Decompression Function");
 
-    // Ensure Webpack module system exists
-    if (!window.webpackChunkdeltav7) {
-        console.error("❌ Webpack Chunk System Not Found! Hook Failed.");
-        return;
-    }
-
-    // Hook into Webpack's module system
-    let webpackModules = {};
-    try {
-        window.webpackChunkdeltav7.push([
+    // Step 1: Force Webpack to Reveal All Modules
+    let webpackRequire;
+    if (window.webpackChunkdeltav7) {
+        webpackRequire = window.webpackChunkdeltav7.push([
             [Math.random()], 
             {}, 
-            (modules) => { webpackModules = modules; }
+            (modules) => { webpackRequire = modules; }
         ]);
-    } catch (error) {
-        console.error("❌ Failed to Hook Webpack Chunk System:", error);
+    } else {
+        console.error("❌ Webpack Module System Not Found! Hook Failed.");
         return;
     }
 
-    console.log("🔍 Webpack Modules Extracted:", Object.keys(webpackModules));
+    console.log("🔍 Extracted Webpack Modules:", Object.keys(webpackRequire));
 
-    // Locate Delta's decompression function inside the extracted modules
+    // Step 2: Locate Delta's Decompression Function
     let deltaDecompress = null;
-    for (let moduleId in webpackModules) {
+    for (let moduleId in webpackRequire) {
         try {
-            let moduleExports = webpackModules[moduleId]();
+            let moduleExports = webpackRequire[moduleId]();
             for (let key in moduleExports) {
                 if (typeof moduleExports[key] === "function" && moduleExports[key].toString().includes("_decompress")) {
                     deltaDecompress = moduleExports[key];
@@ -45,7 +39,7 @@
         return;
     }
 
-    // Override WebSocket to Use Extracted Delta Decompression
+    // Step 3: Override WebSocket to Use Extracted Delta Decompression
     const OriginalWebSocket = window.WebSocket;
 
     window.WebSocket = function(url, protocols) {
