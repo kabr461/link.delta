@@ -98,11 +98,12 @@
           const imageUrl = 'https://via.placeholder.com/40';
           teamHTML += `
             <div class="player">
+              <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
               <div class="player-info" onclick="copyPlayerInfo(event, this)">
                 <img src="${imageUrl}" alt="User">
                 <span>${name}</span>
               </div>
-              <span class="player-tag">${tag}</span>
+              <span class="player-tag team-tag">${tag}</span>
             </div>
           `;
         }
@@ -126,7 +127,7 @@
           </div>
           <div class="player-team-section">
             <div class="collapsible" onclick="toggleCollapse(this)">
-              Team <span class="arrow">▶</span>
+              Team<span class="arrow">▶</span>
             </div>
             <div class="content player-list">
               ${teamHTML}
@@ -339,6 +340,10 @@
           font-size: 0.85vw;
           color: #fff;
       }
+      /* Smaller text for team tags */
+      .team-tag {
+          font-size: 0.7vw;
+      }
       .score {
           font-size: 0.8vw;
           background: #555;
@@ -377,6 +382,12 @@
       }
       .toggle.active {
           background: #0f0;
+      }
+      .tick-button {
+          color: #0f0;
+          font-size: 1vw;
+          cursor: pointer;
+          margin-right: 0.2vw;
       }
       .copy-alert {
           position: absolute;
