@@ -1,7 +1,7 @@
 (function() {
   // --- Global Hard-Coded Arrays ---
   const hardCodedNames = ["TALIBAN 1", "Bianyx", "Marcin PL", "albania", "medo"];
-  const hardCodedTags = ['no tag', 'no tag', 'ko', '#D'];
+  const hardCodedTags = ['no tag', 'no tag', 'ko', '#D', '#X'];
 
   function main() {
     // --- Global Error Handling ---
@@ -72,98 +72,65 @@
           panel.style.right = '0';
           return;
         }
-        // Get the playing players from window.gameState.players.
-        const players = (window.gameState && window.gameState.players) || {};
-        // Filter out spectators.
-        const playingPlayers = Object.values(players).filter(p => !p.isSpectator);
-        
-        // Build the Users section using hard coded names and tags.
+        // Build the Users section from the hardcoded arrays.
         let usersHTML = "";
-        if (playingPlayers.length === 0) {
-          usersHTML = `<div class="player">No players found</div>`;
-        } else {
-          playingPlayers.forEach((player, index) => {
-            // Cycle through the hard-coded names and tags using modulo arithmetic.
-            const name = hardCodedNames[index % hardCodedNames.length];
-            const tag = hardCodedTags[index % hardCodedTags.length];
-            const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-        
-            usersHTML += `
-              <div class="player">
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                  <img src="${imageUrl}" alt="User">
-                  <span>${name}</span>
-                </div>
-                <span class="player-tag">${tag}</span>
+        for (let i = 0; i < hardCodedNames.length; i++) {
+          const name = hardCodedNames[i];
+          const tag = hardCodedTags[i % hardCodedTags.length];
+          const imageUrl = 'https://via.placeholder.com/40';
+          usersHTML += `
+            <div class="player">
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                <img src="${imageUrl}" alt="User">
+                <span>${name}</span>
               </div>
-            `;
-          });
-        }
-    
-        // Build the Teams section.
-        let teamsHTML = "";
-        const teams = {};
-        playingPlayers.forEach(player => {
-          if (player.team) {
-            teams[player.team] = teams[player.team] || [];
-            teams[player.team].push(player);
-          }
-        });
-        if (Object.keys(teams).length > 0) {
-          Object.keys(teams).forEach(team => {
-            let teamPlayersHTML = "";
-            teams[team].forEach((player, index) => {
-              // Cycle through the hard-coded names for the team tab as well.
-              const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-              const name = hardCodedNames[index % hardCodedNames.length];
-              const score = player.score || 0;
-              teamPlayersHTML += `
-                <div class="player">
-                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                    <img src="${imageUrl}" alt="User">
-                    <span>${name}</span>
-                  </div>
-                  <span class="score">${score}</span>
-                </div>
-              `;
-            });
-            if (!teamPlayersHTML.trim()) {
-              teamPlayersHTML = `<div class="player">No players found</div>`;
-            }
-            teamsHTML += `
-              <div class="collapsible" onclick="toggleCollapse(this)">
-                Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
-              </div>
-              <div class="content team">
-                ${teamPlayersHTML}
-              </div>
-            `;
-          });
-        } else {
-          teamsHTML = `
-            <div class="collapsible" onclick="toggleCollapse(this)">
-              Teams (0) <span class="arrow">▶</span>
-            </div>
-            <div class="content team">
-              <div class="player">No teams found</div>
+              <span class="player-tag">${tag}</span>
             </div>
           `;
         }
-    
-        // Create the spectate panel container with two sections.
+
+        // Build the Team section. Only include players whose tag is exactly "no tag".
+        let teamHTML = "";
+        for (let i = 0; i < hardCodedNames.length; i++) {
+          const name = hardCodedNames[i];
+          const tag = hardCodedTags[i % hardCodedTags.length];
+          if (tag !== "no tag") continue;
+          const imageUrl = 'https://via.placeholder.com/40';
+          teamHTML += `
+            <div class="player">
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                <img src="${imageUrl}" alt="User">
+                <span>${name}</span>
+              </div>
+              <span class="player-tag">${tag}</span>
+            </div>
+          `;
+        }
+        // If no player qualifies for team list, show a fallback message.
+        if (!teamHTML.trim()) {
+          teamHTML = `<div class="player">No team players found</div>`;
+        }
+
+        // Create the spectate panel container with two sections: Users and Team.
         panel = document.createElement('div');
         panel.id = 'spectateTab';
         panel.className = 'spectate-tab';
         panel.innerHTML = `
           <div class="player-team-section">
             <div class="collapsible" onclick="toggleCollapse(this)">
-              Users (${playingPlayers.length}) <span class="arrow">▶</span>
+              Users (${hardCodedNames.length}) <span class="arrow">▶</span>
             </div>
             <div class="content player-list">
               ${usersHTML}
             </div>
-            ${teamsHTML}
+          </div>
+          <div class="player-team-section">
+            <div class="collapsible" onclick="toggleCollapse(this)">
+              Team (filtered) <span class="arrow">▶</span>
+            </div>
+            <div class="content player-list">
+              ${teamHTML}
+            </div>
           </div>
           <div class="button-container">
             <div class="toggle-container">
@@ -182,7 +149,7 @@
         console.error("[openSpectateTab] Exception:", err);
       }
     }
-    
+
     // --- UI Helper Functions ---
     window.toggleCollapse = function(element) {
       try {
@@ -197,7 +164,7 @@
         console.error("[toggleCollapse] Exception:", err);
       }
     };
-    
+
     window.toggleSwitch = function(element) {
       try {
         element.classList.toggle('active');
@@ -209,7 +176,7 @@
         console.error("[toggleSwitch] Exception:", err);
       }
     };
-    
+
     window.toggleTick = function(event, element) {
       try {
         element.textContent = (element.textContent.trim() === '✓') ? '☐' : '✓';
@@ -218,7 +185,7 @@
         console.error("[toggleTick] Exception:", err);
       }
     };
-    
+
     window.copyPlayerInfo = function(event, container) {
       try {
         event.stopPropagation();
@@ -254,7 +221,7 @@
         console.error("[copyPlayerInfo] Exception:", err);
       }
     };
-    
+
     function showCopyAlert(parent, message) {
       try {
         const alertEl = document.createElement('div');
@@ -272,7 +239,7 @@
         console.error("[showCopyAlert] Exception:", err);
       }
     }
-    
+
     // --- Close Spectate Panel on Escape ---
     document.addEventListener('keydown', function(e) {
       try {
@@ -293,7 +260,7 @@
         console.error("[keydown] Exception:", err);
       }
     });
-    
+
     // --- CSS Styles for the Spectate Panel ---
     const style = document.createElement('style');
     style.innerHTML = `
@@ -365,11 +332,6 @@
       .player-info span {
           cursor: pointer;
       }
-      .tick-button {
-          color: #0f0;
-          font-size: 1vw;
-          cursor: pointer;
-      }
       .player-tag {
           background: #888;
           padding: 0.2em 0.5em;
@@ -428,113 +390,10 @@
       }
     `;
     document.head.appendChild(style);
-    
+
     initSpectate();
-    
-    // ----------------------------------------------------------------------------
-    // ADDED 1: Function to re-build the panel contents if it's open.
-    //          This re-runs the player logic every second WITHOUT destroying/recreating the panel.
-    // ----------------------------------------------------------------------------
-    function refreshSpectatePanel() {
-      const panel = document.getElementById('spectateTab');
-      if (!panel) return; // If panel isn't open, do nothing
-    
-      // Re-run the same logic that builds the "Users" & "Teams" HTML:
-      const players = (window.gameState && window.gameState.players) || {};
-      const playingPlayers = Object.values(players).filter(p => !p.isSpectator);
-    
-      let usersHTML = "";
-      if (playingPlayers.length === 0) {
-        usersHTML = `<div class="player">No players found</div>`;
-      } else {
-        playingPlayers.forEach((player, index) => {
-          const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-          // Use hard coded names and tags here as well
-          const name = hardCodedNames[index % hardCodedNames.length];
-          const tag = hardCodedTags[index % hardCodedTags.length];
-          usersHTML += `
-            <div class="player">
-              <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                <img src="${imageUrl}" alt="User">
-                <span>${name}</span>
-              </div>
-              <span class="player-tag">${tag}</span>
-            </div>
-          `;
-        });
-      }
-    
-      let teamsHTML = "";
-      const teams = {};
-      playingPlayers.forEach(player => {
-        if (player.team) {
-          teams[player.team] = teams[player.team] || [];
-          teams[player.team].push(player);
-        }
-      });
-      if (Object.keys(teams).length > 0) {
-        Object.keys(teams).forEach(team => {
-          let teamPlayersHTML = "";
-          teams[team].forEach((player, index) => {
-            const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-            // Use hard coded names for team tab as well
-            const name = hardCodedNames[index % hardCodedNames.length];
-            const score = player.score || 0;
-            teamPlayersHTML += `
-              <div class="player">
-                <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                  <img src="${imageUrl}" alt="User">
-                  <span>${name}</span>
-                </div>
-                <span class="score">${score}</span>
-              </div>
-            `;
-          });
-          if (!teamPlayersHTML.trim()) {
-            teamPlayersHTML = `<div class="player">No players found</div>`;
-          }
-          teamsHTML += `
-            <div class="collapsible" onclick="toggleCollapse(this)">
-              Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
-            </div>
-            <div class="content team">
-              ${teamPlayersHTML}
-            </div>
-          `;
-        });
-      } else {
-        teamsHTML = `
-          <div class="collapsible" onclick="toggleCollapse(this)">
-            Teams (0) <span class="arrow">▶</span>
-          </div>
-          <div class="content team">
-            <div class="player">No teams found</div>
-          </div>
-        `;
-      }
-    
-      // Now replace the relevant sections in the existing panel:
-      const playerTeamSection = panel.querySelector('.player-team-section');
-      if (playerTeamSection) {
-        playerTeamSection.innerHTML = `
-          <div class="collapsible" onclick="toggleCollapse(this)">
-            Users (${playingPlayers.length}) <span class="arrow">▶</span>
-          </div>
-          <div class="content player-list">
-            ${usersHTML}
-          </div>
-          ${teamsHTML}
-        `;
-      }
-    }
-    
-    // ----------------------------------------------------------------------------
-    // ADDED 2: Poll for updates every second, so the spectate panel "auto-refreshes"
-    // ----------------------------------------------------------------------------
-    setInterval(refreshSpectatePanel, 1000);
   }
-  
+
   // Delay UI initialization by 4000ms.
   setTimeout(main, 4000);
 })();
