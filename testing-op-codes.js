@@ -1,14 +1,28 @@
-// === Delta-like Dynamic Opcode Mapping & WebSocket Client ===
 (function() {
   console.log("Injecting Delta-like client...");
 
-  // Ensure pako is loaded.
-  if (typeof pako === "undefined") {
-    console.error("pako library is required. Please load pako before this script.");
-    return;
-  } else {
-    console.log("pako is available.");
+  // Poll for pako every 100ms
+  const intervalId = setInterval(function() {
+    if (typeof pako !== "undefined") {
+      console.log("pako is available.");
+      
+      // Stop checking
+      clearInterval(intervalId);
+      
+      // Run additional code once pako is loaded
+      runAdditionalCode();
+    } else {
+      console.log("Waiting for pako to load...");
+    }
+  }, 100);
+
+  function runAdditionalCode() {
+    // Your additional code here
+    console.log("Running additional code now that pako is loaded.");
+    // ...
   }
+})();
+
 
   // --- Dynamic Opcode Mapping Initialization ---
   // In Delta, an obfuscated function rotates an array until a computed condition holds.
