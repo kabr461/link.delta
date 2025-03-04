@@ -21,7 +21,7 @@
     console.log("Running additional code now that pako is loaded.");
     // ...
   }
-})();
+
 
 
   // --- Dynamic Opcode Mapping Initialization ---
