@@ -74,8 +74,9 @@
         const playingPlayers = Object.values(players).filter(p => !p.isSpectator);
         
      // Define your hard-coded list of names and tags.
-const hardCodedNames = ['Alice', 'Bob', 'Charlie', 'David'];
-const hardCodedTags = ['#Alpha', '#Beta', '#Gamma', '#Delta'];
+const hardCodedNames = ["TALIBAN 1", "Bianyx", "Marcin PL", "albania", "medo"];
+
+const hardCodedTags = ['no tag', 'no tag', 'ko', '#D'];
 
 // Build the Users section.
 let usersHTML = "";
