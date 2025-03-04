@@ -144,7 +144,8 @@ function handleRawMessage(data) {
     default:
       decoded = { type: "unknown", opcode, rawPayload: payload };
   }
-  console.log(`[WS] Received ${messageType}:`, decoded);
+  console.log('[WS] Received ' + messageType + ':', decoded);
+
 }
 
 // --- Override WebSocket ---
