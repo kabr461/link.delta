@@ -1,34 +1,35 @@
 (function() {
   console.log("Injecting Delta-like client...");
 
-  // Poll for pako every 100ms
-  const intervalId = setInterval(function() {
+  // --- pako Polling Mechanism with Timeout ---
+  let pakoWaitTime = 0;
+  const maxPakoWaitTime = 5000; // Maximum wait time of 5 seconds
+  const pakoIntervalId = setInterval(function() {
+    pakoWaitTime += 100;
     if (typeof pako !== "undefined") {
       console.log("pako is available.");
-      
-      // Stop checking
-      clearInterval(intervalId);
-      
-      // Run additional code once pako is loaded
+      clearInterval(pakoIntervalId);
       runAdditionalCode();
+    } else if (pakoWaitTime >= maxPakoWaitTime) {
+      console.error("pako did not load within the expected time.");
+      clearInterval(pakoIntervalId);
     } else {
-      console.log("Waiting for pako to load...");
+      // Log less frequently (every 1000ms)
+      if (pakoWaitTime % 1000 === 0) {
+        console.log("Waiting for pako to load...");
+      }
     }
   }, 100);
 
   function runAdditionalCode() {
-    // Your additional code here
     console.log("Running additional code now that pako is loaded.");
-    // ...
+    // Place additional code here...
   }
 
-
-
   // --- Dynamic Opcode Mapping Initialization ---
-  // In Delta, an obfuscated function rotates an array until a computed condition holds.
-  // We replicate that structure with a dummy large array.
+
+  // Simulate an obfuscated array (Delta's m() returns a long array of strings)
   function getMappingArray() {
-    // Simulate an obfuscated array (Delta's m() returns a long array of strings)
     return [
       "686255LrqtKP", "CdtBy", "accHg", "1365gBFmLM", "Message", "encode", "XrzDJ", "shpzH", "XHYGU", "toPrimitiv",
       // ... more entries would exist in the real code ...
@@ -36,16 +37,19 @@
     ];
   }
   
-  // This deobfuscation function mimics Delta's internal function 'e'
+  // Mimics Delta's internal deobfuscation function 'e'
   function deobfuscate(index, mappingArray) {
-    // For demonstration, return element modulo array length.
     return mappingArray[index % mappingArray.length];
   }
   
-  // Rotate the mapping array until the computed condition equals 153617.
+  // Rotate the mapping array until the computed condition equals 153617,
+  // or exit after a maximum number of iterations.
   function initializeDynamicOpcodeMapping() {
     let mappingArray = getMappingArray();
-    while (true) {
+    let iteration = 0;
+    const maxIterations = 1000; // Safeguard limit
+
+    while (iteration < maxIterations) {
       try {
         let computedValue =
           -parseInt(deobfuscate(512, mappingArray)) / 1 * (-parseInt(deobfuscate(520, mappingArray)) / 2) +
@@ -55,11 +59,18 @@
           -parseInt(deobfuscate(525, mappingArray)) / 9 +
           parseInt(deobfuscate(556, mappingArray)) / 10 * (-parseInt(deobfuscate(528, mappingArray)) / 11) +
           parseInt(deobfuscate(540, mappingArray)) / 12 * (parseInt(deobfuscate(492, mappingArray)) / 13);
-        if (computedValue === 153617) break;
+          
+        if (computedValue === 153617) {
+          break;
+        }
       } catch (e) {
-        // On error, continue rotating.
+        // If any parsing fails, continue rotating.
       }
       mappingArray.push(mappingArray.shift());
+      iteration++;
+    }
+    if (iteration === maxIterations) {
+      console.warn("Mapping array initialization reached maximum iterations without matching condition.");
     }
     return mappingArray;
   }
@@ -67,10 +78,8 @@
   const dynamicOpcodeMappingArray = initializeDynamicOpcodeMapping();
   console.log("Dynamic Opcode Mapping Array initialized:", dynamicOpcodeMappingArray);
   
-  // For demonstration, we simulate a mapping between raw opcode bytes and message types.
-  // In Delta, this mapping is generated from the dynamicOpcodeMappingArray and handshake data.
+  // --- Opcode Mapping Setup ---
   let opcodeMap = {};
-  // Example: explicitly assign opcodes from our simulated mapping.
   opcodeMap[110] = "worldUpdate";  // For instance, opcode 110 means world update.
   opcodeMap[75]  = "chat";
   opcodeMap[200] = "leaderboard";
@@ -136,7 +145,6 @@
   }
   
   // --- Packet Decoders ---
-  // These functions decode the payload according to the message type.
   function decodeWorldUpdate(buffer) {
     let offset = 0;
     const view = new DataView(buffer.buffer);
