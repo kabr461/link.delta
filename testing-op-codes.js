@@ -1,19 +1,22 @@
-// Create a script element
-const script = document.createElement('script');
-script.type = 'https://cdn.jsdelivr.net/npm/pako@2.0.2/dist/pako.min.js';
+// --- Injection Script with Debug Logging ---
 
-// Your complete Delta-like code as a string
-script.textContent = `
-// === Delta-like WebSocket Client ===
+// Log that our custom script is injected.
+console.log("Delta-like WebSocket interceptor script injected.");
 
-// Ensure pako is loaded (if it's not, you could inject it similarly)
-// For this example, we assume pako is already available on the page
+// Check if pako is loaded; if not, log an error.
+if (typeof pako === "undefined") {
+  console.error("pako is not loaded! Please include pako before this script runs.");
+} else {
+  console.log("pako is available.");
+}
 
 // --- Decompression Module ---
 function decompress(buffer) {
   try {
     const uint8Buffer = buffer instanceof ArrayBuffer ? new Uint8Array(buffer) : buffer;
-    if (uint8Buffer[0] === 0xFF) {  // 0xFF indicates compression
+    // Our custom protocol flag: if first byte is 0xFF, then it's compressed.
+    if (uint8Buffer[0] === 0xFF) {
+      console.log("Compressed packet detected; decompressing...");
       const compressedData = uint8Buffer.slice(1);
       const decompressed = pako.inflate(compressedData);
       return decompressed; // Uint8Array
@@ -125,6 +128,7 @@ function decodeChat(buffer) {
 // --- Main Message Handler ---
 function handleRawMessage(data) {
   const rawBuffer = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+  console.log("Raw message received:", rawBuffer);
   const processedBuffer = decompress(rawBuffer) || rawBuffer;
   if (!processedBuffer) return;
   const opcode = processedBuffer[0];
@@ -142,18 +146,19 @@ function handleRawMessage(data) {
       decoded = decodeChat(payload);
       break;
     default:
-      decoded = { type: "unknown", opcode, rawPayload: payload };
+      decoded = { type: "unknown", opcode: opcode, rawPayload: payload };
   }
-  console.log('[WS] Received ' + messageType + ':', decoded);
-
+  console.log("[WS] Received " + messageType + ":", decoded);
 }
 
 // --- Override WebSocket ---
 (function() {
   const NativeWebSocket = window.WebSocket;
   function CustomWebSocket(url, protocols) {
+    console.log("Creating new WebSocket connection to:", url);
     const ws = new NativeWebSocket(url, protocols);
     ws.addEventListener('message', event => {
+      console.log("WebSocket message event intercepted.");
       handleRawMessage(event.data);
     });
     return ws;
@@ -166,7 +171,5 @@ function handleRawMessage(data) {
   window.WebSocket = CustomWebSocket;
   console.log("Custom WebSocket override for Delta message processing is active.");
 })();
-`;
 
-// Append the script to the document head
-document.head.appendChild(script);
+// End of injected script.
