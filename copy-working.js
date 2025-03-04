@@ -126,7 +126,7 @@
           </div>
           <div class="player-team-section">
             <div class="collapsible" onclick="toggleCollapse(this)">
-              Team (filtered) <span class="arrow">▶</span>
+              Team <span class="arrow">▶</span>
             </div>
             <div class="content player-list">
               ${teamHTML}
