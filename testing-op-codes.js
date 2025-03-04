@@ -26,6 +26,33 @@
     // Place additional code here...
   }
 
+  // --- Capture Setup for Translated Data ---
+  const capturedMessages = [];
+  const captureDuration = 10000; // 10 seconds
+  const captureEndTime = Date.now() + captureDuration;
+  
+  // Function to export captured messages as a JSON file
+  function exportCapturedMessages() {
+    if (capturedMessages.length === 0) {
+      console.warn("No messages were captured.");
+      return;
+    }
+    const dataStr = JSON.stringify(capturedMessages, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'translated_data.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log("Exported captured translated messages.");
+  }
+  
+  // Schedule export after 10 seconds
+  setTimeout(exportCapturedMessages, captureDuration);
+
   // --- Dynamic Opcode Mapping Initialization ---
 
   // Simulate an obfuscated array (Delta's m() returns a long array of strings)
@@ -211,6 +238,12 @@
         decoded = { type: "unknown", opcode: opcode, rawPayload: payload };
     }
     console.log("[WS] Received " + messageType + ":", decoded);
+    
+    // Capture translated (decoded) data for the first 10 seconds
+    if (Date.now() <= captureEndTime) {
+      // Include a timestamp for inspection purposes
+      capturedMessages.push({ timestamp: new Date().toISOString(), data: decoded });
+    }
   }
   
   // --- Override WebSocket ---
