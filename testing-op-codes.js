@@ -1,6 +1,6 @@
 // Create a script element
 const script = document.createElement('script');
-script.type = 'text/javascript';
+script.type = 'https://cdn.jsdelivr.net/npm/pako@2.0.2/dist/pako.min.js';
 
 // Your complete Delta-like code as a string
 script.textContent = `
