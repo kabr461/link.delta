@@ -1,4 +1,3 @@
-
 (function() {
   function main() {
     // --- Global Error Handling ---
@@ -74,27 +73,32 @@
         // Filter out spectators.
         const playingPlayers = Object.values(players).filter(p => !p.isSpectator);
         
-        // Build the Users section.
-        let usersHTML = "";
-        if (playingPlayers.length === 0) {
-          usersHTML = `<div class="player">No players found</div>`;
-        } else {
-          playingPlayers.forEach(player => {
-            // CHANGED LINES (from previous snippet):
-            const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-            const name = player.username || 'Unknown';
-            const tag = player.clanTag || '';
-            usersHTML += `
-              <div class="player">
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                  <img src="${imageUrl}" alt="User">
-                  <span>${name}</span>
-                </div>
-                <span class="player-tag">${tag}</span>
-              </div>
-            `;
-          });
-        }
+     // Define your hard-coded list of names and tags.
+const hardCodedNames = ['Alice', 'Bob', 'Charlie', 'David'];
+const hardCodedTags = ['#Alpha', '#Beta', '#Gamma', '#Delta'];
+
+// Build the Users section.
+let usersHTML = "";
+if (playingPlayers.length === 0) {
+  usersHTML = `<div class="player">No players found</div>`;
+} else {
+  playingPlayers.forEach((player, index) => {
+    // Cycle through the hard-coded names and tags using modulo arithmetic.
+    const name = hardCodedNames[index % hardCodedNames.length];
+    const tag = hardCodedTags[index % hardCodedTags.length];
+    const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
+
+    usersHTML += `
+      <div class="player">
+        <div class="player-info" onclick="copyPlayerInfo(event, this)">
+          <img src="${imageUrl}" alt="User">
+          <span>${name}</span>
+        </div>
+        <span class="player-tag">${tag}</span>
+      </div>
+    `;
+  });
+}
 
         // Build the Teams section.
         let teamsHTML = "";
