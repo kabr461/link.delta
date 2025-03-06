@@ -68,97 +68,23 @@
           panel.style.right = '0';
           return;
         }
-        // Get the playing players from window.gameState.players.
-        const players = (window.gameState && window.gameState.players) || {};
-        // Filter out spectators.
-        const playingPlayers = Object.values(players).filter(p => !p.isSpectator);
-        
-        // Build the Users section.
-        let usersHTML = "";
-        if (playingPlayers.length === 0) {
-          usersHTML = `<div class="player">No players found</div>`;
-        } else {
-          playingPlayers.forEach(player => {
-            // CHANGED LINES (from previous snippet):
-            const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-            const name = player.username || 'Unknown';
-            const tag = player.clanTag || '';
-            usersHTML += `
-              <div class="player">
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                  <img src="${imageUrl}" alt="User">
-                  <span>${name}</span>
-                </div>
-                <span class="player-tag">${tag}</span>
-              </div>
-            `;
-          });
-        }
-
-        // Build the Teams section.
-        let teamsHTML = "";
-        const teams = {};
-        playingPlayers.forEach(player => {
-          if (player.team) {
-            teams[player.team] = teams[player.team] || [];
-            teams[player.team].push(player);
-          }
-        });
-        if (Object.keys(teams).length > 0) {
-          for (let team in teams) {
-            let teamPlayersHTML = "";
-            teams[team].forEach(player => {
-              // CHANGED LINES (from previous snippet):
-              const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-              const name = player.username || 'Unknown';
-              const score = player.score || 0;
-              teamPlayersHTML += `
-                <div class="player">
-                  <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                  <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                    <img src="${imageUrl}" alt="User">
-                    <span>${name}</span>
-                  </div>
-                  <span class="score">${score}</span>
-                </div>
-              `;
-            });
-            if (!teamPlayersHTML.trim()) {
-              teamPlayersHTML = `<div class="player">No players found</div>`;
-            }
-            teamsHTML += `
-              <div class="collapsible" onclick="toggleCollapse(this)">
-                Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
-              </div>
-              <div class="content team">
-                ${teamPlayersHTML}
-              </div>
-            `;
-          }
-        } else {
-          teamsHTML = `
-            <div class="collapsible" onclick="toggleCollapse(this)">
-              Teams (0) <span class="arrow">▶</span>
-            </div>
-            <div class="content team">
-              <div class="player">No teams found</div>
-            </div>
-          `;
-        }
-
-        // Create the spectate panel container with two sections.
         panel = document.createElement('div');
         panel.id = 'spectateTab';
         panel.className = 'spectate-tab';
         panel.innerHTML = `
           <div class="player-team-section">
             <div class="collapsible" onclick="toggleCollapse(this)">
-              Users (${playingPlayers.length}) <span class="arrow">▶</span>
+              Users <span class="arrow">▶</span>
             </div>
             <div class="content player-list">
-              ${usersHTML}
+              ${buildUsersHTML()}
             </div>
-            ${teamsHTML}
+            <div class="collapsible" onclick="toggleCollapse(this)">
+              Teams <span class="arrow">▶</span>
+            </div>
+            <div class="content team-list">
+              ${buildTeamsHTML()}
+            </div>
           </div>
           <div class="button-container">
             <div class="toggle-container">
@@ -176,6 +102,73 @@
       } catch (err) {
         console.error("[openSpectateTab] Exception:", err);
       }
+    }
+
+    // --- Build Users HTML with Leaderboard Data ---
+    function buildUsersHTML() {
+      const leaderboardPlayers = leaderboard.leaderboard || [];
+      let usersHTML = "";
+      if (leaderboardPlayers.length === 0) {
+        usersHTML = `<div class="player">No leaderboard players found</div>`;
+      } else {
+        leaderboardPlayers.forEach(player => {
+          const nick = player.nick || 'Unknown';
+          const skinURL = parent.Texture.customSkinMap.get(nick) || 'https://via.placeholder.com/40';
+          usersHTML += `
+            <div class="player">
+              <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                <img src="${skinURL}" alt="User">
+                <span>${nick}</span>
+              </div>
+            </div>
+          `;
+        });
+      }
+      return usersHTML;
+    }
+
+    // --- Build Teams HTML ---
+    function buildTeamsHTML() {
+      const teams = {};
+      const players = (window.gameState && window.gameState.players) || {};
+      Object.values(players).forEach(player => {
+        if (player.team) {
+          teams[player.team] = teams[player.team] || [];
+          teams[player.team].push(player);
+        }
+      });
+      let teamsHTML = "";
+      if (Object.keys(teams).length === 0) {
+        teamsHTML = `<div class="player">No teams found</div>`;
+      } else {
+        for (let team in teams) {
+          let teamPlayersHTML = "";
+          teams[team].forEach(player => {
+            const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
+            const name = player.username || 'Unknown';
+            const score = player.score || 0;
+            teamPlayersHTML += `
+              <div class="player">
+                <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
+                <div class="player-info" onclick="copyPlayerInfo(event, this)">
+                  <img src="${imageUrl}" alt="User">
+                  <span>${name}</span>
+                </div>
+                <span class="score">${score}</span>
+              </div>
+            `;
+          });
+          teamsHTML += `
+            <div class="collapsible" onclick="toggleCollapse(this)">
+              Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
+            </div>
+            <div class="content team">
+              ${teamPlayersHTML}
+            </div>
+          `;
+        }
+      }
+      return teamsHTML;
     }
 
     // --- UI Helper Functions ---
@@ -331,7 +324,15 @@
       .collapsible.active .arrow {
           transform: rotate(90deg);
       }
-      .content {
+      .content.player-list {
+          display: none;
+          padding: 5px;
+          background: #181818;
+          border-top: 1px solid #444;
+          overflow-y: auto;
+          max-height: 150px; /* Strict overflow management with scrollbar */
+      }
+      .content.team-list {
           display: none;
           padding: 5px;
           background: #181818;
@@ -426,118 +427,19 @@
 
     initSpectate();
 
-    // ----------------------------------------------------------------------------
-    // ADDED 1: Function to re-build the panel contents if it's open.
-    //          This re-runs the player logic every second WITHOUT destroying/recreating the panel.
-    // ----------------------------------------------------------------------------
+    // --- Refresh Spectate Panel ---
     function refreshSpectatePanel() {
       const panel = document.getElementById('spectateTab');
-      if (!panel) return; // If panel isn't open, do nothing
+      if (!panel) return;
 
-      // Re-run the same logic that builds the "Users" & "Teams" HTML:
-      const players = (window.gameState && window.gameState.players) || {};
-      const playingPlayers = Object.values(players).filter(p => !p.isSpectator);
-
-      let usersHTML = "";
-      if (playingPlayers.length === 0) {
-        usersHTML = `<div class="player">No players found</div>`;
-      } else {
-        playingPlayers.forEach(player => {
-          const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-          const name = player.username || 'Unknown';
-          const tag = player.clanTag || '';
-          usersHTML += `
-            <div class="player">
-              <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                <img src="${imageUrl}" alt="User">
-                <span>${name}</span>
-              </div>
-              <span class="player-tag">${tag}</span>
-            </div>
-          `;
-        });
-      }
-
-      let teamsHTML = "";
-      const teams = {};
-      playingPlayers.forEach(player => {
-        if (player.team) {
-          teams[player.team] = teams[player.team] || [];
-          teams[player.team].push(player);
-        }
-      });
-      if (Object.keys(teams).length > 0) {
-        for (let team in teams) {
-          let teamPlayersHTML = "";
-          teams[team].forEach(player => {
-            const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-            const name = player.username || 'Unknown';
-            const score = player.score || 0;
-            teamPlayersHTML += `
-              <div class="player">
-                <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
-                <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                  <img src="${imageUrl}" alt="User">
-                  <span>${name}</span>
-                </div>
-                <span class="score">${score}</span>
-              </div>
-            `;
-          });
-          if (!teamPlayersHTML.trim()) {
-            teamPlayersHTML = `<div class="player">No players found</div>`;
-          }
-          teamsHTML += `
-            <div class="collapsible" onclick="toggleCollapse(this)">
-              Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
-            </div>
-            <div class="content team">
-              ${teamPlayersHTML}
-            </div>
-          `;
-        }
-      } else {
-        teamsHTML = `
-          <div class="collapsible" onclick="toggleCollapse(this)">
-            Teams (0) <span class="arrow">▶</span>
-          </div>
-          <div class="content team">
-            <div class="player">No teams found</div>
-          </div>
-        `;
-      }
-
-      // Now replace just the relevant sections in the existing panel:
-      const userListElem = panel.querySelector('.player-list');
+      const userListElem = panel.querySelector('.content.player-list');
       if (userListElem) {
-        userListElem.innerHTML = usersHTML;
-      }
-      // The teams HTML is appended right after the user list in openSpectateTab().
-      // So we can find the next sibling or re-build the entire `.player-team-section`.
-      // A simple approach is to find the .player-team-section and re-build inside it:
-      const playerTeamSection = panel.querySelector('.player-team-section');
-      if (playerTeamSection) {
-        // We can replace everything after the first collapsible with `teamsHTML`.
-        // But safer is to rebuild the entire structure. For brevity, let's do:
-        const newHTML = `
-          <div class="collapsible" onclick="toggleCollapse(this)">
-            Users (${playingPlayers.length}) <span class="arrow">▶</span>
-          </div>
-          <div class="content player-list">
-            ${usersHTML}
-          </div>
-          ${teamsHTML}
-        `;
-        playerTeamSection.innerHTML = newHTML;
+        userListElem.innerHTML = buildUsersHTML();
       }
     }
 
-    // ----------------------------------------------------------------------------
-    // ADDED 2: Poll for updates every second, so the spectate panel "auto-refreshes"
-    // ----------------------------------------------------------------------------
-    setInterval(refreshSpectatePanel, 1000);
+    setInterval(refreshSpectatePanel, 4000); // Refresh every 4 seconds
   }
 
-  // Delay UI initialization by 6000ms.
-  setTimeout(main, 6000);
+  setTimeout(main, 6000); // Delay initialization
 })();
