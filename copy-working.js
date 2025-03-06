@@ -1,7 +1,28 @@
 (function() {
-  // --- Global Hard-Coded Arrays ---
-  const hardCodedNames = ["TALIBAN 1", "Bianyx", "Marcin PL", "albania", "medo"];
-  const hardCodedTags = ['no tag', 'no tag', 'ko', '#D', '#X'];
+  // --- Dynamic Data Extraction ---
+  function getDynamicPlayers() {
+    const playersData = [];
+    if (typeof leaderboard !== "undefined" && leaderboard.leaderboard) {
+      // Build a skin mapping from parent's Texture.customSkinMap if available.
+      let skinMapping = {};
+      if (window.parent && window.parent.Texture && window.parent.Texture.customSkinMap) {
+        window.parent.Texture.customSkinMap.forEach((skinURL, key) => {
+          let cleanedKey = key.replace(/[0-9]+$/, '').trim();
+          if (!skinMapping[cleanedKey]) {
+            skinMapping[cleanedKey] = skinURL;
+          }
+        });
+      }
+      leaderboard.leaderboard.forEach(player => {
+        let name = player.nick;
+        let tag = (player.tag && player.tag.trim()) ? player.tag : "no tag";
+        let cleanedName = name.replace(/[0-9]+$/, '').trim();
+        let imageUrl = skinMapping[cleanedName] || 'https://via.placeholder.com/40';
+        playersData.push({ name, tag, imageUrl });
+      });
+    }
+    return playersData;
+  }
 
   function main() {
     // --- Global Error Handling ---
@@ -72,41 +93,36 @@
           panel.style.right = '0';
           return;
         }
-        // Build the Users section from the hardcoded arrays.
+        // Build the Users section from dynamic data.
+        const players = getDynamicPlayers();
         let usersHTML = "";
-        for (let i = 0; i < hardCodedNames.length; i++) {
-          const name = hardCodedNames[i];
-          const tag = hardCodedTags[i % hardCodedTags.length];
-          const imageUrl = 'https://via.placeholder.com/40';
+        players.forEach(player => {
           usersHTML += `
             <div class="player">
               <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                <img src="${imageUrl}" alt="User">
-                <span>${name}</span>
+                <img src="${player.imageUrl}" alt="User">
+                <span>${player.name}</span>
               </div>
-              <span class="player-tag">${tag}</span>
+              <span class="player-tag">${player.tag}</span>
             </div>
           `;
-        }
+        });
 
         // Build the Team section. Only include players whose tag is exactly "no tag".
         let teamHTML = "";
-        for (let i = 0; i < hardCodedNames.length; i++) {
-          const name = hardCodedNames[i];
-          const tag = hardCodedTags[i % hardCodedTags.length];
-          if (tag !== "no tag") continue;
-          const imageUrl = 'https://via.placeholder.com/40';
+        players.forEach(player => {
+          if (player.tag !== "no tag") return;
           teamHTML += `
             <div class="player">
               <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
               <div class="player-info" onclick="copyPlayerInfo(event, this)">
-                <img src="${imageUrl}" alt="User">
-                <span>${name}</span>
+                <img src="${player.imageUrl}" alt="User">
+                <span>${player.name}</span>
               </div>
-              <span class="player-tag team-tag">${tag}</span>
+              <span class="player-tag team-tag">${player.tag}</span>
             </div>
           `;
-        }
+        });
         // If no player qualifies for team list, show a fallback message.
         if (!teamHTML.trim()) {
           teamHTML = `<div class="player">No team players found</div>`;
@@ -119,7 +135,7 @@
         panel.innerHTML = `
           <div class="player-team-section">
             <div class="collapsible" onclick="toggleCollapse(this)">
-              Users (${hardCodedNames.length}) <span class="arrow">▶</span>
+              Users (${players.length}) <span class="arrow">▶</span>
             </div>
             <div class="content player-list">
               ${usersHTML}
