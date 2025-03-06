@@ -19,7 +19,9 @@
         let name = player.nick;
         let tag = (player.tag && player.tag.trim()) ? player.tag : "no tag";
         // Try to retrieve skin URL using exact name, then using a cleaned version.
-        let imageUrl = skinMapping[name] || skinMapping[name.replace(/[0-9]+$/, '').trim()] || 'https://via.placeholder.com/40';
+        let imageUrl = skinMapping[name] || skinMapping[name.replace(/[0-9]+$/, '').trim()];
+        // If no valid skin URL found, skip this player.
+        if (!imageUrl) return;
         playersData.push({ name, tag, imageUrl });
       });
     }
@@ -139,7 +141,7 @@
             <div class="collapsible" onclick="toggleCollapse(this)">
               Users (${players.length}) <span class="arrow">▶</span>
             </div>
-            <div class="content player-list">
+            <div class="content player-list" style="max-height: 300px; overflow-y: auto;">
               ${usersHTML}
             </div>
           </div>
@@ -147,7 +149,7 @@
             <div class="collapsible" onclick="toggleCollapse(this)">
               Team<span class="arrow">▶</span>
             </div>
-            <div class="content player-list">
+            <div class="content player-list" style="max-height: 300px; overflow-y: auto;">
               ${teamHTML}
             </div>
           </div>
