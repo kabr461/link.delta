@@ -1,4 +1,3 @@
-(function() {
   function main() {
     // --- Global Error Handling ---
     window.onerror = function(message, source, lineno, colno, error) {
@@ -65,16 +64,16 @@
       try {
         let panel = document.getElementById('spectateTab');
         if (panel) {
-          panel.style.right = '0';
+          panel.style.left = '0';
           return;
         }
         panel = document.createElement('div');
         panel.id = 'spectateTab';
         panel.className = 'spectate-tab';
-        panel.innerHTML = `
+        panel.innerHTML = 
           <div class="player-team-section">
-            <div class="collapsible" onclick="toggleCollapse(this)">
-              Users <span class="arrow">▶</span>
+            <div class="collapsible" onclick="toggleCollapse(this)" id="usersHeader">
+              Users (<span id="playerCount">${(leaderboard && leaderboard.leaderboard) ? leaderboard.leaderboard.length : 0}</span>) <span class="arrow">▶</span>
             </div>
             <div class="content player-list">
               ${buildUsersHTML()}
@@ -96,9 +95,9 @@
               <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
             </div>
           </div>
-        `;
+        ;
         document.body.appendChild(panel);
-        requestAnimationFrame(() => panel.style.right = '0');
+        requestAnimationFrame(() => panel.style.left = '0');
       } catch (err) {
         console.error("[openSpectateTab] Exception:", err);
       }
@@ -109,19 +108,37 @@
       const leaderboardPlayers = leaderboard.leaderboard || [];
       let usersHTML = "";
       if (leaderboardPlayers.length === 0) {
-        usersHTML = `<div class="player">No leaderboard players found</div>`;
+        usersHTML = <div class="player">No leaderboard players found</div>;
       } else {
         leaderboardPlayers.forEach(player => {
-          const nick = player.nick || 'Unknown';
-          const skinURL = parent.Texture.customSkinMap.get(nick) || 'https://via.placeholder.com/40';
-          usersHTML += `
+          // Trim the nick for lookup; if empty, display "No name"
+          const key = (player.nick || "").trim();
+          const displayName = key ? key : 'No name';
+          // Default placeholder image
+          let skinURL = 'https://via.placeholder.com/40';
+          // First, try a direct lookup using the raw key
+          if (window.parent && window.parent.Texture && window.parent.Texture.customSkinMap) {
+            if (window.parent.Texture.customSkinMap.get(key)) {
+              skinURL = window.parent.Texture.customSkinMap.get(key);
+            } else {
+              // If direct lookup fails, iterate over the keys to find one that includes the player's nick
+              for (const [mapKey, url] of window.parent.Texture.customSkinMap.entries()) {
+                if (key && mapKey.includes(key)) {
+                  skinURL = url;
+                  break;
+                }
+              }
+            }
+          }
+          usersHTML += 
             <div class="player">
               <div class="player-info" onclick="copyPlayerInfo(event, this)">
                 <img src="${skinURL}" alt="User">
-                <span>${nick}</span>
+                <span>${displayName}</span>
+                <div class="player-tag"></div>
               </div>
             </div>
-          `;
+          ;
         });
       }
       return usersHTML;
@@ -139,36 +156,44 @@
       });
       let teamsHTML = "";
       if (Object.keys(teams).length === 0) {
-        teamsHTML = `<div class="player">No teams found</div>`;
+        teamsHTML = <div class="player">No teams found</div>;
       } else {
         for (let team in teams) {
           let teamPlayersHTML = "";
           teams[team].forEach(player => {
+            const displayName = (player.username && player.username.trim()) ? player.username : 'No name';
             const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
-            const name = player.username || 'Unknown';
             const score = player.score || 0;
-            teamPlayersHTML += `
+            teamPlayersHTML += 
               <div class="player">
                 <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
                 <div class="player-info" onclick="copyPlayerInfo(event, this)">
                   <img src="${imageUrl}" alt="User">
-                  <span>${name}</span>
+                  <span>${displayName}</span>
                 </div>
                 <span class="score">${score}</span>
               </div>
-            `;
+            ;
           });
-          teamsHTML += `
+          teamsHTML += 
             <div class="collapsible" onclick="toggleCollapse(this)">
               Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
             </div>
             <div class="content team">
               ${teamPlayersHTML}
             </div>
-          `;
+          ;
         }
       }
       return teamsHTML;
+    }
+
+    // --- Update Player Count in Header ---
+    function updatePlayerCount() {
+      const countSpan = document.getElementById('playerCount');
+      if (countSpan && leaderboard && leaderboard.leaderboard) {
+        countSpan.textContent = leaderboard.leaderboard.length;
+      }
     }
 
     // --- UI Helper Functions ---
@@ -267,7 +292,7 @@
         if (e.key === 'Escape') {
           const panel = document.getElementById('spectateTab');
           if (panel) {
-            panel.style.right = '-15vw';
+            panel.style.left = '-15vw';
             setTimeout(() => {
               try {
                 panel.remove();
@@ -284,12 +309,11 @@
 
     // --- CSS Styles for the Spectate Panel ---
     const style = document.createElement('style');
-    style.innerHTML = `
+    style.innerHTML = 
       .spectate-tab {
           position: fixed;
-          top: 50%;
-          right: -15vw;
-          transform: translateY(-50%);
+          top: 0;
+          left: -15vw;
           width: 12vw;
           max-width: 180px;
           height: 50vh;
@@ -299,7 +323,7 @@
           border-radius: 5px;
           border: 1px solid #444;
           box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-          transition: right 0.5s ease-out;
+          transition: left 0.5s ease-out;
           color: white;
           font-family: Arial, sans-serif;
           z-index: 10000;
@@ -330,7 +354,7 @@
           background: #181818;
           border-top: 1px solid #444;
           overflow-y: auto;
-          max-height: 150px; /* Strict overflow management with scrollbar */
+          max-height: 150px;
       }
       .content.team-list {
           display: none;
@@ -359,11 +383,6 @@
           cursor: pointer;
       }
       .player-info span {
-          cursor: pointer;
-      }
-      .tick-button {
-          color: #0f0;
-          font-size: 1vw;
           cursor: pointer;
       }
       .player-tag {
@@ -422,7 +441,7 @@
           border-radius: 3px;
           opacity: 0.8;
       }
-    `;
+    ;
     document.head.appendChild(style);
 
     initSpectate();
@@ -431,14 +450,36 @@
     function refreshSpectatePanel() {
       const panel = document.getElementById('spectateTab');
       if (!panel) return;
-
       const userListElem = panel.querySelector('.content.player-list');
       if (userListElem) {
         userListElem.innerHTML = buildUsersHTML();
       }
+      updatePlayerCount();
     }
 
     setInterval(refreshSpectatePanel, 4000); // Refresh every 4 seconds
+
+    // --- IIFE to check for embedded tags in player nicknames ---
+    (function(){
+      'use strict';
+      if (typeof leaderboard !== "undefined" && leaderboard.leaderboard) {
+        const players = leaderboard.leaderboard;
+        console.log("Checking for embedded tags in player nicknames...");
+        players.forEach((player, index) => {
+          let tagMatch = player.nick.match(/\[([^\]]+)\]/);
+          if (!tagMatch) {
+            tagMatch = player.nick.match(/#(\S+)/);
+          }
+          if (tagMatch && tagMatch[1]) {
+            console.log(Player ${index + 1}: Nick: ${player.nick}, Extracted Tag: ${tagMatch[1]});
+          } else {
+            console.log(Player ${index + 1}: Nick: ${player.nick}, Tag: No tag found);
+          }
+        });
+      } else {
+        console.log("Leaderboard data is not available.");
+      }
+    })();
   }
 
   setTimeout(main, 6000); // Delay initialization
