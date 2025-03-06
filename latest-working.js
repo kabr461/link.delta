@@ -1,3 +1,4 @@
+(function() {
   function main() {
     // --- Global Error Handling ---
     window.onerror = function(message, source, lineno, colno, error) {
@@ -70,10 +71,20 @@
         panel = document.createElement('div');
         panel.id = 'spectateTab';
         panel.className = 'spectate-tab';
-        panel.innerHTML = 
+        panel.innerHTML = `
           <div class="player-team-section">
             <div class="collapsible" onclick="toggleCollapse(this)" id="usersHeader">
-              Users (<span id="playerCount">${(leaderboard && leaderboard.leaderboard) ? leaderboard.leaderboard.length : 0}</span>) <span class="arrow">▶</span>
+              Users (<span id="playerCount">${(function(){
+                // Count unique (non‑bot) players from leaderboard
+                const unique = new Set();
+                if (leaderboard && leaderboard.leaderboard) {
+                  leaderboard.leaderboard.forEach(p => {
+                    const nick = (p.nick || "").trim();
+                    if (nick) unique.add(nick);
+                  });
+                }
+                return unique.size;
+              })()}</span>) <span class="arrow">▶</span>
             </div>
             <div class="content player-list">
               ${buildUsersHTML()}
@@ -95,7 +106,7 @@
               <div id="cmdChatToggle" class="toggle" onclick="toggleSwitch(this)">OFF</div>
             </div>
           </div>
-        ;
+        `;
         document.body.appendChild(panel);
         requestAnimationFrame(() => panel.style.left = '0');
       } catch (err) {
@@ -103,34 +114,57 @@
       }
     }
 
-    // --- Build Users HTML with Leaderboard Data ---
+    // --- Helper function for image extraction (exactly as in message.txt) with debugging ---
+    function getSkinURLForNick(nick) {
+      let skinURL = 'https://via.placeholder.com/40';
+      let found = false;
+      if (window.parent && window.parent.Texture && window.parent.Texture.customSkinMap) {
+        // First, try a direct lookup using the raw key
+        if (window.parent.Texture.customSkinMap.get(nick)) {
+          skinURL = window.parent.Texture.customSkinMap.get(nick);
+          found = true;
+          console.log("[DEBUG] Direct custom skin detected for nick:", nick, "=>", skinURL);
+        } else {
+          // If direct lookup fails, iterate over the keys to find one that includes the player's nick
+          for (const [mapKey, url] of window.parent.Texture.customSkinMap.entries()) {
+            if (nick && mapKey.includes(nick)) {
+              skinURL = url;
+              found = true;
+              console.log("[DEBUG] Fallback custom skin detected for nick:", nick, "with key:", mapKey, "=>", skinURL);
+              break;
+            }
+          }
+        }
+      }
+      if (!found) {
+        console.log("[DEBUG] No custom skin detected for nick:", nick, "using placeholder", skinURL);
+      }
+      return skinURL;
+    }
+
+    // --- Build Users HTML with Leaderboard Data (Non Bot Players Only) ---
     function buildUsersHTML() {
       const leaderboardPlayers = leaderboard.leaderboard || [];
       let usersHTML = "";
-      if (leaderboardPlayers.length === 0) {
-        usersHTML = <div class="player">No leaderboard players found</div>;
+      // Filter out duplicate (bot) players by nick
+      const uniquePlayers = [];
+      const seen = new Set();
+      leaderboardPlayers.forEach(player => {
+        const nick = (player.nick || "").trim();
+        if (nick && !seen.has(nick)) {
+          seen.add(nick);
+          uniquePlayers.push(player);
+        }
+      });
+      if (uniquePlayers.length === 0) {
+        usersHTML = `<div class="player">No leaderboard players found</div>`;
       } else {
-        leaderboardPlayers.forEach(player => {
-          // Trim the nick for lookup; if empty, display "No name"
+        uniquePlayers.forEach(player => {
           const key = (player.nick || "").trim();
           const displayName = key ? key : 'No name';
-          // Default placeholder image
-          let skinURL = 'https://via.placeholder.com/40';
-          // First, try a direct lookup using the raw key
-          if (window.parent && window.parent.Texture && window.parent.Texture.customSkinMap) {
-            if (window.parent.Texture.customSkinMap.get(key)) {
-              skinURL = window.parent.Texture.customSkinMap.get(key);
-            } else {
-              // If direct lookup fails, iterate over the keys to find one that includes the player's nick
-              for (const [mapKey, url] of window.parent.Texture.customSkinMap.entries()) {
-                if (key && mapKey.includes(key)) {
-                  skinURL = url;
-                  break;
-                }
-              }
-            }
-          }
-          usersHTML += 
+          // Use the image extraction logic from message.txt file with debugging
+          let skinURL = getSkinURLForNick(key);
+          usersHTML += `
             <div class="player">
               <div class="player-info" onclick="copyPlayerInfo(event, this)">
                 <img src="${skinURL}" alt="User">
@@ -138,7 +172,8 @@
                 <div class="player-tag"></div>
               </div>
             </div>
-          ;
+          `;
+          console.log("[DEBUG] Processed user:", displayName, "with skin URL:", skinURL);
         });
       }
       return usersHTML;
@@ -156,7 +191,7 @@
       });
       let teamsHTML = "";
       if (Object.keys(teams).length === 0) {
-        teamsHTML = <div class="player">No teams found</div>;
+        teamsHTML = `<div class="player">No teams found</div>`;
       } else {
         for (let team in teams) {
           let teamPlayersHTML = "";
@@ -164,7 +199,7 @@
             const displayName = (player.username && player.username.trim()) ? player.username : 'No name';
             const imageUrl = player.skinUrl || 'https://via.placeholder.com/40';
             const score = player.score || 0;
-            teamPlayersHTML += 
+            teamPlayersHTML += `
               <div class="player">
                 <div class="tick-button" onclick="toggleTick(event, this)">☐</div>
                 <div class="player-info" onclick="copyPlayerInfo(event, this)">
@@ -173,16 +208,16 @@
                 </div>
                 <span class="score">${score}</span>
               </div>
-            ;
+            `;
           });
-          teamsHTML += 
+          teamsHTML += `
             <div class="collapsible" onclick="toggleCollapse(this)">
               Team: ${team} (${teams[team].length}) <span class="arrow">▶</span>
             </div>
             <div class="content team">
               ${teamPlayersHTML}
             </div>
-          ;
+          `;
         }
       }
       return teamsHTML;
@@ -192,7 +227,12 @@
     function updatePlayerCount() {
       const countSpan = document.getElementById('playerCount');
       if (countSpan && leaderboard && leaderboard.leaderboard) {
-        countSpan.textContent = leaderboard.leaderboard.length;
+        const unique = new Set();
+        leaderboard.leaderboard.forEach(p => {
+          const nick = (p.nick || "").trim();
+          if (nick) unique.add(nick);
+        });
+        countSpan.textContent = unique.size;
       }
     }
 
@@ -309,7 +349,7 @@
 
     // --- CSS Styles for the Spectate Panel ---
     const style = document.createElement('style');
-    style.innerHTML = 
+    style.innerHTML = `
       .spectate-tab {
           position: fixed;
           top: 0;
@@ -441,7 +481,7 @@
           border-radius: 3px;
           opacity: 0.8;
       }
-    ;
+    `;
     document.head.appendChild(style);
 
     initSpectate();
@@ -471,9 +511,9 @@
             tagMatch = player.nick.match(/#(\S+)/);
           }
           if (tagMatch && tagMatch[1]) {
-            console.log(Player ${index + 1}: Nick: ${player.nick}, Extracted Tag: ${tagMatch[1]});
+            console.log(`Player ${index + 1}: Nick: ${player.nick}, Extracted Tag: ${tagMatch[1]}`);
           } else {
-            console.log(Player ${index + 1}: Nick: ${player.nick}, Tag: No tag found);
+            console.log(`Player ${index + 1}: Nick: ${player.nick}, Tag: No tag found`);
           }
         });
       } else {
