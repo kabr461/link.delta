@@ -7,6 +7,8 @@
       let skinMapping = {};
       if (window.parent && window.parent.Texture && window.parent.Texture.customSkinMap) {
         window.parent.Texture.customSkinMap.forEach((skinURL, key) => {
+          // Try storing the mapping with both the raw key and a cleaned version.
+          skinMapping[key] = skinURL;
           let cleanedKey = key.replace(/[0-9]+$/, '').trim();
           if (!skinMapping[cleanedKey]) {
             skinMapping[cleanedKey] = skinURL;
@@ -16,8 +18,8 @@
       leaderboard.leaderboard.forEach(player => {
         let name = player.nick;
         let tag = (player.tag && player.tag.trim()) ? player.tag : "no tag";
-        let cleanedName = name.replace(/[0-9]+$/, '').trim();
-        let imageUrl = skinMapping[cleanedName] || 'https://via.placeholder.com/40';
+        // Try to retrieve skin URL using exact name, then using a cleaned version.
+        let imageUrl = skinMapping[name] || skinMapping[name.replace(/[0-9]+$/, '').trim()] || 'https://via.placeholder.com/40';
         playersData.push({ name, tag, imageUrl });
       });
     }
@@ -166,6 +168,7 @@
         console.error("[openSpectateTab] Exception:", err);
       }
     }
+
 
     // --- UI Helper Functions ---
     window.toggleCollapse = function(element) {
