@@ -1,14 +1,35 @@
-(function() {
-    let OriginalWebSocket = window.WebSocket;
-    let sessionLogs = [];
-    let startTime = Date.now();
+const OriginalWebSocket = window.WebSocket;
+let sessionLogs = [];
+let startTime = Date.now();
 
-    window.WebSocket = function(url, protocols) {
-        console.log("WebSocket Created:", url);
-        let ws = new OriginalWebSocket(url, protocols);
+class CustomWebSocket extends OriginalWebSocket {
+    constructor(url, protocols) {
+        super(url, protocols);
+        console.log('[CustomWebSocket] Connecting to:', url);
 
-        // Wrap send function
-        ws.send = new Proxy(ws.send, {
+        this.addEventListener('message', (event) => {
+            let timeElapsed = (Date.now() - startTime) / 1000;
+
+            if (event.data instanceof ArrayBuffer) {
+                sessionLogs.push({ time: timeElapsed, type: "received", data: Array.from(new Uint8Array(event.data)) });
+            } else if (event.data instanceof Blob) {
+                event.data.arrayBuffer().then(buffer => {
+                    sessionLogs.push({ time: timeElapsed, type: "received", data: Array.from(new Uint8Array(buffer)) });
+                });
+            } else {
+                sessionLogs.push({ time: timeElapsed, type: "received", data: event.data });
+            }
+        });
+
+        this.addEventListener('close', (event) => {
+            console.warn('[CustomWebSocket] Connection closed:', event);
+            setTimeout(() => {
+                console.log('[CustomWebSocket] Attempting to reconnect...');
+                window.WebSocket = new CustomWebSocket(this.url, this.protocols);
+            }, 1000);
+        });
+
+        this.send = new Proxy(this.send, {
             apply: function(target, thisArg, argumentsList) {
                 let timeElapsed = (Date.now() - startTime) / 1000;
                 let data = argumentsList[0];
@@ -22,33 +43,18 @@
                 return target.apply(thisArg, argumentsList);
             }
         });
+    }
+}
 
-        // Wrap onmessage to capture incoming packets
-        ws.addEventListener("message", function(event) {
-            let timeElapsed = (Date.now() - startTime) / 1000;
+// Override WebSocket
+window.WebSocket = CustomWebSocket;
 
-            if (typeof event.data === "string") {
-                sessionLogs.push({ time: timeElapsed, type: "received", data: event.data });
-            } else if (event.data instanceof Blob) {
-                let reader = new FileReader();
-                reader.onload = function() {
-                    let buffer = new Uint8Array(reader.result);
-                    sessionLogs.push({ time: timeElapsed, type: "received", data: Array.from(buffer) });
-                };
-                reader.readAsArrayBuffer(event.data);
-            }
-        });
-
-        return ws;
-    };
-
-    // Stop capturing after 15 seconds and save to file
-    setTimeout(() => {
-        let blob = new Blob([JSON.stringify(sessionLogs, null, 2)], { type: "application/json" });
-        let link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = "websocket_logs.json";
-        link.click();
-        console.log("Saved WebSocket logs!");
-    }, 15000);
-})();
+// Save logs after 15 seconds
+setTimeout(() => {
+    let blob = new Blob([JSON.stringify(sessionLogs, null, 2)], { type: "application/json" });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "websocket_logs.json";
+    link.click();
+    console.log("Saved WebSocket logs!");
+}, 15000);
