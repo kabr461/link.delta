@@ -28,6 +28,7 @@
         });
     }
 
+    // Create and style the toggle button for live mode
     const toggleButton = document.createElement('button');
     toggleButton.textContent = '⚙️ Activate Live Mode';
     Object.assign(toggleButton.style, {
@@ -64,6 +65,8 @@
         else disableSystem();
     });
 
+    // This function attaches a combined Enter key handler to the chat input.
+    // It performs your smartRun logic *and* then clears the input and simulates canvas clicks.
     function handleInputBox(inputBox) {
         const input = inputBox.querySelector('input#message');
         if (!input) return;
@@ -72,9 +75,50 @@
 
         inputListener = (event) => {
             if (event.key === 'Enter') {
+                // Capture the current input before clearing
                 liveInputText = input.value;
                 console.log("✍️ Enter pressed, live input:", liveInputText);
+
+                // Run your smart-run logic
                 smartRun(liveInputText);
+
+                // Perform additional actions (clear input, blur, simulate canvas clicks)
+                if (input.value.trim().length > 0) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+
+                    // Clear and update input field
+                    input.value = '';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.blur();
+                    console.log('⌨️ Enter intercepted, chat cleared, and blurred');
+
+                    const canvas = document.querySelector('canvas.canvas');
+                    if (!canvas) {
+                        console.warn('❌ Canvas not found!');
+                        return;
+                    }
+
+                    // Simulate a few rapid clicks on the canvas to force game focus
+                    let i = 0;
+                    const maxClicks = 3;
+                    const clickInterval = setInterval(() => {
+                        const clickEvent = new MouseEvent('mousedown', {
+                            bubbles: true,
+                            cancelable: true,
+                            view: window,
+                            clientX: 100,
+                            clientY: 100
+                        });
+                        canvas.dispatchEvent(clickEvent);
+                        console.log(`🖱️ Simulated canvas click (${i + 1}/${maxClicks})`);
+                        i++;
+                        if (i >= maxClicks) {
+                            clearInterval(clickInterval);
+                            console.log('%c🎮 Now PRESS "1" MANUALLY — the game is ready.', 'color: limegreen; font-weight: bold;');
+                        }
+                    }, 100);
+                }
             }
         };
 
@@ -82,6 +126,7 @@
         console.log('🎯 Input listener attached for Enter key');
     }
 
+    // Wait for the chat input box to appear and then attach the handler
     function observeAndTrackTyping() {
         const existing = document.querySelector('.message-input-cell.input-box.mr0');
         if (existing) {
@@ -179,55 +224,4 @@
             }, 200);
         }, 200);
     }
-})();
-
-
-
-(function () {
-    document.addEventListener('keydown', function (e) {
-        const input = document.querySelector('input#message');
-        if (!input) return;
-
-        const isFocused = document.activeElement === input;
-        const hasText = input.value.trim().length > 0;
-
-        if (isFocused && hasText && e.key === 'Enter') {
-            e.stopImmediatePropagation();
-            e.preventDefault();
-
-            input.value = '';
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.blur();
-            console.log('⌨️ Enter intercepted, chat cleared, and blurred');
-
-            const canvas = document.querySelector('canvas.canvas');
-            if (!canvas) {
-                console.warn('❌ Canvas not found!');
-                return;
-            }
-
-            // Simulate a few rapid clicks to force game focus
-            let i = 0;
-            const maxClicks = 3;
-
-            const clickInterval = setInterval(() => {
-                const clickEvent = new MouseEvent('mousedown', {
-                    bubbles: true,
-                    cancelable: true,
-                    view: window,
-                    clientX: 100,
-                    clientY: 100
-                });
-                canvas.dispatchEvent(clickEvent);
-                console.log(`🖱️ Simulated canvas click (${i + 1}/${maxClicks})`);
-                i++;
-                if (i >= maxClicks) {
-                    clearInterval(clickInterval);
-
-                    // Now inform the user to press "1"
-                    console.log('%c🎮 Now PRESS "1" MANUALLY — the game is ready.', 'color: limegreen; font-weight: bold;');
-                }
-            }, 100); // 100ms between clicks
-        }
-    }, true);
 })();
