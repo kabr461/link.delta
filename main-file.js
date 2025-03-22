@@ -1,21 +1,4 @@
 (function() {
-  const allowedKeys = ["naze", "key404", "key123"];
-
-  let userKey = GM_getValue("registercode");
-  if (!userKey) {
-      userKey = prompt("Please enter your registration code:");
-      GM_setValue("registercode", userKey);
-  }
-
-  if (!allowedKeys.includes(userKey)) {
-      alert("Invalid registration code.");
-      return; // stops execution here
-  }
-
-  // ✅ Your actual script logic starts here
-  alert("License key valid. Your script runs now!");
-
-(function() {
   function main() {
     // --- Global Error Handling ---
     window.onerror = function(message, source, lineno, colno, error) {
@@ -862,5 +845,4 @@ updateSpectatorBoard();
   }
 
   setTimeout(main, 5000); // Delay initialization
-})();
 })();
